@@ -1,0 +1,7 @@
+Nom_Cli,Ape_Cli,Tel_Cli,Ema_Cli,Pai_Cli,Doc_Cli,Cat_Cli,Pre_Con_Cli,Ace_Not_Tel_Cli,Ace_Not_Cor_Cli,Not_Cli,Est_Cli
+Juan,Pérez,0998765432,juan@correo.com,Ecuador,1234567890,nuevo,whatsapp,1,0,Cliente preferente,activo
+María,González,0997654321,maria@correo.com,Ecuador,0987654321,ocasional,email,1,1,Cliente corporativo,activo
+Carlos,Rodríguez,0996543210,carlos@correo.com,Ecuador,1122334455,frecuente,telegram,0,1,,activo
+Ana,López,0995432109,ana@correo.com,Ecuador,5566778899,vip,instagram,1,1,Cliente VIP,activo
+Luis,Martínez,0994321098,,Ecuador,,nuevo,whatsapp,0,0,,inactivo
+Patricia,Silva,0993210987,patricia@correo.com,Colombia,9988776655,ocasional,email,1,0,,activo

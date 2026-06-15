@@ -1,0 +1,10 @@
+export const VENTA_INICIAL = {
+	Id_Cli: "",
+	Id_Rev: "",
+	Fec_Ven: getCurrentDateTimeInputValue(),
+	Des_Tot_Ven: "0",
+	Imp_Tot_Ven: "0",
+	Met_Pag_Ven: "Transferencia",
+	Not_Ven: "",
+	Est_Ven: "completada",
+};

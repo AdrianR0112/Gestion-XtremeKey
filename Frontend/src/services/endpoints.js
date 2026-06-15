@@ -1,0 +1,32 @@
+export const endpoints = {
+    auth: {
+        login: "/auth/login",
+        register: "/auth/register",
+        me: "/auth/me",
+        changePassword: "/auth/change-password",
+        logout: "/auth/logout",
+    },
+    configuracion: "/configuracion",
+    usuarios: "/usuarios",
+    clientes: "/clientes",
+    revendedores: "/revendedores",
+    proveedores: "/proveedores",
+    categorias: "/categorias",
+    productos: "/productos",
+    variantes: "/variantes",
+    proveedoresProductos: "/proveedores-productos",
+    cuentas: "/cuentas",
+    keys: "/keys",
+    ventas: "/ventas",
+    detalleVentas: "/detalle-ventas",
+    compras: "/compras",
+    detalleCompras: "/detalle-compras",
+    gastos: "/gastos",
+    renovaciones: "/renovaciones",
+    tareas: "/tareas",
+    calendario: "/calendario",
+    dashboard: "/dashboard",
+    plantillas: "/plantillas",
+};
+
+export default endpoints;
