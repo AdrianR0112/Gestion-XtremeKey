@@ -17,9 +17,7 @@ router.post('/vencimientos-email/run', asyncHandler(async (req, res) => {
     type: req.body?.type,
     clientId: req.body?.clientId,
     detalleId: req.body?.detalleId,
-    forceResend: req.body?.forceResend,
-    overrideEmail: req.body?.overrideEmail,
-    includeAllClients: req.body?.includeAllClients
+    forceResend: req.body?.forceResend
   });
 
   res.status(200).json(successResponse(summary, 'Job de recordatorios ejecutado correctamente.'));
