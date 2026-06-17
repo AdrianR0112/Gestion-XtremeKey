@@ -2,11 +2,13 @@
 const { env } = require('./config/env');
 const { logger } = require('./config/logger');
 const { connectDatabase } = require('./config/database');
+const { startJobs } = require('./jobs');
 
 let server;
 
 async function bootstrap() {
   await connectDatabase();
+  startJobs();
 
   server = app.listen(env.port, () => {
     logger.info(`API listening on port ${env.port} (${env.nodeEnv})`);

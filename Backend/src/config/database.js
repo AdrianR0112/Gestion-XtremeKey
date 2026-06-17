@@ -37,6 +37,29 @@ async function ensureVariantNotificationColumns(connection) {
   }
 }
 
+async function ensureReminderEmailLogTable(connection) {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS recordatorios_vencimiento_email (
+      Id_Rec int(11) NOT NULL AUTO_INCREMENT,
+      Id_Dve int(11) NOT NULL,
+      Tip_Rec enum('pre_vencimiento','dia_vencimiento') NOT NULL,
+      Fec_Objetivo date NOT NULL,
+      Ema_Destino varchar(150) NOT NULL,
+      Id_Cli int(11) DEFAULT NULL,
+      Id_Rev int(11) DEFAULT NULL,
+      Resend_Id varchar(120) DEFAULT NULL,
+      Est_Envio enum('pendiente','enviado','omitido','error') NOT NULL DEFAULT 'pendiente',
+      Err_Envio text DEFAULT NULL,
+      Fec_Cre datetime DEFAULT current_timestamp(),
+      Fec_Mod datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+      PRIMARY KEY (Id_Rec),
+      UNIQUE KEY uq_recordatorio_vencimiento (Id_Dve, Tip_Rec, Fec_Objetivo),
+      KEY idx_recordatorios_destino (Ema_Destino),
+      KEY idx_recordatorios_detalle (Id_Dve)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+}
+
 async function connectDatabase() {
   if (!env.mysqlDatabase) {
     throw new Error('MYSQL_DATABASE is not configured.');
@@ -89,6 +112,7 @@ async function connectDatabase() {
 
   await pool.query('SELECT 1');
   await ensureVariantNotificationColumns(pool);
+  await ensureReminderEmailLogTable(pool);
 
   logger.info(
     `MySQL connected: ${env.mysqlHost}:${env.mysqlPort}/${env.mysqlDatabase} (tz: ${getTimezoneOffset()})`
