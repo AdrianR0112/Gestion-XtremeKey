@@ -22,6 +22,7 @@ const { router: tareasRoutes } = require('./tareas.routes');
 const { router: calendarioRoutes } = require('./calendario.routes');
 const { router: dashboardRoutes } = require('./dashboard.routes');
 const { router: plantillasRoutes } = require('./plantillas.routes');
+const { router: jobsRoutes } = require('./jobs.routes');
 
 const apiRouter = Router();
 
@@ -51,5 +52,6 @@ apiRouter.use('/tareas', tareasRoutes);
 apiRouter.use('/calendario', calendarioRoutes);
 apiRouter.use('/dashboard', dashboardRoutes);
 apiRouter.use('/plantillas', plantillasRoutes);
+apiRouter.use('/jobs', jobsRoutes);
 
 module.exports = { apiRouter };

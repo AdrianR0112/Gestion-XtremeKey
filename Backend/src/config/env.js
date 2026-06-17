@@ -16,7 +16,13 @@ const env = {
   resendApiKey: process.env.RESEND_API_KEY || '',
   resendFromEmail: process.env.RESEND_FROM_EMAIL || '',
   resendFromName: process.env.RESEND_FROM_NAME || '',
-  resendReplyTo: process.env.RESEND_REPLY_TO || ''
+  resendReplyTo: process.env.RESEND_REPLY_TO || '',
+  remindersEnabled: String(process.env.REMINDERS_ENABLED || 'false').toLowerCase() === 'true',
+  remindersCron: process.env.REMINDERS_CRON || '0 9 * * *',
+  remindersDryRun: String(process.env.REMINDERS_DRY_RUN || 'true').toLowerCase() === 'true',
+  remindersTestMode: String(process.env.REMINDERS_TEST_MODE || 'false').toLowerCase() === 'true',
+  remindersTestClientId: process.env.REMINDERS_TEST_CLIENT_ID ? Number(process.env.REMINDERS_TEST_CLIENT_ID) : null,
+  remindersTestOverrideEmail: process.env.REMINDERS_TEST_OVERRIDE_EMAIL || ''
 };
 
 module.exports = { env };
