@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useLocation, NavLink } from "react-router-dom";
@@ -23,6 +24,7 @@ import {
 import { Button } from "../components/ui/button";
 import authService from "../modules/auth/services/auth.service";
 import configuracionService from "../modules/configuracion/services/configuracion.service";
+import { queryKeys } from "../app/query-keys";
 import { loadTimezone } from "../utils/timezone";
 import { logout as clearAuth } from "../store/auth.store";
 import {
@@ -86,10 +88,10 @@ const navigationGroups = [
 			{ name: "Proveedores", href: "/proveedores", icon: Truck },
 		],
 	},
-	{
-		label: "SISTEMA",
-		items: [
-			{ name: "Usuarios", href: "/usuarios", icon: UserCog },
+		{
+			label: "SISTEMA",
+			items: [
+				{ name: "Staff", href: "/staff", icon: UserCog },
 			{ name: "Cuentas", href: "/cuentas", icon: Wallet },
 			{ name: "Plantillas", href: "/plantillas", icon: FileText },
 			{ name: "Keys", href: "/keys", icon: KeyRound },
@@ -101,31 +103,23 @@ export default function Sidebar() {
 	const location = useLocation();
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
-	const [companyName, setCompanyName] = useState("Sistema de Ventas");
 	const [expanded, setExpanded] = useState({
 		Productos: false,
 		Operaciones: false,
 	});
+	const { data: currentConfig } = useQuery({
+		queryKey: queryKeys.configuracion.current(),
+		queryFn: async () => {
+			return await configuracionService.getCurrent().catch((err) => {
+				if (err?.status === 404) return null;
+				throw err;
+			});
+		},
+	});
+	const companyName = String(currentConfig?.Nom_Emp_Con || "").trim() || "Sistema de Ventas";
 
 	useEffect(() => {
-		let mounted = true;
-
-		const cargarNombreEmpresa = async () => {
-			try {
-				const current = await configuracionService.getCurrent();
-				if (!mounted) return;
-				const nombre = String(current?.Nom_Emp_Con || "").trim();
-				if (nombre) setCompanyName(nombre);
-				loadTimezone(configuracionService);
-			} catch {
-				loadTimezone(configuracionService);
-			}
-		};
-
-		cargarNombreEmpresa();
-		return () => {
-			mounted = false;
-		};
+		loadTimezone(configuracionService);
 	}, []);
 
 	const onLogout = async () => {

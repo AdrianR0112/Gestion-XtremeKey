@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 import { Eye, ListTree, Pencil, Trash } from "lucide-react";
 import ProductoEstadoBadge from "./ProductoEstadoBadge";
 import { ESTADOS_PRODUCTO } from "../schemas/producto.schema";
+import { resolveProductoImageUrl } from "../helpers/producto-image";
 
 export default function ProductoTable({
 	productos = [],
@@ -74,6 +75,7 @@ export default function ProductoTable({
 							const variantes = variantesPorProducto[Number(producto.Id_Prd)] || [];
 							const hasVariantes = variantes.length > 0;
 							const isSelected = Number(selectedProductId) === Number(producto.Id_Prd);
+							const imageUrl = resolveProductoImageUrl(producto.Ima_Prd);
 
 							return (
 								<Card
@@ -89,13 +91,18 @@ export default function ProductoTable({
 												<p className="text-xs text-muted-foreground mt-1">
 													{hasVariantes ? `${variantes.length} variante${variantes.length > 1 ? "s" : ""}` : "Sin variantes"}
 												</p>
-												{producto.Ima_Prd && <p className="text-xs text-muted-foreground mt-1 break-all">Imagen: {producto.Ima_Prd}</p>}
 											</div>
 											<ProductoEstadoBadge estado={producto.Est_Prd} />
 										</div>
 									</CardHeader>
 
 									<CardContent className="space-y-4">
+										{imageUrl && (
+											<div className="overflow-hidden rounded-lg border bg-muted/20">
+												<img src={imageUrl} alt={producto.Nom_Prd || "Imagen del producto"} className="h-36 w-full object-contain" />
+											</div>
+										)}
+
 										<div className="space-y-2">
 											{producto.Tip_Prd && (
 												<div className="flex justify-between items-center">

@@ -1,28 +1,41 @@
-﻿const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+﻿import { z } from "zod";
+import { firstErrorFromResult } from "@/lib/zod";
+
+const loginFormSchema = z.object({
+	email: z.email("Correo invalido"),
+	password: z.string().min(6, "La contrasena debe tener al menos 6 caracteres"),
+});
+
+const registerFormSchema = z.object({
+	firstName: z.string().trim().min(1, "El nombre es obligatorio"),
+	lastName: z.string().trim().min(1, "El apellido es obligatorio"),
+	email: z.email("Correo invalido"),
+	phone: z.string().trim().min(1, "El telefono es obligatorio"),
+	password: z.string().min(6, "La contrasena debe tener al menos 6 caracteres"),
+	role: z.string().trim().min(1, "Selecciona un rol"),
+});
+
+const changePasswordFormSchema = z.object({
+	currentPassword: z.string().min(6, "Contrasena actual invalida"),
+	newPassword: z.string().min(6, "La nueva contrasena debe tener al menos 6 caracteres"),
+});
 
 export function validateLoginForm(form) {
-	if (!form.email || !emailRegex.test(form.email)) return "Correo invalido";
-	if (!form.password || form.password.length < 6) return "La contrasena debe tener al menos 6 caracteres";
-	return "";
+	return firstErrorFromResult(loginFormSchema.safeParse(form));
 }
 
 export function validateRegisterForm(form) {
-	if (!form.firstName?.trim()) return "El nombre es obligatorio";
-	if (!form.lastName?.trim()) return "El apellido es obligatorio";
-	if (!form.email || !emailRegex.test(form.email)) return "Correo invalido";
-	if (!form.phone?.trim()) return "El telefono es obligatorio";
-	if (!form.password || form.password.length < 6) return "La contrasena debe tener al menos 6 caracteres";
-	if (!form.role) return "Selecciona un rol";
-	return "";
+	return firstErrorFromResult(registerFormSchema.safeParse(form));
 }
 
 export function validateChangePasswordForm(form) {
-	if (!form.currentPassword || form.currentPassword.length < 6) return "Contrasena actual invalida";
-	if (!form.newPassword || form.newPassword.length < 6) return "La nueva contrasena debe tener al menos 6 caracteres";
-	return "";
+	return firstErrorFromResult(changePasswordFormSchema.safeParse(form));
 }
 
 export const authSchema = {
+	loginFormSchema,
+	registerFormSchema,
+	changePasswordFormSchema,
 	validateLoginForm,
 	validateRegisterForm,
 	validateChangePasswordForm,

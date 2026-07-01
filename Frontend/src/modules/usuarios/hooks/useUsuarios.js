@@ -1,45 +1,53 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { matchesPhoneSearch, matchesTextSearch, normalizeSearchText } from "../../../utils/search";
 import { mapUsuarioFromApi } from "../helpers/usuario.mapper";
 import { USUARIO_INICIAL, validateUsuarioForm } from "../schemas/usuario.schema";
 import usuariosService from "../services/usuarios.service";
 
 export default function useUsuarios() {
-	const [usuarios, setUsuarios] = useState([]);
+	const queryClient = useQueryClient();
 	const [selectedUsuarioId, setSelectedUsuarioId] = useState(null);
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [sheetMode, setSheetMode] = useState("create");
 	const [form, setForm] = useState(USUARIO_INICIAL);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [estadoFilter, setEstadoFilter] = useState("todos");
-	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
+	const usuariosQueryKey = queryKeys.usuarios.list();
+	const usuariosQuery = useQuery({
+		queryKey: usuariosQueryKey,
+		queryFn: async () => toArray(await usuariosService.list()).map((item) => mapUsuarioFromApi(item)),
+	});
+	const usuarios = usuariosQuery.data ?? [];
+	const setUsuarios = createQueryDataSetter(queryClient, usuariosQueryKey, []);
+	const loading = usuariosQuery.isLoading || usuariosQuery.isFetching;
 
 	const resetForm = () => setForm(USUARIO_INICIAL);
 
 	const cargarUsuarios = async () => {
-		setLoading(true);
 		setError("");
 		try {
-			const list = await usuariosService.list();
-			const mapped = Array.isArray(list) ? list.map((item) => mapUsuarioFromApi(item)) : [];
-			setUsuarios(mapped);
-			setSelectedUsuarioId((prev) => {
-				if (prev && mapped.some((item) => item.Id_Usu === prev)) return prev;
-				return mapped[0]?.Id_Usu ?? null;
+			return await queryClient.fetchQuery({
+				queryKey: usuariosQueryKey,
+				queryFn: async () => toArray(await usuariosService.list()).map((item) => mapUsuarioFromApi(item)),
 			});
 		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudo cargar usuarios.");
-		} finally {
-			setLoading(false);
+			setError(getErrorMessage(err, "No se pudo cargar usuarios."));
+			return [];
 		}
 	};
 
 	useEffect(() => {
-		cargarUsuarios();
-	}, []);
+		setSelectedUsuarioId((prev) => {
+			if (prev && usuarios.some((item) => item.Id_Usu === prev)) return prev;
+			return usuarios[0]?.Id_Usu ?? null;
+		});
+	}, [usuarios]);
 
 	const usuariosFiltrados = useMemo(() => {
 		const query = normalizeSearchText(searchTerm);

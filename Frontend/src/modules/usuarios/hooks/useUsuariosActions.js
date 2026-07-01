@@ -37,7 +37,7 @@ export default function useUsuariosActions(state) {
 			Ema_Usu: usuario.Ema_Usu || "",
 			Pas_Usu: "",
 			Tel_Usu: usuario.Tel_Usu || "",
-			Rol_Usu: usuario.Rol_Usu || "vendedor",
+			Rol_Usu: usuario.Rol_Usu || "admin",
 			Est_Usu: usuario.Est_Usu || "activo",
 		});
 		setError("");

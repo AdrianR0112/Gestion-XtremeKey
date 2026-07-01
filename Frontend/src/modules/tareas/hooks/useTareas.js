@@ -1,10 +1,13 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { mapTareaFromApi } from "../helpers/tarea.mapper";
 import { TAREA_INICIAL, isTareaFormValid } from "../schemas/tarea.schema";
 import tareasService from "../services/tareas.service";
 
 export default function useTareas() {
-  const [tareas, setTareas] = useState([]);
+  const queryClient = useQueryClient();
   const [selectedTareaId, setSelectedTareaId] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState("create");
@@ -12,34 +15,37 @@ export default function useTareas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("todos");
   const [prioridadFilter, setPrioridadFilter] = useState("todos");
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const tareasQueryKey = queryKeys.tareas.list();
+  const tareasQuery = useQuery({
+    queryKey: tareasQueryKey,
+    queryFn: async () => toArray(await tareasService.list()).map((item) => mapTareaFromApi(item)),
+  });
+  const tareas = tareasQuery.data ?? [];
+  const setTareas = createQueryDataSetter(queryClient, tareasQueryKey, []);
+  const loading = tareasQuery.isLoading || tareasQuery.isFetching;
 
   const cargarTareas = async () => {
-    setLoading(true);
     setError("");
     try {
-      const list = await tareasService.list();
-      const mapped = Array.isArray(list) ? list.map((item) => mapTareaFromApi(item)) : [];
-      setTareas(mapped);
-      setSelectedTareaId((prev) => {
-        if (prev && mapped.some((item) => item.Id_Tar === prev)) return prev;
-        return mapped[0]?.Id_Tar ?? null;
+      return await queryClient.fetchQuery({
+        queryKey: tareasQueryKey,
+        queryFn: async () => toArray(await tareasService.list()).map((item) => mapTareaFromApi(item)),
       });
-      return mapped;
     } catch (err) {
-      setError(err?.data?.message || err?.message || "No se pudieron cargar las tareas.");
+      setError(getErrorMessage(err, "No se pudieron cargar las tareas."));
       return [];
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    cargarTareas();
-  }, []);
+	    setSelectedTareaId((prev) => {
+	      if (prev && tareas.some((item) => item.Id_Tar === prev)) return prev;
+	      return tareas[0]?.Id_Tar ?? null;
+	    });
+	  }, [tareas]);
 
   const tareaSeleccionada = useMemo(
     () => tareas.find((item) => item.Id_Tar === selectedTareaId) || null,

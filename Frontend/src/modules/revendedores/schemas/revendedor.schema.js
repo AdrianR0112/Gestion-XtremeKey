@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { fieldErrorsFromResult } from "@/lib/zod";
+
 export const REVENDEDOR_INICIAL = {
 	Id_Rev: "",
 	Tel_Rev: "",
@@ -11,24 +14,25 @@ export const REVENDEDOR_INICIAL = {
 
 const estados = ["activo", "inactivo"];
 
-function isValidEmail(value) {
-	if (!value) return true;
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
-}
+const revendedorFormSchema = z.object({
+	Tel_Rev: z.string().trim().min(1, "El telefono es obligatorio."),
+	Ema_Rev: z.string().trim().refine((value) => value === "" || z.email().safeParse(value).success, {
+		message: "El correo no tiene un formato valido.",
+	}),
+	Est_Rev: z.enum(estados, { message: "Estado invalido." }).optional(),
+}).passthrough();
 
 export function validateRevendedorForm(form = {}) {
-	const errors = {};
-
-	if (!form.Tel_Rev?.trim()) errors.Tel_Rev = "El telefono es obligatorio.";
-
-	if (!isValidEmail(form.Ema_Rev?.trim())) errors.Ema_Rev = "El correo no tiene un formato valido.";
-	if (form.Est_Rev && !estados.includes(form.Est_Rev)) errors.Est_Rev = "Estado invalido.";
-
-	return errors;
+	return fieldErrorsFromResult(revendedorFormSchema.safeParse(form));
 }
 
 export function isRevendedorFormValid(form = {}) {
 	return Object.keys(validateRevendedorForm(form)).length === 0;
 }
 
-export default { REVENDEDOR_INICIAL };
+export const revendedorSchema = {
+	schema: revendedorFormSchema,
+	validate: validateRevendedorForm,
+};
+
+export default revendedorSchema;

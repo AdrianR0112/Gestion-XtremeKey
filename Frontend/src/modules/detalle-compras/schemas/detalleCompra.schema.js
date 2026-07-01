@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { fieldErrorsFromResult } from "@/lib/zod";
+
 export const DETALLE_COMPRA_INICIAL = {
 	Id_Com: null,
 	Id_Prd: null,
@@ -8,27 +11,27 @@ export const DETALLE_COMPRA_INICIAL = {
 	Not_Dco: "",
 };
 
+const detalleCompraFormSchema = z.object({
+	Id_Com: z.any().refine((value) => Boolean(value), { message: "La compra es obligatoria." }),
+	Can_Dco: z.union([z.string(), z.number()]).refine((value) => value !== null && value !== undefined && value !== "", {
+		message: "La cantidad es obligatoria.",
+	}).refine((value) => Number(value) >= 1, {
+		message: "La cantidad debe ser mayor a 0.",
+	}),
+	Pre_Uni_Dco: z.union([z.string(), z.number()]).refine((value) => value !== null && value !== undefined && value !== "", {
+		message: "El precio unitario es obligatorio.",
+	}).refine((value) => Number(value) >= 0, {
+		message: "El precio no puede ser negativo.",
+	}),
+	Sub_Tot_Dco: z.union([z.string(), z.number()]).refine((value) => value !== null && value !== undefined && value !== "", {
+		message: "El subtotal es obligatorio.",
+	}).refine((value) => Number(value) >= 0, {
+		message: "El subtotal no puede ser negativo.",
+	}),
+}).passthrough();
+
 export function validateDetalleCompraForm(form = {}) {
-	const errors = {};
-
-	if (!form.Id_Com) errors.Id_Com = "La compra es obligatoria.";
-	if (form.Can_Dco === null || form.Can_Dco === undefined || form.Can_Dco === "") {
-		errors.Can_Dco = "La cantidad es obligatoria.";
-	} else if (Number(form.Can_Dco) < 1) {
-		errors.Can_Dco = "La cantidad debe ser mayor a 0.";
-	}
-	if (form.Pre_Uni_Dco === null || form.Pre_Uni_Dco === undefined || form.Pre_Uni_Dco === "") {
-		errors.Pre_Uni_Dco = "El precio unitario es obligatorio.";
-	} else if (Number(form.Pre_Uni_Dco) < 0) {
-		errors.Pre_Uni_Dco = "El precio no puede ser negativo.";
-	}
-	if (form.Sub_Tot_Dco === null || form.Sub_Tot_Dco === undefined || form.Sub_Tot_Dco === "") {
-		errors.Sub_Tot_Dco = "El subtotal es obligatorio.";
-	} else if (Number(form.Sub_Tot_Dco) < 0) {
-		errors.Sub_Tot_Dco = "El subtotal no puede ser negativo.";
-	}
-
-	return errors;
+	return fieldErrorsFromResult(detalleCompraFormSchema.safeParse(form));
 }
 
 export function isDetalleCompraFormValid(form = {}) {
@@ -36,6 +39,7 @@ export function isDetalleCompraFormValid(form = {}) {
 }
 
 export const detalleCompraSchema = {
+	schema: detalleCompraFormSchema,
 	validate: validateDetalleCompraForm,
 };
 

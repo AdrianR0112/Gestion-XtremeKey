@@ -1,4 +1,7 @@
-﻿export const ESTADOS_CUENTA = ["disponible", "ocupada", "parcial", "vencida", "suspendida"];
+﻿import { z } from "zod";
+import { fieldErrorsFromResult } from "@/lib/zod";
+
+export const ESTADOS_CUENTA = ["disponible", "ocupada", "parcial", "vencida", "suspendida"];
 
 export const CUENTA_INICIAL = {
 	Id_Prd: "",
@@ -18,36 +21,22 @@ export const CUENTA_INICIAL = {
 	Est_Cue: "disponible",
 };
 
-function isNonNegativeNumber(value) {
-	if (value === "" || value === null || value === undefined) return true;
-	const parsed = Number(value);
-	return Number.isFinite(parsed) && parsed >= 0;
-}
+const cuentaFormSchema = z.object({
+	Nom_Cue: z.string().trim().min(1, "El nombre de la cuenta es obligatorio."),
+	Tot_Per_Cue: z.union([z.string(), z.number(), z.null(), z.undefined()]).refine((value) => value === "" || value === null || value === undefined || (Number.isFinite(Number(value)) && Number(value) >= 0), {
+		message: "Total de perfiles debe ser un numero positivo.",
+	}),
+	Per_Dis_Cue: z.union([z.string(), z.number(), z.null(), z.undefined()]).refine((value) => value === "" || value === null || value === undefined || (Number.isFinite(Number(value)) && Number(value) >= 0), {
+		message: "Perfiles disponibles debe ser un numero positivo.",
+	}),
+	Cos_Cue: z.union([z.string(), z.number(), z.null(), z.undefined()]).refine((value) => value === "" || value === null || value === undefined || (Number.isFinite(Number(value)) && Number(value) >= 0), {
+		message: "El costo debe ser un numero positivo.",
+	}),
+	Est_Cue: z.enum(ESTADOS_CUENTA, { message: "Estado de cuenta invalido." }).optional(),
+}).passthrough();
 
 export function validateCuentaForm(form = {}) {
-	const errors = {};
-
-	if (!form.Nom_Cue?.trim()) {
-		errors.Nom_Cue = "El nombre de la cuenta es obligatorio.";
-	}
-
-	if (!isNonNegativeNumber(form.Tot_Per_Cue)) {
-		errors.Tot_Per_Cue = "Total de perfiles debe ser un numero positivo.";
-	}
-
-	if (!isNonNegativeNumber(form.Per_Dis_Cue)) {
-		errors.Per_Dis_Cue = "Perfiles disponibles debe ser un numero positivo.";
-	}
-
-	if (!isNonNegativeNumber(form.Cos_Cue)) {
-		errors.Cos_Cue = "El costo debe ser un numero positivo.";
-	}
-
-	if (form.Est_Cue && !ESTADOS_CUENTA.includes(form.Est_Cue)) {
-		errors.Est_Cue = "Estado de cuenta invalido.";
-	}
-
-	return errors;
+	return fieldErrorsFromResult(cuentaFormSchema.safeParse(form));
 }
 
 export function isCuentaFormValid(form = {}) {
@@ -55,6 +44,7 @@ export function isCuentaFormValid(form = {}) {
 }
 
 export const cuentaSchema = {
+	schema: cuentaFormSchema,
 	validate: validateCuentaForm,
 };
 

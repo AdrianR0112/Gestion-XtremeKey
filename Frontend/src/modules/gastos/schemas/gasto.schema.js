@@ -1,4 +1,6 @@
-﻿import { getTimezone } from "../../../utils/timezone";
+﻿import { z } from "zod";
+import { getTimezone } from "../../../utils/timezone";
+import { fieldErrorsFromResult } from "@/lib/zod";
 
 function getTodayDateInputValue() {
 	const tz = getTimezone();
@@ -28,36 +30,23 @@ export function createGastoForm() {
 	return { ...GASTO_INICIAL, Fec_Gas: getTodayDateInputValue() };
 }
 
+const validCategorias = ["operativo", "administrativo", "marketing", "proveedor", "impuesto", "otro"];
+const validEstados = ["registrado", "pagado", "cancelado"];
+
+const gastoFormSchema = z.object({
+	Nom_Gas: z.string().trim().min(1, "El nombre es requerido").max(150, "El nombre no puede exceder 150 caracteres"),
+	Mon_Gas: z.union([z.string(), z.number()]).refine((value) => value !== "" && value !== null && !Number.isNaN(Number(value)), {
+		message: "El monto es requerido",
+	}).refine((value) => Number(value) >= 0, {
+		message: "El monto no puede ser negativo",
+	}),
+	Fec_Gas: z.string().trim().min(1, "La fecha es requerida"),
+	Cat_Gas: z.enum(validCategorias, { message: "Categoría inválida" }).optional(),
+	Est_Gas: z.enum(validEstados, { message: "Estado inválido" }).optional(),
+}).passthrough();
+
 export function validateGastoForm(form) {
-	const errors = {};
-
-	if (!form.Nom_Gas || !form.Nom_Gas.trim()) {
-		errors.Nom_Gas = "El nombre es requerido";
-	} else if (form.Nom_Gas.trim().length > 150) {
-		errors.Nom_Gas = "El nombre no puede exceder 150 caracteres";
-	}
-
-	if (form.Mon_Gas === "" || form.Mon_Gas === null || Number.isNaN(form.Mon_Gas)) {
-		errors.Mon_Gas = "El monto es requerido";
-	} else if (Number(form.Mon_Gas) < 0) {
-		errors.Mon_Gas = "El monto no puede ser negativo";
-	}
-
-	if (!form.Fec_Gas || !form.Fec_Gas.trim()) {
-		errors.Fec_Gas = "La fecha es requerida";
-	}
-
-	const validCategorias = ["operativo", "administrativo", "marketing", "proveedor", "impuesto", "otro"];
-	if (form.Cat_Gas && !validCategorias.includes(form.Cat_Gas)) {
-		errors.Cat_Gas = "Categoría inválida";
-	}
-
-	const validEstados = ["registrado", "pagado", "cancelado"];
-	if (form.Est_Gas && !validEstados.includes(form.Est_Gas)) {
-		errors.Est_Gas = "Estado inválido";
-	}
-
-	return errors;
+	return fieldErrorsFromResult(gastoFormSchema.safeParse(form));
 }
 
 export function isGastoFormValid(form) {

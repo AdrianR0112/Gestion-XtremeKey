@@ -1,5 +1,5 @@
 ﻿import { productosService } from '../services/productos.service';
-import { mapProductoFromApi, mapProductoPayload } from '../helpers/producto.mapper';
+import { buildProductoFormData, mapProductoFromApi } from '../helpers/producto.mapper';
 import { PRODUCTO_INICIAL, validateProductoForm } from '../schemas/producto.schema';
 
 export default function useProductosActions(state) {
@@ -30,6 +30,28 @@ export default function useProductosActions(state) {
         setSheetOpen(true);
     };
 
+    const eliminarImagenProducto = async (productoId) => {
+        if (!productoId) return false;
+
+        try {
+            setSaving(true);
+            const updated = await productosService.removeImage(productoId);
+            setForm(mapProductoFromApi(updated));
+            await cargarProductos();
+            setError(null);
+            setSuccess('Imagen eliminada correctamente.');
+            setTimeout(() => setSuccess(null), 3000);
+            return true;
+        } catch (err) {
+            const backendErrors = Array.isArray(err?.data?.errors) ? err.data.errors.join(', ') : null;
+            setError(backendErrors || err?.data?.message || err?.message || 'Error al eliminar la imagen del producto.');
+            console.error('Error eliminando imagen de producto:', err);
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const guardarProducto = async (event) => {
         event?.preventDefault();
 
@@ -41,7 +63,7 @@ export default function useProductosActions(state) {
 
         try {
             setSaving(true);
-            const payload = mapProductoPayload(form);
+            const payload = buildProductoFormData(form);
 
             if (form.Id_Prd) {
                 await productosService.update(form.Id_Prd, payload);
@@ -92,6 +114,7 @@ export default function useProductosActions(state) {
     return {
         abrirCrear,
         abrirEditar,
+        eliminarImagenProducto,
         guardarProducto,
         confirmarEliminacion,
     };

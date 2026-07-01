@@ -20,6 +20,7 @@ export const productosService = {
   getById: async (id, options) => extractPayload(await api.get(`${basePath}/${id}`, options)),
   create: async (payload, options) => extractPayload(await api.post(basePath, payload, options)),
   update: async (id, payload, options) => extractPayload(await api.put(`${basePath}/${id}`, payload, options)),
+  removeImage: async (id, options) => extractPayload(await api.del(`${basePath}/${id}/imagen`, options)),
   remove: async (id, options) => extractPayload(await api.del(`${basePath}/${id}`, options)),
 };
 

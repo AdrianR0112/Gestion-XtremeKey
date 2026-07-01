@@ -7,6 +7,7 @@ const allowedFields = [
   'Ape_Cli',
   'Tel_Cli',
   'Ema_Cli',
+  'Usu_Tel_Cli',
   'Pai_Cli',
   'Doc_Cli',
   'Cat_Cli',
@@ -14,7 +15,11 @@ const allowedFields = [
   'Ace_Not_Tel_Cli',
   'Ace_Not_Cor_Cli',
   'Not_Cli',
-  'Est_Cli'
+  'Est_Cli',
+  'Password_Hash',
+  'Email_Verificado',
+  'Token_Verificacion',
+  'Fec_Ultimo_Acceso'
 ];
 
 module.exports = {

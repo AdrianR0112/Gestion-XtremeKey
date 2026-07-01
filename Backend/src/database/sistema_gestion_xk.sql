@@ -64,6 +64,10 @@ CREATE TABLE `clientes` (
   `Ape_Cli` varchar(100) DEFAULT NULL,
   `Tel_Cli` varchar(20) NOT NULL,
   `Ema_Cli` varchar(100) DEFAULT NULL,
+  `Password_Hash` varchar(255) DEFAULT NULL,
+  `Email_Verificado` tinyint(1) DEFAULT 0,
+  `Token_Verificacion` varchar(255) DEFAULT NULL,
+  `Fec_Ultimo_Acceso` datetime DEFAULT NULL,
   `Usu_Tel_Cli` varchar(100) DEFAULT NULL,
   `Pai_Cli` varchar(100) DEFAULT 'Ecuador',
   `Doc_Cli` varchar(50) DEFAULT NULL,
@@ -227,6 +231,37 @@ INSERT INTO `clientes` (`Id_Cli`, `Nom_Cli`, `Ape_Cli`, `Tel_Cli`, `Ema_Cli`, `U
 (154, 'Pruebas', 'Personal', '593989560069', 'admin@xtremekey.shop', NULL, 'Ecuador', NULL, 'nuevo', 'whatsapp', 1, 1, NULL, 'activo', '2026-05-15 21:36:54', '2026-06-15 14:30:40'),
 (155, 'Alexis', 'Aguilar', '593998142215', NULL, NULL, 'Ecuador', NULL, 'nuevo', 'whatsapp', 1, 1, NULL, 'activo', '2026-06-11 17:13:55', '2026-06-11 17:13:55'),
 (156, 'Joseph', 'Taco', '593969790576', 'filmsjireh@gmail.com', NULL, 'Ecuador', NULL, 'nuevo', 'whatsapp', 1, 1, NULL, 'activo', '2026-06-12 11:38:18', '2026-06-12 11:44:42');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `carrito_sesiones`
+--
+
+CREATE TABLE `carrito_sesiones` (
+  `Id_Car_Ses` varchar(64) NOT NULL,
+  `Id_Cli` int(11) DEFAULT NULL,
+  `Id_Sesion_Tmp` varchar(64) DEFAULT NULL,
+  `Expira_En` datetime DEFAULT NULL,
+  `Fec_Cre` datetime DEFAULT current_timestamp(),
+  `Fec_Mod` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `carrito_items`
+--
+
+CREATE TABLE `carrito_items` (
+  `Id_Car_Item` int(11) NOT NULL,
+  `Id_Car_Ses` varchar(64) NOT NULL,
+  `Id_Prd` int(11) NOT NULL,
+  `Id_Var` int(11) DEFAULT NULL COMMENT 'Variante elegida (ej. plan mensual/anual)',
+  `Cantidad` int(11) DEFAULT 1,
+  `Fec_Agregado` datetime DEFAULT current_timestamp(),
+  `Fec_Mod` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -475,12 +510,19 @@ CREATE TABLE `productos` (
   `Id_Prd` int(11) NOT NULL,
   `Cod_Prd` varchar(50) DEFAULT NULL,
   `Nom_Prd` varchar(150) NOT NULL,
+  `Slug_Prd` varchar(200) DEFAULT NULL,
   `Des_Prd` text DEFAULT NULL,
   `Des_Cor_Prd` varchar(255) DEFAULT NULL,
+  `Precio_Venta` decimal(10,2) DEFAULT NULL,
+  `Precio_Regular` decimal(10,2) DEFAULT NULL,
   `Id_Cat` int(11) DEFAULT NULL,
   `Tip_Prd` enum('servicio','producto','suscripcion') DEFAULT 'producto',
   `Ima_Prd` varchar(255) DEFAULT NULL,
   `Est_Prd` enum('activo','inactivo','agotado') DEFAULT 'activo',
+  `Estado_Tienda` enum('borrador','activo','archivado') DEFAULT 'activo',
+  `Es_Destacado` tinyint(1) DEFAULT 0,
+  `Meta_Titulo` varchar(200) DEFAULT NULL,
+  `Meta_Descripcion` text DEFAULT NULL,
   `Fec_Cre` datetime DEFAULT current_timestamp(),
   `Fec_Mod` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -499,6 +541,201 @@ INSERT INTO `productos` (`Id_Prd`, `Cod_Prd`, `Nom_Prd`, `Des_Prd`, `Des_Cor_Prd
 (21, NULL, 'Perplexity Pro', NULL, NULL, 10, 'suscripcion', NULL, 'activo', '2026-05-12 23:30:00', '2026-05-12 23:30:00'),
 (22, NULL, 'Autodesk', NULL, 'Suite de Autodesk o Aplicación individual', 13, 'suscripcion', NULL, 'activo', '2026-05-17 01:16:01', '2026-05-17 01:16:01'),
 (23, NULL, 'Grok', NULL, 'Grok IA', 10, 'suscripcion', NULL, 'activo', '2026-06-10 11:48:25', '2026-06-10 11:48:25');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `ordenes`
+--
+
+CREATE TABLE `ordenes` (
+  `Id_Ord` int(11) NOT NULL,
+  `Numero_Ord` varchar(50) NOT NULL,
+  `Id_Cli` int(11) DEFAULT NULL,
+  `Email_Invitado` varchar(150) DEFAULT NULL COMMENT 'Si compra sin registro',
+  `Estado_Ord` enum('pendiente','pagada','completada','cancelada','reembolsada') DEFAULT 'pendiente',
+  `Estado_Pago` enum('pendiente','pagado','fallido','reembolsado','parcial') DEFAULT 'pendiente',
+  `Moneda` varchar(10) DEFAULT 'USD',
+  `Subtotal` decimal(10,2) NOT NULL,
+  `Descuento` decimal(10,2) DEFAULT 0.00,
+  `Total` decimal(10,2) NOT NULL,
+  `Id_Cupon` int(11) DEFAULT NULL,
+  `Codigo_Cupon` varchar(50) DEFAULT NULL,
+  `Notas_Cliente` text DEFAULT NULL,
+  `Notas_Internas` text DEFAULT NULL,
+  `Metadatos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`Metadatos`)),
+  `Fec_Cre` datetime DEFAULT current_timestamp(),
+  `Fec_Mod` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `items_orden`
+--
+
+CREATE TABLE `items_orden` (
+  `Id_Item_Ord` int(11) NOT NULL,
+  `Id_Ord` int(11) NOT NULL,
+  `Id_Prd` int(11) NOT NULL,
+  `Id_Var` int(11) DEFAULT NULL,
+  `Id_Key` int(11) DEFAULT NULL COMMENT 'Clave de licencia asignada tras pago',
+  `Id_Cue` int(11) DEFAULT NULL COMMENT 'Cuenta asignada tras pago',
+  `Nombre_Prd` varchar(150) NOT NULL,
+  `Nombre_Var` varchar(100) DEFAULT NULL,
+  `Precio_Unitario` decimal(10,2) NOT NULL,
+  `Cantidad` int(11) DEFAULT 1,
+  `Precio_Total` decimal(10,2) NOT NULL,
+  `Descuento_Item` decimal(10,2) DEFAULT 0.00,
+  `Clave_Licencia` text DEFAULT NULL,
+  `Correo_Asociado` varchar(150) DEFAULT NULL,
+  `Contrasena_Asociada` varchar(255) DEFAULT NULL,
+  `Fec_Ini_Licencia` datetime DEFAULT NULL,
+  `Fec_Fin_Licencia` datetime DEFAULT NULL,
+  `Estado_Item` enum('pendiente','entregado','cancelado') DEFAULT 'pendiente',
+  `Fec_Cre` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `pagos`
+--
+
+CREATE TABLE `pagos` (
+  `Id_Pag` int(11) NOT NULL,
+  `Id_Ord` int(11) NOT NULL,
+  `Metodo_Pago` enum('tarjeta','paypal','cripto','transferencia') NOT NULL,
+  `Proveedor_Pago` varchar(50) DEFAULT 'stripe',
+  `Monto` decimal(10,2) NOT NULL,
+  `Moneda` varchar(10) DEFAULT 'USD',
+  `Estado_Pago_Prov` varchar(50) DEFAULT 'pendiente',
+  `Id_Transaccion` varchar(255) DEFAULT NULL,
+  `Stripe_PaymentIntent_Id` varchar(255) DEFAULT NULL,
+  `Metadatos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`Metadatos`)),
+  `Fec_Cre` datetime DEFAULT current_timestamp(),
+  `Fec_Mod` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cupones`
+--
+
+CREATE TABLE `cupones` (
+  `Id_Cup` int(11) NOT NULL,
+  `Codigo_Cup` varchar(50) NOT NULL,
+  `Descripcion_Cup` text DEFAULT NULL,
+  `Tipo_Cup` enum('porcentaje','fijo') DEFAULT 'porcentaje',
+  `Monto_Descuento` decimal(10,2) DEFAULT 0.00,
+  `Minimo_Carrito` decimal(10,2) DEFAULT 0.00,
+  `Maximo_Descuento` decimal(10,2) DEFAULT NULL,
+  `Fecha_Desde` datetime NOT NULL,
+  `Fecha_Hasta` datetime NOT NULL,
+  `Limite_Uso` int(11) DEFAULT NULL,
+  `Limite_Uso_Por_Usuario` int(11) DEFAULT 1,
+  `Veces_Usado` int(11) DEFAULT 0,
+  `Esta_Activo` tinyint(1) DEFAULT 1,
+  `Estado_Cup` enum('activo','inactivo','expirado','programado') DEFAULT 'activo',
+  `Aplica_A` enum('todos','productos_especificos','categorias_especificas') DEFAULT 'todos',
+  `Fec_Cre` datetime DEFAULT current_timestamp(),
+  `Fec_Mod` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cupones_productos`
+--
+
+CREATE TABLE `cupones_productos` (
+  `Id_Cup` int(11) NOT NULL,
+  `Id_Prd` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `uso_cupones`
+--
+
+CREATE TABLE `uso_cupones` (
+  `Id_Uso` int(11) NOT NULL,
+  `Id_Cup` int(11) NOT NULL,
+  `Id_Cli` int(11) NOT NULL,
+  `Id_Ord` int(11) DEFAULT NULL,
+  `Descuento_Aplicado` decimal(10,2) DEFAULT 0.00,
+  `Usado_En` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `resenias`
+--
+
+CREATE TABLE `resenias` (
+  `Id_Res` int(11) NOT NULL,
+  `Id_Cli` int(11) NOT NULL,
+  `Id_Prd` int(11) NOT NULL,
+  `Id_Ord` int(11) NOT NULL,
+  `Id_Item_Ord` int(11) NOT NULL,
+  `Calificacion` tinyint(4) NOT NULL CHECK (`Calificacion` between 1 and 5),
+  `Titulo_Res` varchar(200) NOT NULL,
+  `Comentario_Res` text NOT NULL,
+  `Estado_Res` enum('pendiente','aprobada','rechazada') DEFAULT 'aprobada',
+  `Votos_Utiles` int(11) DEFAULT 0,
+  `Es_Compra_Verificada` tinyint(1) DEFAULT 1,
+  `Fec_Cre` datetime DEFAULT current_timestamp(),
+  `Fec_Mod` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `lista_deseos`
+--
+
+CREATE TABLE `lista_deseos` (
+  `Id_Des` int(11) NOT NULL,
+  `Id_Cli` int(11) NOT NULL,
+  `Id_Prd` int(11) NOT NULL,
+  `Fec_Cre` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `notificaciones`
+--
+
+CREATE TABLE `notificaciones` (
+  `Id_Not` int(11) NOT NULL,
+  `Tipo_Not` enum('nuevo_pedido','pago','stock_bajo','sistema') NOT NULL,
+  `Titulo_Not` varchar(200) NOT NULL,
+  `Mensaje_Not` text NOT NULL,
+  `Datos_Not` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`Datos_Not`)),
+  `Leida` tinyint(1) DEFAULT 0,
+  `Fecha_Lectura` datetime DEFAULT NULL,
+  `Fec_Cre` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `imagenes_productos`
+--
+
+CREATE TABLE `imagenes_productos` (
+  `Id_Ima` int(11) NOT NULL,
+  `Id_Prd` int(11) NOT NULL,
+  `Url_Ima` varchar(500) NOT NULL,
+  `Texto_Alt` varchar(255) DEFAULT NULL,
+  `Orden` int(11) DEFAULT 0,
+  `Es_Primaria` tinyint(1) DEFAULT 0,
+  `Fec_Cre` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -829,6 +1066,23 @@ ALTER TABLE `clientes`
   ADD KEY `idx_ema_cli` (`Ema_Cli`);
 
 --
+-- Indices de la tabla `carrito_sesiones`
+--
+ALTER TABLE `carrito_sesiones`
+  ADD PRIMARY KEY (`Id_Car_Ses`),
+  ADD KEY `idx_carrito_cliente` (`Id_Cli`),
+  ADD KEY `idx_carrito_sesion_tmp` (`Id_Sesion_Tmp`);
+
+--
+-- Indices de la tabla `carrito_items`
+--
+ALTER TABLE `carrito_items`
+  ADD PRIMARY KEY (`Id_Car_Item`),
+  ADD KEY `idx_carrito_item_sesion` (`Id_Car_Ses`),
+  ADD KEY `idx_carrito_item_producto` (`Id_Prd`),
+  ADD KEY `idx_carrito_item_variante` (`Id_Var`);
+
+--
 -- Indices de la tabla `compras`
 --
 ALTER TABLE `compras`
@@ -908,9 +1162,91 @@ ALTER TABLE `plantillas_notificacion`
 ALTER TABLE `productos`
   ADD PRIMARY KEY (`Id_Prd`),
   ADD UNIQUE KEY `Cod_Prd` (`Cod_Prd`),
+  ADD UNIQUE KEY `uk_slug_prd` (`Slug_Prd`),
   ADD KEY `Id_Cat` (`Id_Cat`),
   ADD KEY `idx_nom_prd` (`Nom_Prd`),
-  ADD KEY `idx_est_prd` (`Est_Prd`);
+  ADD KEY `idx_est_prd` (`Est_Prd`),
+  ADD KEY `idx_estado_tienda_prd` (`Estado_Tienda`);
+
+--
+-- Indices de la tabla `ordenes`
+--
+ALTER TABLE `ordenes`
+  ADD PRIMARY KEY (`Id_Ord`),
+  ADD UNIQUE KEY `Numero_Ord` (`Numero_Ord`),
+  ADD KEY `idx_orden_cliente` (`Id_Cli`);
+
+--
+-- Indices de la tabla `items_orden`
+--
+ALTER TABLE `items_orden`
+  ADD PRIMARY KEY (`Id_Item_Ord`),
+  ADD KEY `idx_item_orden` (`Id_Ord`),
+  ADD KEY `idx_item_producto` (`Id_Prd`),
+  ADD KEY `idx_item_variante` (`Id_Var`),
+  ADD KEY `idx_item_key` (`Id_Key`),
+  ADD KEY `idx_item_cuenta` (`Id_Cue`);
+
+--
+-- Indices de la tabla `pagos`
+--
+ALTER TABLE `pagos`
+  ADD PRIMARY KEY (`Id_Pag`),
+  ADD KEY `idx_pago_orden` (`Id_Ord`);
+
+--
+-- Indices de la tabla `cupones`
+--
+ALTER TABLE `cupones`
+  ADD PRIMARY KEY (`Id_Cup`),
+  ADD UNIQUE KEY `Codigo_Cup` (`Codigo_Cup`);
+
+--
+-- Indices de la tabla `cupones_productos`
+--
+ALTER TABLE `cupones_productos`
+  ADD PRIMARY KEY (`Id_Cup`,`Id_Prd`),
+  ADD KEY `idx_cupones_productos_producto` (`Id_Prd`);
+
+--
+-- Indices de la tabla `uso_cupones`
+--
+ALTER TABLE `uso_cupones`
+  ADD PRIMARY KEY (`Id_Uso`),
+  ADD KEY `idx_uso_cupon` (`Id_Cup`),
+  ADD KEY `idx_uso_cliente` (`Id_Cli`),
+  ADD KEY `idx_uso_orden` (`Id_Ord`);
+
+--
+-- Indices de la tabla `resenias`
+--
+ALTER TABLE `resenias`
+  ADD PRIMARY KEY (`Id_Res`),
+  ADD KEY `idx_resenia_cliente` (`Id_Cli`),
+  ADD KEY `idx_resenia_producto` (`Id_Prd`),
+  ADD KEY `idx_resenia_orden` (`Id_Ord`),
+  ADD KEY `idx_resenia_item_orden` (`Id_Item_Ord`);
+
+--
+-- Indices de la tabla `lista_deseos`
+--
+ALTER TABLE `lista_deseos`
+  ADD PRIMARY KEY (`Id_Des`),
+  ADD UNIQUE KEY `uk_lista_deseos_cliente_producto` (`Id_Cli`,`Id_Prd`),
+  ADD KEY `idx_lista_deseos_producto` (`Id_Prd`);
+
+--
+-- Indices de la tabla `notificaciones`
+--
+ALTER TABLE `notificaciones`
+  ADD PRIMARY KEY (`Id_Not`);
+
+--
+-- Indices de la tabla `imagenes_productos`
+--
+ALTER TABLE `imagenes_productos`
+  ADD PRIMARY KEY (`Id_Ima`),
+  ADD KEY `idx_imagen_producto` (`Id_Prd`);
 
 --
 -- Indices de la tabla `proveedores`
@@ -1010,6 +1346,16 @@ ALTER TABLE `clientes`
   MODIFY `Id_Cli` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=157;
 
 --
+-- AUTO_INCREMENT de la tabla `carrito_sesiones`
+--
+
+--
+-- AUTO_INCREMENT de la tabla `carrito_items`
+--
+ALTER TABLE `carrito_items`
+  MODIFY `Id_Car_Item` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `compras`
 --
 ALTER TABLE `compras`
@@ -1062,6 +1408,60 @@ ALTER TABLE `plantillas_notificacion`
 --
 ALTER TABLE `productos`
   MODIFY `Id_Prd` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+
+--
+-- AUTO_INCREMENT de la tabla `ordenes`
+--
+ALTER TABLE `ordenes`
+  MODIFY `Id_Ord` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `items_orden`
+--
+ALTER TABLE `items_orden`
+  MODIFY `Id_Item_Ord` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `pagos`
+--
+ALTER TABLE `pagos`
+  MODIFY `Id_Pag` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `cupones`
+--
+ALTER TABLE `cupones`
+  MODIFY `Id_Cup` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `uso_cupones`
+--
+ALTER TABLE `uso_cupones`
+  MODIFY `Id_Uso` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `resenias`
+--
+ALTER TABLE `resenias`
+  MODIFY `Id_Res` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `lista_deseos`
+--
+ALTER TABLE `lista_deseos`
+  MODIFY `Id_Des` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `notificaciones`
+--
+ALTER TABLE `notificaciones`
+  MODIFY `Id_Not` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `imagenes_productos`
+--
+ALTER TABLE `imagenes_productos`
+  MODIFY `Id_Ima` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `proveedores`
@@ -1172,6 +1572,79 @@ ALTER TABLE `keys_productos`
 --
 ALTER TABLE `productos`
   ADD CONSTRAINT `productos_ibfk_1` FOREIGN KEY (`Id_Cat`) REFERENCES `categorias_productos` (`Id_Cat`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `carrito_sesiones`
+--
+ALTER TABLE `carrito_sesiones`
+  ADD CONSTRAINT `carrito_sesiones_ibfk_1` FOREIGN KEY (`Id_Cli`) REFERENCES `clientes` (`Id_Cli`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `carrito_items`
+--
+ALTER TABLE `carrito_items`
+  ADD CONSTRAINT `carrito_items_ibfk_1` FOREIGN KEY (`Id_Car_Ses`) REFERENCES `carrito_sesiones` (`Id_Car_Ses`) ON DELETE CASCADE,
+  ADD CONSTRAINT `carrito_items_ibfk_2` FOREIGN KEY (`Id_Prd`) REFERENCES `productos` (`Id_Prd`),
+  ADD CONSTRAINT `carrito_items_ibfk_3` FOREIGN KEY (`Id_Var`) REFERENCES `variantes_productos` (`Id_Var`);
+
+--
+-- Filtros para la tabla `ordenes`
+--
+ALTER TABLE `ordenes`
+  ADD CONSTRAINT `ordenes_ibfk_1` FOREIGN KEY (`Id_Cli`) REFERENCES `clientes` (`Id_Cli`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `items_orden`
+--
+ALTER TABLE `items_orden`
+  ADD CONSTRAINT `items_orden_ibfk_1` FOREIGN KEY (`Id_Ord`) REFERENCES `ordenes` (`Id_Ord`) ON DELETE CASCADE,
+  ADD CONSTRAINT `items_orden_ibfk_2` FOREIGN KEY (`Id_Prd`) REFERENCES `productos` (`Id_Prd`),
+  ADD CONSTRAINT `items_orden_ibfk_3` FOREIGN KEY (`Id_Var`) REFERENCES `variantes_productos` (`Id_Var`),
+  ADD CONSTRAINT `items_orden_ibfk_4` FOREIGN KEY (`Id_Key`) REFERENCES `keys_productos` (`Id_Key`) ON DELETE SET NULL,
+  ADD CONSTRAINT `items_orden_ibfk_5` FOREIGN KEY (`Id_Cue`) REFERENCES `cuentas` (`Id_Cue`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `pagos`
+--
+ALTER TABLE `pagos`
+  ADD CONSTRAINT `pagos_ibfk_1` FOREIGN KEY (`Id_Ord`) REFERENCES `ordenes` (`Id_Ord`);
+
+--
+-- Filtros para la tabla `cupones_productos`
+--
+ALTER TABLE `cupones_productos`
+  ADD CONSTRAINT `cupones_productos_ibfk_1` FOREIGN KEY (`Id_Cup`) REFERENCES `cupones` (`Id_Cup`) ON DELETE CASCADE,
+  ADD CONSTRAINT `cupones_productos_ibfk_2` FOREIGN KEY (`Id_Prd`) REFERENCES `productos` (`Id_Prd`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `uso_cupones`
+--
+ALTER TABLE `uso_cupones`
+  ADD CONSTRAINT `uso_cupones_ibfk_1` FOREIGN KEY (`Id_Cup`) REFERENCES `cupones` (`Id_Cup`),
+  ADD CONSTRAINT `uso_cupones_ibfk_2` FOREIGN KEY (`Id_Cli`) REFERENCES `clientes` (`Id_Cli`),
+  ADD CONSTRAINT `uso_cupones_ibfk_3` FOREIGN KEY (`Id_Ord`) REFERENCES `ordenes` (`Id_Ord`);
+
+--
+-- Filtros para la tabla `resenias`
+--
+ALTER TABLE `resenias`
+  ADD CONSTRAINT `resenias_ibfk_1` FOREIGN KEY (`Id_Cli`) REFERENCES `clientes` (`Id_Cli`),
+  ADD CONSTRAINT `resenias_ibfk_2` FOREIGN KEY (`Id_Prd`) REFERENCES `productos` (`Id_Prd`),
+  ADD CONSTRAINT `resenias_ibfk_3` FOREIGN KEY (`Id_Ord`) REFERENCES `ordenes` (`Id_Ord`),
+  ADD CONSTRAINT `resenias_ibfk_4` FOREIGN KEY (`Id_Item_Ord`) REFERENCES `items_orden` (`Id_Item_Ord`);
+
+--
+-- Filtros para la tabla `lista_deseos`
+--
+ALTER TABLE `lista_deseos`
+  ADD CONSTRAINT `lista_deseos_ibfk_1` FOREIGN KEY (`Id_Cli`) REFERENCES `clientes` (`Id_Cli`) ON DELETE CASCADE,
+  ADD CONSTRAINT `lista_deseos_ibfk_2` FOREIGN KEY (`Id_Prd`) REFERENCES `productos` (`Id_Prd`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `imagenes_productos`
+--
+ALTER TABLE `imagenes_productos`
+  ADD CONSTRAINT `imagenes_productos_ibfk_1` FOREIGN KEY (`Id_Prd`) REFERENCES `productos` (`Id_Prd`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `proveedores_productos`

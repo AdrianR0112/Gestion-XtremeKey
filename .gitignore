@@ -1,0 +1,44 @@
+# Dependencias
+node_modules/
+**/node_modules
+
+# Variables de entorno
+.env
+**/.env
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Compilacion y salida
+dist/
+build/
+out/
+coverage/
+.next/
+.vite/
+.vercel/
+.turbo/
+storybook-static/
+
+# Cache y temporales
+.cache/
+.eslintcache
+*.tsbuildinfo
+*.pid
+*.seed
+*.pid.lock
+*.swp
+*.swo
+*~
+
+# Sistema y editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+!.vscode/extensions.json

@@ -1,88 +1,112 @@
-﻿import { useEffect, useMemo, useState } from "react";
-import gastosService from "../services/gastos.service";
-import proveedoresService from "../../proveedores/services/proveedores.service";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import comprasService from "../../compras/services/compras.service";
+import proveedoresService from "../../proveedores/services/proveedores.service";
+import { buildCompraMap, buildProveedorMap, filterGastos, mapGastoFromApi } from "../helpers/gasto.mapper";
 import { createGastoForm } from "../schemas/gasto.schema";
-import { mapGastoFromApi, buildProveedorMap, buildCompraMap, filterGastos } from "../helpers/gasto.mapper";
+import gastosService from "../services/gastos.service";
 import useGastosActions from "./useGastosActions";
 
 export default function useGastos() {
-const [gastos, setGastos] = useState([]);
-const [proveedores, setProveedores] = useState([]);
-const [compras, setCompras] = useState([]);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState("");
-const [success, setSuccess] = useState("");
-const [gastoSheetOpen, setGastoSheetOpen] = useState(false);
-const [gastoForm, setGastoForm] = useState(createGastoForm());
-const [searchTerm, setSearchTerm] = useState("");
-const [categoriaFilter, setCategoriaFilter] = useState("");
+	const queryClient = useQueryClient();
+	const [actionLoading, setLoading] = useState(false);
+	const [error, setError] = useState("");
+	const [success, setSuccess] = useState("");
+	const [gastoSheetOpen, setGastoSheetOpen] = useState(false);
+	const [gastoForm, setGastoForm] = useState(createGastoForm());
+	const [searchTerm, setSearchTerm] = useState("");
+	const [categoriaFilter, setCategoriaFilter] = useState("");
+	const gastosQueryKey = queryKeys.gastos.list();
+	const proveedoresQueryKey = queryKeys.proveedores.list();
+	const comprasQueryKey = queryKeys.compras.list();
 
-const proveedorMap = useMemo(() => buildProveedorMap(proveedores), [proveedores]);
-const compraMap = useMemo(() => buildCompraMap(compras), [compras]);
-const gastosFiltrados = useMemo(
-() => filterGastos(gastos, searchTerm, categoriaFilter, proveedorMap),
-[gastos, searchTerm, categoriaFilter, proveedorMap]
-);
+	const gastosQuery = useQuery({
+		queryKey: gastosQueryKey,
+		queryFn: async () => toArray(await gastosService.list()).map(mapGastoFromApi),
+	});
+	const proveedoresQuery = useQuery({
+		queryKey: proveedoresQueryKey,
+		queryFn: async () => toArray(await proveedoresService.list()),
+	});
+	const comprasQuery = useQuery({
+		queryKey: comprasQueryKey,
+		queryFn: async () => toArray(await comprasService.list()),
+	});
 
-const cargarTodo = async () => {
-try {
-setLoading(true);
-setError("");
-const [gastosResp, proveedoresResp, comprasResp] = await Promise.all([
-gastosService.list(),
-proveedoresService.list(),
-comprasService.list(),
-]);
+	const gastos = gastosQuery.data ?? [];
+	const proveedores = proveedoresQuery.data ?? [];
+	const compras = comprasQuery.data ?? [];
+	const setGastos = createQueryDataSetter(queryClient, gastosQueryKey, []);
+	const setProveedores = createQueryDataSetter(queryClient, proveedoresQueryKey, []);
+	const setCompras = createQueryDataSetter(queryClient, comprasQueryKey, []);
+	const loading =
+		actionLoading ||
+		gastosQuery.isLoading ||
+		gastosQuery.isFetching ||
+		proveedoresQuery.isLoading ||
+		proveedoresQuery.isFetching ||
+		comprasQuery.isLoading ||
+		comprasQuery.isFetching;
 
-const gastosData = Array.isArray(gastosResp) ? gastosResp : gastosResp?.data || [];
-const proveedoresData = Array.isArray(proveedoresResp) ? proveedoresResp : proveedoresResp?.data || [];
-const comprasData = Array.isArray(comprasResp) ? comprasResp : comprasResp?.data || [];
+	const proveedorMap = useMemo(() => buildProveedorMap(proveedores), [proveedores]);
+	const compraMap = useMemo(() => buildCompraMap(compras), [compras]);
+	const gastosFiltrados = useMemo(
+		() => filterGastos(gastos, searchTerm, categoriaFilter, proveedorMap),
+		[gastos, searchTerm, categoriaFilter, proveedorMap]
+	);
 
-setGastos(gastosData.map(mapGastoFromApi));
-setProveedores(proveedoresData);
-setCompras(comprasData);
-} catch (err) {
-setError(err?.message || "Error al cargar datos");
-} finally {
-setLoading(false);
-}
-};
+	const cargarTodo = async () => {
+		try {
+			setError("");
+			const [gastosData, proveedoresData, comprasData] = await Promise.all([
+				queryClient.fetchQuery({ queryKey: gastosQueryKey, queryFn: async () => toArray(await gastosService.list()).map(mapGastoFromApi) }),
+				queryClient.fetchQuery({ queryKey: proveedoresQueryKey, queryFn: async () => toArray(await proveedoresService.list()) }),
+				queryClient.fetchQuery({ queryKey: comprasQueryKey, queryFn: async () => toArray(await comprasService.list()) }),
+			]);
 
-useEffect(() => {
-cargarTodo();
-}, []);
+			return { gastosData, proveedoresData, comprasData };
+		} catch (err) {
+			setError(getErrorMessage(err, "Error al cargar datos"));
+			return { gastosData: [], proveedoresData: [], comprasData: [] };
+		}
+	};
 
-const actions = useGastosActions({
-setGastos,
-setProveedores,
-setGastoForm,
-setGastoSheetOpen,
-setError,
-setSuccess,
-gastos,
-gastoForm,
-});
+	const actions = useGastosActions({
+		setGastos,
+		setProveedores,
+		setGastoForm,
+		setGastoSheetOpen,
+		setError,
+		setSuccess,
+		gastos,
+		gastoForm,
+	});
 
-return {
-gastos,
-proveedores,
-compras,
-loading,
-error,
-success,
-gastoSheetOpen,
-setGastoSheetOpen,
-gastoForm,
-setGastoForm,
-searchTerm,
-setSearchTerm,
-categoriaFilter,
-setCategoriaFilter,
-proveedorMap,
-compraMap,
-gastosFiltrados,
-cargarTodo,
-...actions,
-};
+	return {
+		gastos,
+		setGastos,
+		proveedores,
+		setProveedores,
+		compras,
+		setCompras,
+		loading,
+		setLoading,
+		error,
+		success,
+		gastoSheetOpen,
+		setGastoSheetOpen,
+		gastoForm,
+		setGastoForm,
+		searchTerm,
+		setSearchTerm,
+		categoriaFilter,
+		setCategoriaFilter,
+		proveedorMap,
+		compraMap,
+		gastosFiltrados,
+		cargarTodo,
+		...actions,
+	};
 }

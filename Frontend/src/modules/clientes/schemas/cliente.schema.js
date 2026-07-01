@@ -1,4 +1,7 @@
-﻿export const CLIENTE_INICIAL = {
+﻿import { z } from "zod";
+import { fieldErrorsFromResult, optionalEmailString } from "@/lib/zod";
+
+export const CLIENTE_INICIAL = {
 	Nom_Cli: "",
 	Ape_Cli: "",
 	Tel_Cli: "",
@@ -18,22 +21,18 @@ const categorias = ["nuevo", "ocasional", "frecuente", "vip"];
 const preferencias = ["whatsapp", "email", "instagram", "messenger", "telegram"];
 const estados = ["activo", "inactivo", "suspendido"];
 
-function isValidEmail(value) {
-	if (!value) return true;
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
-}
+const clienteFormSchema = z.object({
+	Tel_Cli: z.string().trim().min(1, "El telefono es obligatorio."),
+	Ema_Cli: optionalEmailString.refine((value) => value === "" || z.email().safeParse(value).success, {
+		message: "El correo no tiene un formato valido.",
+	}),
+	Cat_Cli: z.enum(categorias, { message: "Categoria invalida." }).optional(),
+	Pre_Con_Cli: z.enum(preferencias, { message: "Preferencia invalida." }).optional(),
+	Est_Cli: z.enum(estados, { message: "Estado invalido." }).optional(),
+}).passthrough();
 
 export function validateClienteForm(form = {}) {
-	const errors = {};
-
-	if (!form.Tel_Cli?.trim()) errors.Tel_Cli = "El telefono es obligatorio.";
-
-	if (!isValidEmail(form.Ema_Cli?.trim())) errors.Ema_Cli = "El correo no tiene un formato valido.";
-	if (form.Cat_Cli && !categorias.includes(form.Cat_Cli)) errors.Cat_Cli = "Categoria invalida.";
-	if (form.Pre_Con_Cli && !preferencias.includes(form.Pre_Con_Cli)) errors.Pre_Con_Cli = "Preferencia invalida.";
-	if (form.Est_Cli && !estados.includes(form.Est_Cli)) errors.Est_Cli = "Estado invalido.";
-
-	return errors;
+	return fieldErrorsFromResult(clienteFormSchema.safeParse(form));
 }
 
 export function isClienteFormValid(form = {}) {
@@ -41,6 +40,7 @@ export function isClienteFormValid(form = {}) {
 }
 
 export const clienteSchema = {
+	schema: clienteFormSchema,
 	validate: validateClienteForm,
 };
 

@@ -1,7 +1,7 @@
 ﻿export const ROUTES = {
   AUTH: "/auth",
   DASHBOARD: "/dashboard",
-  USUARIOS: "/usuarios",
+  USUARIOS: "/staff",
   CLIENTES: "/clientes",
   PROVEEDORES: "/proveedores",
   CATEGORIAS: "/categorias",

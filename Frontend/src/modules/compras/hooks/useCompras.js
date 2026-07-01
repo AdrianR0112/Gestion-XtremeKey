@@ -1,11 +1,14 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import proveedoresService from "../../proveedores/services/proveedores.service";
 import { productosService } from "../../productos/services/productos.service";
 import { variantesService } from "../../variantes/services/variantes.service";
-import detalleComprasService from "../services/detalleCompras.service";
+import { buildProductoMap, buildProveedorMap, buildVarianteMap, filterCompras } from "../helpers/compra.mapper";
+import { createCompraForm, createDetalleCompraForm } from "../schemas/compra.schema";
 import comprasService from "../services/compras.service";
-import { buildProveedorMap, buildProductoMap, buildVarianteMap, filterCompras } from "../helpers/compra.mapper";
-import { createDetalleCompraForm, createCompraForm } from "../schemas/compra.schema";
+import detalleComprasService from "../services/detalleCompras.service";
 import useComprasActions from "./useComprasActions";
 
 const COMPRA_DRAFT_STORAGE_KEY = "compras.create.draft";
@@ -35,23 +38,19 @@ function readCompraDraft() {
 			detalleFormOpen: Boolean(parsed?.detalleFormOpen),
 			detalleEditandoIdx: typeof parsed?.detalleEditandoIdx === "number" ? parsed.detalleEditandoIdx : null,
 		};
-	} catch (_error) {
+	} catch {
 		return getEmptyCompraDraft();
 	}
 }
 
 export default function useCompras() {
+	const queryClient = useQueryClient();
 	const draftPersistDisabledRef = useRef(false);
 	const initialDraft = useMemo(() => readCompraDraft(), []);
-	const [compras, setCompras] = useState([]);
-	const [detalleCompras, setDetalleCompras] = useState([]);
-	const [proveedores, setProveedores] = useState([]);
-	const [productos, setProductos] = useState([]);
-	const [variantes, setVariantes] = useState([]);
 	const [selectedCompraId, setSelectedCompraId] = useState(null);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [estadoFilter, setEstadoFilter] = useState("todos");
-	const [loading, setLoading] = useState(false);
+	const [actionLoading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
@@ -67,13 +66,63 @@ export default function useCompras() {
 	const [detalleForm, setDetalleForm] = useState(() => initialDraft.detalleForm);
 	const [detalleEditandoIdx, setDetalleEditandoIdx] = useState(() => initialDraft.detalleEditandoIdx);
 
+	const comprasQueryKey = queryKeys.compras.list();
+	const detalleComprasQueryKey = queryKeys.detalleCompras.list();
+	const proveedoresQueryKey = queryKeys.proveedores.list();
+	const productosQueryKey = queryKeys.productos.list();
+	const variantesQueryKey = queryKeys.variantes.list();
+
+	const comprasQuery = useQuery({
+		queryKey: comprasQueryKey,
+		queryFn: async () => toArray(await comprasService.list()),
+	});
+	const detalleComprasQuery = useQuery({
+		queryKey: detalleComprasQueryKey,
+		queryFn: async () => toArray(await detalleComprasService.list()),
+	});
+	const proveedoresQuery = useQuery({
+		queryKey: proveedoresQueryKey,
+		queryFn: async () => toArray(await proveedoresService.list()),
+	});
+	const productosQuery = useQuery({
+		queryKey: productosQueryKey,
+		queryFn: async () => toArray(await productosService.list()),
+	});
+	const variantesQuery = useQuery({
+		queryKey: variantesQueryKey,
+		queryFn: async () => toArray(await variantesService.list()),
+	});
+
+	const compras = comprasQuery.data ?? [];
+	const detalleCompras = detalleComprasQuery.data ?? [];
+	const proveedores = proveedoresQuery.data ?? [];
+	const productos = productosQuery.data ?? [];
+	const variantes = variantesQuery.data ?? [];
+	const setCompras = createQueryDataSetter(queryClient, comprasQueryKey, []);
+	const setDetalleCompras = createQueryDataSetter(queryClient, detalleComprasQueryKey, []);
+	const setProveedores = createQueryDataSetter(queryClient, proveedoresQueryKey, []);
+	const setProductos = createQueryDataSetter(queryClient, productosQueryKey, []);
+	const setVariantes = createQueryDataSetter(queryClient, variantesQueryKey, []);
+	const loading =
+		actionLoading ||
+		comprasQuery.isLoading ||
+		comprasQuery.isFetching ||
+		detalleComprasQuery.isLoading ||
+		detalleComprasQuery.isFetching ||
+		proveedoresQuery.isLoading ||
+		proveedoresQuery.isFetching ||
+		productosQuery.isLoading ||
+		productosQuery.isFetching ||
+		variantesQuery.isLoading ||
+		variantesQuery.isFetching;
+
 	const proveedorMap = useMemo(() => buildProveedorMap(proveedores), [proveedores]);
 	const productoMap = useMemo(() => buildProductoMap(productos), [productos]);
 	const varianteMap = useMemo(() => buildVarianteMap(variantes), [variantes]);
 	const compraSeleccionada = useMemo(() => compras.find((compra) => Number(compra.Id_Com) === Number(selectedCompraId)) || null, [compras, selectedCompraId]);
 	const detallesDeCompra = useMemo(() => detalleCompras.filter((item) => Number(item.Id_Com) === Number(selectedCompraId)), [detalleCompras, selectedCompraId]);
 	const subtotalFinalDetalles = useMemo(
-		() => Number(detallesTemporales.reduce((sum, det) => sum + (Number(det.Sub_Tot_Dco || 0)), 0).toFixed(2)),
+		() => Number(detallesTemporales.reduce((sum, det) => sum + Number(det.Sub_Tot_Dco || 0), 0).toFixed(2)),
 		[detallesTemporales]
 	);
 	const compraTotals = useMemo(() => {
@@ -114,6 +163,13 @@ export default function useCompras() {
 	};
 
 	useEffect(() => {
+		setSelectedCompraId((prev) => {
+			if (prev && compras.some((item) => Number(item.Id_Com) === Number(prev))) return prev;
+			return compras[0]?.Id_Com ?? null;
+		});
+	}, [compras]);
+
+	useEffect(() => {
 		if (typeof window === "undefined") return;
 		if (compraSheetMode !== "create") return;
 		if (draftPersistDisabledRef.current) {
@@ -139,7 +195,7 @@ export default function useCompras() {
 			if (prev.Sub_Tot_Com === subtotalString) return prev;
 			return { ...prev, Sub_Tot_Com: subtotalString };
 		});
-	}, [setCompraForm, subtotalFinalDetalles]);
+	}, [subtotalFinalDetalles]);
 
 	const descartarBorradorCompra = () => {
 		resetCompraDraftState({ clearMessages: true, closeSheet: true });
@@ -161,32 +217,22 @@ export default function useCompras() {
 	};
 
 	const cargarTodo = async () => {
-		setLoading(true);
 		setError("");
 		try {
-			const [comprasData, detalleData, proveedoresData, productosData, variantesData] = await Promise.all([
-				comprasService.list(),
-				detalleComprasService.list(),
-				proveedoresService.list(),
-				productosService.list(),
-				variantesService.list(),
+			const data = await Promise.all([
+				queryClient.fetchQuery({ queryKey: comprasQueryKey, queryFn: async () => toArray(await comprasService.list()) }),
+				queryClient.fetchQuery({ queryKey: detalleComprasQueryKey, queryFn: async () => toArray(await detalleComprasService.list()) }),
+				queryClient.fetchQuery({ queryKey: proveedoresQueryKey, queryFn: async () => toArray(await proveedoresService.list()) }),
+				queryClient.fetchQuery({ queryKey: productosQueryKey, queryFn: async () => toArray(await productosService.list()) }),
+				queryClient.fetchQuery({ queryKey: variantesQueryKey, queryFn: async () => toArray(await variantesService.list()) }),
 			]);
 
-			setCompras(Array.isArray(comprasData) ? comprasData : []);
-			setDetalleCompras(Array.isArray(detalleData) ? detalleData : []);
-			setProveedores(Array.isArray(proveedoresData) ? proveedoresData : []);
-			setProductos(Array.isArray(productosData) ? productosData : []);
-			setVariantes(Array.isArray(variantesData) ? variantesData : []);
+			return data;
 		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudo cargar compras.");
-		} finally {
-			setLoading(false);
+			setError(getErrorMessage(err, "No se pudo cargar compras."));
+			return [[], [], [], [], []];
 		}
 	};
-
-	useEffect(() => {
-		cargarTodo();
-	}, []);
 
 	const acciones = useComprasActions({
 		comprasService,
@@ -226,15 +272,22 @@ export default function useCompras() {
 
 	return {
 		compras,
+		setCompras,
 		detalleCompras,
+		setDetalleCompras,
 		proveedores,
+		setProveedores,
 		productos,
+		setProductos,
 		variantes,
+		setVariantes,
 		selectedCompraId,
 		searchTerm,
 		estadoFilter,
 		loading,
+		setLoading,
 		saving,
+		setSaving,
 		error,
 		success,
 		compraSheetOpen,
@@ -258,7 +311,6 @@ export default function useCompras() {
 		comprasFiltradas,
 		setSearchTerm,
 		setEstadoFilter,
-		setProveedores,
 		setCompraSheetOpen,
 		setCompraForm,
 		setDetalleForm,
@@ -269,10 +321,9 @@ export default function useCompras() {
 		setDetalleViewOpen,
 		setSuccess,
 		setError,
-		setLoading,
-		setSaving,
 		guardarBorradorCompra,
 		descartarBorradorCompra,
+		cargarTodo,
 		...acciones,
 	};
 }

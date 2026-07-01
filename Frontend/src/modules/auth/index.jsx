@@ -38,9 +38,6 @@ export default function AuthPage() {
 					<Button type="button" variant="outline" className="w-full" onClick={() => state.setLoginForm((prev) => ({ ...prev, email: "demo@empresa.com" }))}>
 						Usar demo
 					</Button>
-					<Link to="/auth/register" className="text-sm text-center text-zinc-600 hover:underline">
-						Crear una cuenta
-					</Link>
 					<Link to="/auth/forgot-password" className="text-sm text-center text-zinc-600 hover:underline">
 						Recuperar contrasena
 					</Link>

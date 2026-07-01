@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { endOfMonth, format, startOfMonth, addMonths, getDaysInMonth, getDay, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -10,6 +11,7 @@ import {
 	ChevronRight,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import { queryKeys } from "../../app/query-keys";
 import {
 	Card,
 	CardContent,
@@ -225,32 +227,14 @@ function SimpleCalendar({ currentMonth, onMonthChange, selectedDate, onSelectDat
 export default function CalendarioPage() {
 	const todayTz = getTodayInTimezone();
 	const [currentMonth, setCurrentMonth] = useState(todayTz);
-	const [range, setRange] = useState(() => getMonthRange(todayTz));
-	const [summary, setSummary] = useState({ total: 0, byType: {} });
-	const [events, setEvents] = useState([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState("");
 	const [selectedDate, setSelectedDate] = useState(todayTz);
-
-	const loadCalendar = async (nextRange) => {
-		setLoading(true);
-		setError("");
-
-		try {
-			const response = await calendarioService.list(nextRange);
-			setRange(nextRange);
-			setSummary(response?.summary || { total: 0, byType: {} });
-			setEvents(Array.isArray(response?.events) ? response.events : []);
-		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudo cargar el calendario.");
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	useEffect(() => {
-		loadCalendar(getMonthRange(currentMonth));
-	}, [currentMonth]);
+	const range = useMemo(() => getMonthRange(currentMonth), [currentMonth]);
+	const { data, isLoading: loading, error, refetch } = useQuery({
+		queryKey: queryKeys.calendario.list(range),
+		queryFn: async () => calendarioService.list(range),
+	});
+	const summary = data?.summary || { total: 0, byType: {} };
+	const events = Array.isArray(data?.events) ? data.events : [];
 
 	const calendarSummary = buildSummary(summary, events);
 	const eventsForSelectedDate = useMemo(
@@ -372,7 +356,7 @@ export default function CalendarioPage() {
 							<Badge variant="outline" className="rounded-full">{range.endDate}</Badge>
 						</div>
 					</div>
-					<FeedbackAlert message={error} variant="error" className="max-w-md" />
+					<FeedbackAlert message={error?.data?.message || error?.message || ""} variant="error" className="max-w-md" />
 				</div>
 
 				<div className="p-4 sm:p-5">
@@ -382,6 +366,7 @@ export default function CalendarioPage() {
 							<p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
 								Cambia de mes o revisa si existen tareas y detalles de venta con fecha dentro de la consulta.
 							</p>
+							<Button variant="outline" className="mt-4" onClick={() => refetch()}>Reintentar</Button>
 						</div>
 					) : (
 						<Table>

@@ -386,6 +386,7 @@ export default function ProductosPage() {
 						onFormChange={state.setForm}
 						categoriasActivas={state.categoriasActivas}
 						onSubmit={handleFormSubmit}
+						onRemovePersistedImage={actions.eliminarImagenProducto}
 						onCancel={() => setEditSheetOpen(false)}
 						isValid={state.formValido}
 						isLoading={state.saving}

@@ -1,9 +1,5 @@
 ﻿const { allowedFields } = require('./proveedoresProductos.schemas');
-
-function isNumericId(value) {
-  const id = Number(value);
-  return Number.isInteger(id) && id > 0;
-}
+const { z, validationResult, isNumericId, optionalTinyIntBoolean, optionalTrimmedNullableString } = require('../../utils/zod');
 
 function pickAllowed(payload = {}) {
   const clean = {};
@@ -22,83 +18,75 @@ function normalizeOptionalString(value) {
   return trimmed === '' ? null : trimmed;
 }
 
-function normalizeTinyInt(value) {
-  if (value === undefined) return undefined;
-  if (value === null || value === '') return 0;
-  if (typeof value === 'boolean') return value ? 1 : 0;
-  return Number(value) === 1 ? 1 : 0;
+function getProveedoresProductosPayloadSchema(isUpdate) {
+  return z.object({
+    Id_Pro: z.any().optional(),
+    Id_Prd: z.any().optional(),
+    Id_Var: z.any().optional(),
+    Pre_Com_Pro_Prd: z.any().optional(),
+    Es_Pri_Pro_Prd: optionalTinyIntBoolean,
+    Not_Pro_Prd: optionalTrimmedNullableString,
+  }).passthrough().superRefine((payload, ctx) => {
+    if (!isUpdate) {
+      if (!isNumericId(payload.Id_Pro)) {
+        ctx.addIssue({ code: 'custom', path: ['Id_Pro'], message: 'Id_Pro is required and must be a positive integer' });
+      }
+
+      if (!isNumericId(payload.Id_Prd) && !isNumericId(payload.Id_Var)) {
+        ctx.addIssue({ code: 'custom', path: ['Id_Prd'], message: 'Id_Prd or Id_Var is required and at least one must be a positive integer' });
+      }
+    }
+  }).transform((payload) => {
+    const errors = [];
+    const clean = pickAllowed(payload);
+
+    if (clean.Id_Pro !== undefined) {
+      const proveedorId = Number(clean.Id_Pro);
+      if (!Number.isInteger(proveedorId) || proveedorId <= 0) {
+        errors.push('Id_Pro must be a positive integer');
+      } else {
+        clean.Id_Pro = proveedorId;
+      }
+    }
+
+    for (const field of ['Id_Prd', 'Id_Var']) {
+      if (clean[field] !== undefined) {
+        if (clean[field] === null || clean[field] === '') {
+          clean[field] = null;
+        } else {
+          const idValue = Number(clean[field]);
+          if (!Number.isInteger(idValue) || idValue <= 0) {
+            errors.push(`${field} must be a positive integer or null`);
+          } else {
+            clean[field] = idValue;
+          }
+        }
+      }
+    }
+
+    if (clean.Pre_Com_Pro_Prd !== undefined) {
+      if (clean.Pre_Com_Pro_Prd === null || clean.Pre_Com_Pro_Prd === '') {
+        clean.Pre_Com_Pro_Prd = null;
+      } else {
+        const price = Number(clean.Pre_Com_Pro_Prd);
+        if (Number.isNaN(price) || price < 0) {
+          errors.push('Pre_Com_Pro_Prd must be a number greater or equal to 0');
+        } else {
+          clean.Pre_Com_Pro_Prd = price;
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new z.ZodError(errors.map((message) => ({ code: 'custom', path: [], message })));
+    }
+
+    return clean;
+  });
 }
 
 function validatePayload(payload = {}, { isUpdate = false } = {}) {
-  const errors = [];
-  const clean = pickAllowed(payload);
-
-  if (!isUpdate) {
-    if (!isNumericId(clean.Id_Pro)) {
-      errors.push('Id_Pro is required and must be a positive integer');
-    }
-  }
-
-  if (clean.Id_Pro !== undefined) {
-    const proveedorId = Number(clean.Id_Pro);
-    if (!Number.isInteger(proveedorId) || proveedorId <= 0) {
-      errors.push('Id_Pro must be a positive integer');
-    } else {
-      clean.Id_Pro = proveedorId;
-    }
-  }
-
-  if (clean.Id_Prd !== undefined) {
-    if (clean.Id_Prd === null || clean.Id_Prd === '') {
-      clean.Id_Prd = null;
-    } else {
-      const productId = Number(clean.Id_Prd);
-      if (!Number.isInteger(productId) || productId <= 0) {
-        errors.push('Id_Prd must be a positive integer or null');
-      } else {
-        clean.Id_Prd = productId;
-      }
-    }
-  }
-
-  if (clean.Id_Var !== undefined) {
-    if (clean.Id_Var === null || clean.Id_Var === '') {
-      clean.Id_Var = null;
-    } else {
-      const variantId = Number(clean.Id_Var);
-      if (!Number.isInteger(variantId) || variantId <= 0) {
-        errors.push('Id_Var must be a positive integer or null');
-      } else {
-        clean.Id_Var = variantId;
-      }
-    }
-  }
-
-  if (!isUpdate && !isNumericId(clean.Id_Prd) && !isNumericId(clean.Id_Var)) {
-    errors.push('Id_Prd or Id_Var is required and at least one must be a positive integer');
-  }
-
-  if (clean.Pre_Com_Pro_Prd !== undefined) {
-    if (clean.Pre_Com_Pro_Prd === null || clean.Pre_Com_Pro_Prd === '') {
-      clean.Pre_Com_Pro_Prd = null;
-    } else {
-      const price = Number(clean.Pre_Com_Pro_Prd);
-      if (Number.isNaN(price) || price < 0) {
-        errors.push('Pre_Com_Pro_Prd must be a number greater or equal to 0');
-      } else {
-        clean.Pre_Com_Pro_Prd = price;
-      }
-    }
-  }
-
-  if (clean.Es_Pri_Pro_Prd !== undefined) {
-    clean.Es_Pri_Pro_Prd = normalizeTinyInt(clean.Es_Pri_Pro_Prd);
-  }
-
-  clean.Not_Pro_Prd = normalizeOptionalString(clean.Not_Pro_Prd);
-
-  const isValid = errors.length === 0;
-  return { isValid, errors, payload: clean };
+  return validationResult(getProveedoresProductosPayloadSchema(isUpdate), payload);
 }
 
 module.exports = { validatePayload, isNumericId };

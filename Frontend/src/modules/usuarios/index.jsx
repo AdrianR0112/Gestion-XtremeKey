@@ -92,7 +92,7 @@ export default function UsuariosPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                            Solo los usuarios con rol admin pueden gestionar usuarios.
+                            Solo el staff admin puede gestionar cuentas internas.
                         </p>
                     </CardContent>
                 </Card>
@@ -105,12 +105,12 @@ export default function UsuariosPage() {
             <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white/85 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/85">
                 <div className="flex items-start justify-between gap-3 border-b border-zinc-200/80 px-4 py-4 sm:px-5 dark:border-zinc-800/80">
                     <div>
-                        <h1 className="text-2xl font-semibold">Usuarios</h1>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">Gestion de accesos y roles del sistema</p>
+                        <h1 className="text-2xl font-semibold">Staff</h1>
+						<p className="text-sm text-zinc-600 dark:text-zinc-400">Gestion de accesos internos del sistema</p>
                     </div>
                     <Button onClick={abrirCrear}>
                         <Plus className="size-4 mr-1" />
-                        Nuevo usuario
+                        Nuevo staff
                     </Button>
                 </div>
 
@@ -119,7 +119,7 @@ export default function UsuariosPage() {
 					<FeedbackAlert message={success} variant="success" />
 
                     {loading ? (
-                        <p className="text-sm text-zinc-500">Cargando usuarios...</p>
+                        <p className="text-sm text-zinc-500">Cargando staff...</p>
                     ) : (
                         <UsuarioTable
                             usuarios={usuariosFiltrados}
@@ -142,8 +142,8 @@ export default function UsuariosPage() {
             <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
                 <SheetContent side="right" className="sm:max-w-xl p-0 overflow-y-auto">
                     <SheetHeader className="px-6 pt-6">
-                        <SheetTitle>Detalle de usuario</SheetTitle>
-                        <SheetDescription>Informacion completa y acciones del usuario seleccionado.</SheetDescription>
+                        <SheetTitle>Detalle de staff</SheetTitle>
+						<SheetDescription>Informacion completa y acciones de la cuenta seleccionada.</SheetDescription>
                     </SheetHeader>
                     {usuarioSeleccionado ? (
                         <div className="px-6 pb-6">
@@ -154,7 +154,7 @@ export default function UsuariosPage() {
                             />
                         </div>
                     ) : (
-                        <p className="text-sm text-zinc-500 px-6 pb-6">Selecciona un usuario para ver su detalle.</p>
+                        <p className="text-sm text-zinc-500 px-6 pb-6">Selecciona una cuenta staff para ver su detalle.</p>
                     )}
                 </SheetContent>
             </Sheet>
@@ -162,13 +162,13 @@ export default function UsuariosPage() {
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Eliminar usuario</AlertDialogTitle>
+                        <AlertDialogTitle>Eliminar staff</AlertDialogTitle>
                         <AlertDialogDescription>
                             Esta accion eliminara de forma permanente a {" "}
                             <strong>
                                 {usuarioAEliminar
                                     ? `${usuarioAEliminar.Nom_Usu} ${usuarioAEliminar.Ape_Usu}`.trim()
-                                    : "el usuario seleccionado"}
+                                    : "la cuenta seleccionada"}
                             </strong>
                             . No podras deshacer este cambio.
                         </AlertDialogDescription>

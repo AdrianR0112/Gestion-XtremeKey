@@ -18,30 +18,50 @@ async function findByCode(code) {
   return rows[0] || null;
 }
 
+async function findBySlug(slug) {
+  const pool = getPool();
+  const [rows] = await pool.query('SELECT * FROM productos WHERE Slug_Prd = ? LIMIT 1', [slug]);
+  return rows[0] || null;
+}
+
 async function createOne(data) {
   const pool = getPool();
   const sql = `
     INSERT INTO productos (
       Cod_Prd,
       Nom_Prd,
+      Slug_Prd,
       Des_Prd,
       Des_Cor_Prd,
+      Precio_Venta,
+      Precio_Regular,
       Id_Cat,
       Tip_Prd,
       Ima_Prd,
-      Est_Prd
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      Est_Prd,
+      Estado_Tienda,
+      Es_Destacado,
+      Meta_Titulo,
+      Meta_Descripcion
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
     data.Cod_Prd ?? null,
     data.Nom_Prd,
+    data.Slug_Prd ?? null,
     data.Des_Prd ?? null,
     data.Des_Cor_Prd ?? null,
+    data.Precio_Venta ?? null,
+    data.Precio_Regular ?? null,
     data.Id_Cat ?? null,
     data.Tip_Prd ?? 'producto',
     data.Ima_Prd ?? null,
-    data.Est_Prd ?? 'activo'
+    data.Est_Prd ?? 'activo',
+    data.Estado_Tienda ?? 'activo',
+    data.Es_Destacado ?? 0,
+    data.Meta_Titulo ?? null,
+    data.Meta_Descripcion ?? null
   ];
 
   const [result] = await pool.query(sql, values);
@@ -70,6 +90,7 @@ module.exports = {
   findAll,
   findById,
   findByCode,
+  findBySlug,
   createOne,
   updateById,
   removeById

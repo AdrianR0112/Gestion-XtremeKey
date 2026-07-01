@@ -1,14 +1,16 @@
 ﻿import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Separator } from "../../../components/ui/separator";
-import { Pencil, Trash, Package, Tag, Image } from "lucide-react";
+import { Pencil, Trash, Package, Tag } from "lucide-react";
 import ProductoEstadoBadge from "./ProductoEstadoBadge";
+import { resolveProductoImageUrl } from "../helpers/producto-image";
 
 export default function ProductoCard({ producto = null, categorias = [], onEdit = () => {}, onDelete = () => {} }) {
 	if (!producto) return null;
 
 	const categoria = categorias.find((item) => Number(item.Id_Cat) === Number(producto.Id_Cat));
 	const categoriaNombre = producto.Id_Cat ? categoria?.Nom_Cat || `Categoría #${producto.Id_Cat}` : "Sin categoría";
+	const imageUrl = resolveProductoImageUrl(producto.Ima_Prd);
 
 	return (
 		<Card className="w-full">
@@ -26,6 +28,15 @@ export default function ProductoCard({ producto = null, categorias = [], onEdit 
 			</CardHeader>
 
 			<CardContent className="space-y-6">
+				{imageUrl && (
+					<>
+						<div className="overflow-hidden rounded-xl border bg-muted/20">
+							<img src={imageUrl} alt={producto.Nom_Prd || "Imagen del producto"} className="h-56 w-full object-contain" />
+						</div>
+						<Separator />
+					</>
+				)}
+
 				{/* Descripción */}
 				{producto.Des_Prd && (
 					<div>
@@ -53,19 +64,6 @@ export default function ProductoCard({ producto = null, categorias = [], onEdit 
 						</div>
 					</div>
 				</div>
-
-				{producto.Ima_Prd && (
-					<>
-						<Separator />
-						<div className="flex items-start gap-2">
-							<Image className="h-4 w-4 text-muted-foreground mt-1" />
-							<div>
-								<p className="text-xs text-muted-foreground">Imagen</p>
-								<p className="font-semibold text-sm break-all">{producto.Ima_Prd}</p>
-							</div>
-						</div>
-					</>
-				)}
 
 				<Separator />
 

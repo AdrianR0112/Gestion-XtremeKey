@@ -12,7 +12,9 @@ function shouldRedirectToLogin(status, data) {
     return (
         status === 401
         && (
-            message.includes("token invalido o expirado")
+            message.includes("sesion")
+            || message.includes("session")
+            || message.includes("token invalido o expirado")
             || message.includes("token inválido o expirado")
         )
     );
@@ -20,7 +22,6 @@ function shouldRedirectToLogin(status, data) {
 
 function forceLoginRedirect() {
     if (typeof localStorage !== "undefined") {
-        localStorage.removeItem("authToken");
         localStorage.removeItem("authUser");
     }
 
@@ -30,15 +31,14 @@ function forceLoginRedirect() {
 }
 
 async function request(path, options = {}) {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("authToken") : null;
     const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
     const headers = {
         ...(isFormData ? {} : { "Content-Type": "application/json" }),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {}),
     };
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
+        credentials: "include",
         headers,
         ...options,
     });

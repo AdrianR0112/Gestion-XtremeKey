@@ -4,7 +4,6 @@ import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import LoginPage from "../modules/auth";
 import ForgotPasswordPage from "../modules/auth/ForgotPasswordPage";
-import RegisterPage from "../modules/auth/RegisterPage";
 import ChangePasswordPage from "../modules/auth/ChangePasswordPage";
 import DashboardPage from "../modules/dashboard";
 import ReportesPage from "../modules/reportes";
@@ -31,8 +30,8 @@ import PlantillasPage from "../modules/plantillas";
 
 function PrivateRoute({ children }) {
   const location = useLocation();
-  const authToken = useSelector((state) => state?.auth?.token);
-  const hasSession = Boolean(authToken || localStorage.getItem("authToken"));
+  const authUser = useSelector((state) => state?.auth?.user);
+  const hasSession = Boolean(authUser || localStorage.getItem("authUser"));
 
   if (!hasSession) {
     return <Navigate to="/auth" replace state={{ from: location }} />;
@@ -46,7 +45,6 @@ export default function Router() {
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/auth" element={<LoginPage />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/change-password" element={<ChangePasswordPage />} />
       </Route>
@@ -63,7 +61,7 @@ export default function Router() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="reportes" element={<ReportesPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
-        <Route path="usuarios" element={<UsuariosPage />} />
+        <Route path="staff" element={<UsuariosPage />} />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="proveedores" element={<ProveedoresPage />} />
         <Route path="categorias" element={<CategoriasPage />} />

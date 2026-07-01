@@ -4,15 +4,7 @@
   estados,
   allowedFields
 } = require('./proveedores.schemas');
-
-function isEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
-}
-
-function isNumericId(value) {
-  const id = Number(value);
-  return Number.isInteger(id) && id > 0;
-}
+const { z, validationResult, isNumericId, optionalTrimmedNullableString } = require('../../utils/zod');
 
 function pickAllowed(payload = {}) {
   const clean = {};
@@ -24,61 +16,32 @@ function pickAllowed(payload = {}) {
   return clean;
 }
 
-function normalizeOptionalString(value) {
-  if (value === undefined) return undefined;
-  if (value === null) return null;
-  const trimmed = String(value).trim();
-  return trimmed === '' ? null : trimmed;
+function getProveedorPayloadSchema(isUpdate) {
+  return z.object({
+    Nom_Pro: isUpdate ? z.any().optional() : z.string().trim().min(1, 'Nom_Pro is required'),
+    Ema_Pro: optionalTrimmedNullableString.refine((value) => value === undefined || value === null || z.string().email().safeParse(value).success, {
+      message: 'Ema_Pro must be a valid email',
+    }),
+    Con_Pri_Pro: optionalTrimmedNullableString,
+    Tel_Pro: optionalTrimmedNullableString,
+    Wha_Pro: optionalTrimmedNullableString,
+    Tel_Gram_Pro: optionalTrimmedNullableString,
+    Web_Pro: optionalTrimmedNullableString,
+    Pai_Pro: optionalTrimmedNullableString,
+    Con_Com_Pro: optionalTrimmedNullableString,
+    Not_Pro: optionalTrimmedNullableString,
+    Tip_Pro: z.enum(tiposProveedor).optional().refine((value) => value === undefined || tiposProveedor.includes(value), { message: 'Tip_Pro must be persona, empresa, plataforma, tienda_web or otro' }),
+    Med_Con_Pro: z.enum(mediosContacto).optional().refine((value) => value === undefined || mediosContacto.includes(value), { message: 'Med_Con_Pro must be whatsapp, telegram, web, email or telefono' }),
+    Est_Pro: z.enum(estados).optional().refine((value) => value === undefined || estados.includes(value), { message: 'Est_Pro must be activo, inactivo or suspendido' }),
+    Cal_Pro: z.preprocess((value) => {
+      if (value === undefined) return undefined;
+      return Number(value);
+    }, z.number().int().min(1, 'Cal_Pro must be an integer between 1 and 5').max(5, 'Cal_Pro must be an integer between 1 and 5').optional()),
+  }).passthrough().transform((payload) => pickAllowed(payload));
 }
 
 function validatePayload(payload = {}, { isUpdate = false } = {}) {
-  const errors = [];
-  const clean = pickAllowed(payload);
-
-  if (!isUpdate && (!clean.Nom_Pro || String(clean.Nom_Pro).trim() === '')) {
-    errors.push('Nom_Pro is required');
-  }
-
-  if (clean.Ema_Pro !== undefined) {
-    const email = normalizeOptionalString(clean.Ema_Pro);
-    if (email !== null && !isEmail(email)) {
-      errors.push('Ema_Pro must be a valid email');
-    }
-    clean.Ema_Pro = email;
-  }
-
-  clean.Con_Pri_Pro = normalizeOptionalString(clean.Con_Pri_Pro);
-  clean.Tel_Pro = normalizeOptionalString(clean.Tel_Pro);
-  clean.Wha_Pro = normalizeOptionalString(clean.Wha_Pro);
-  clean.Tel_Gram_Pro = normalizeOptionalString(clean.Tel_Gram_Pro);
-  clean.Web_Pro = normalizeOptionalString(clean.Web_Pro);
-  clean.Pai_Pro = normalizeOptionalString(clean.Pai_Pro);
-  clean.Con_Com_Pro = normalizeOptionalString(clean.Con_Com_Pro);
-  clean.Not_Pro = normalizeOptionalString(clean.Not_Pro);
-
-  if (clean.Tip_Pro !== undefined && !tiposProveedor.includes(clean.Tip_Pro)) {
-    errors.push('Tip_Pro must be persona, empresa, plataforma, tienda_web or otro');
-  }
-
-  if (clean.Med_Con_Pro !== undefined && !mediosContacto.includes(clean.Med_Con_Pro)) {
-    errors.push('Med_Con_Pro must be whatsapp, telegram, web, email or telefono');
-  }
-
-  if (clean.Est_Pro !== undefined && !estados.includes(clean.Est_Pro)) {
-    errors.push('Est_Pro must be activo, inactivo or suspendido');
-  }
-
-  if (clean.Cal_Pro !== undefined) {
-    const rating = Number(clean.Cal_Pro);
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-      errors.push('Cal_Pro must be an integer between 1 and 5');
-    } else {
-      clean.Cal_Pro = rating;
-    }
-  }
-
-  const isValid = errors.length === 0;
-  return { isValid, errors, payload: clean };
+  return validationResult(getProveedorPayloadSchema(isUpdate), payload);
 }
 
 module.exports = { validatePayload, isNumericId };

@@ -1,6 +1,6 @@
 ﻿export const mapLoginPayload = (form) => ({
-	Ema_Usu: form.email.trim(),
-	Pas_Usu: form.password,
+	email: form.email.trim(),
+	password: form.password,
 });
 
 export const mapRegisterPayload = (form) => ({
@@ -20,7 +20,7 @@ export const mapChangePasswordPayload = (form) => ({
 export const extractAuthPayload = (response) => {
 	const payload = response?.data ?? response ?? {};
 	return {
-		token: payload.token || payload?.data?.token || null,
+		token: null,
 		user: payload.user || payload?.data?.user || null,
 		message: payload.message || payload?.data?.message || "",
 	};

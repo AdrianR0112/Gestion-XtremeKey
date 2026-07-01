@@ -1,11 +1,14 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { matchesPhoneSearch, matchesTextSearch, normalizeSearchText } from "../../../utils/search";
 import { mapClienteFromApi } from "../helpers/cliente.mapper";
 import { CLIENTE_INICIAL, isClienteFormValid } from "../schemas/cliente.schema";
 import clientesService from "../services/clientes.service";
 
 export default function useClientes() {
-	const [clientes, setClientes] = useState([]);
+	const queryClient = useQueryClient();
 	const [selectedClienteId, setSelectedClienteId] = useState(null);
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [sheetMode, setSheetMode] = useState("create");
@@ -13,34 +16,37 @@ export default function useClientes() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [estadoFilter, setEstadoFilter] = useState("todos");
 	const [categoriaFilter, setCategoriaFilter] = useState("todas");
-	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
+	const clientesQueryKey = queryKeys.clientes.list();
+	const clientesQuery = useQuery({
+		queryKey: clientesQueryKey,
+		queryFn: async () => toArray(await clientesService.list()).map((item) => mapClienteFromApi(item)),
+	});
+	const clientes = clientesQuery.data ?? [];
+	const setClientes = createQueryDataSetter(queryClient, clientesQueryKey, []);
+	const loading = clientesQuery.isLoading || clientesQuery.isFetching;
 
 	const cargarClientes = async () => {
-		setLoading(true);
 		setError("");
 		try {
-			const list = await clientesService.list();
-			const mapped = Array.isArray(list) ? list.map((item) => mapClienteFromApi(item)) : [];
-			setClientes(mapped);
-			setSelectedClienteId((prev) => {
-				if (prev && mapped.some((item) => item.Id_Cli === prev)) return prev;
-				return mapped[0]?.Id_Cli ?? null;
+			return await queryClient.fetchQuery({
+				queryKey: clientesQueryKey,
+				queryFn: async () => toArray(await clientesService.list()).map((item) => mapClienteFromApi(item)),
 			});
-			return mapped;
 		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudo cargar clientes.");
+			setError(getErrorMessage(err, "No se pudo cargar clientes."));
 			return [];
-		} finally {
-			setLoading(false);
 		}
 	};
 
 	useEffect(() => {
-		cargarClientes();
-	}, []);
+		setSelectedClienteId((prev) => {
+			if (prev && clientes.some((item) => item.Id_Cli === prev)) return prev;
+			return clientes[0]?.Id_Cli ?? null;
+		});
+	}, [clientes]);
 
 	const clienteSeleccionado = useMemo(
 		() => clientes.find((cliente) => cliente.Id_Cli === selectedClienteId) || null,

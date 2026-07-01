@@ -1,11 +1,7 @@
 ﻿const { estados, allowedFields } = require('./variantes.schemas');
+const { z, validationResult, isNumericId, optionalTrimmedNullableString } = require('../../utils/zod');
 
 const durationTypes = ['dias', 'meses', 'anios'];
-
-function isNumericId(value) {
-  const id = Number(value);
-  return Number.isInteger(id) && id > 0;
-}
 
 function pickAllowed(payload = {}) {
   const clean = {};
@@ -51,148 +47,140 @@ function normalizeBoolean(value, fieldName) {
   throw new Error(`${fieldName} must be a boolean value.`);
 }
 
+function getVariantesPayloadSchema(isUpdate) {
+  return z.object({
+    Id_Prd: z.any().optional(),
+    Nom_Var: z.any().optional(),
+    Des_Var: optionalTrimmedNullableString,
+    Pre_Cos_Var: z.any().optional(),
+    Pre_Ven_Var: z.any().optional(),
+    Pre_Rev_Var: z.any().optional(),
+    Dur_Tip_Var: z.any().optional(),
+    Dur_Val_Var: z.any().optional(),
+    Max_Usu_Var: z.any().optional(),
+    Not_Ven_Cor_Var: z.any().optional(),
+    Not_Ven_Wsp_Var: z.any().optional(),
+    Est_Var: z.any().optional(),
+    Atr_Var: z.any().optional(),
+  }).passthrough().superRefine((payload, ctx) => {
+    if (!isUpdate) {
+      if (!isNumericId(payload.Id_Prd)) {
+        ctx.addIssue({ code: 'custom', path: ['Id_Prd'], message: 'Id_Prd is required and must be a positive integer' });
+      }
+
+      if (!payload.Nom_Var || String(payload.Nom_Var).trim() === '') {
+        ctx.addIssue({ code: 'custom', path: ['Nom_Var'], message: 'Nom_Var is required' });
+      }
+
+      if (payload.Pre_Cos_Var === undefined || payload.Pre_Cos_Var === null || payload.Pre_Cos_Var === '') {
+        ctx.addIssue({ code: 'custom', path: ['Pre_Cos_Var'], message: 'Pre_Cos_Var is required' });
+      }
+
+      if (payload.Pre_Ven_Var === undefined || payload.Pre_Ven_Var === null || payload.Pre_Ven_Var === '') {
+        ctx.addIssue({ code: 'custom', path: ['Pre_Ven_Var'], message: 'Pre_Ven_Var is required' });
+      }
+    }
+  }).transform((payload) => {
+    const errors = [];
+    const clean = pickAllowed(payload);
+
+    if (clean.Id_Prd !== undefined && clean.Id_Prd !== null && clean.Id_Prd !== '') {
+      const productId = Number(clean.Id_Prd);
+      if (!Number.isInteger(productId) || productId <= 0) {
+        errors.push('Id_Prd must be a positive integer');
+      } else {
+        clean.Id_Prd = productId;
+      }
+    }
+
+    if (clean.Nom_Var !== undefined) {
+      clean.Nom_Var = String(clean.Nom_Var).trim();
+      if (clean.Nom_Var === '') {
+        errors.push('Nom_Var cannot be empty');
+      }
+    }
+
+    for (const field of ['Pre_Cos_Var', 'Pre_Ven_Var']) {
+      if (clean[field] !== undefined) {
+        if (clean[field] === null || clean[field] === '') {
+          errors.push(`${field} is required`);
+        } else {
+          const price = Number(clean[field]);
+          if (Number.isNaN(price) || price < 0) {
+            errors.push(`${field} must be a number greater or equal to 0`);
+          } else {
+            clean[field] = price;
+          }
+        }
+      }
+    }
+
+    if (clean.Pre_Rev_Var !== undefined) {
+      if (clean.Pre_Rev_Var === null || clean.Pre_Rev_Var === '') {
+        clean.Pre_Rev_Var = null;
+      } else {
+        const price = Number(clean.Pre_Rev_Var);
+        if (Number.isNaN(price) || price < 0) {
+          errors.push('Pre_Rev_Var must be a number greater or equal to 0');
+        } else {
+          clean.Pre_Rev_Var = price;
+        }
+      }
+    }
+
+    if (clean.Dur_Tip_Var !== undefined && !durationTypes.includes(clean.Dur_Tip_Var)) {
+      errors.push('Dur_Tip_Var must be dias, meses or anios');
+    }
+
+    for (const field of ['Dur_Val_Var', 'Max_Usu_Var']) {
+      if (clean[field] !== undefined) {
+        if (clean[field] === null || clean[field] === '') {
+          clean[field] = null;
+        } else {
+          const value = Number(clean[field]);
+          if (!Number.isInteger(value) || value < 1) {
+            errors.push(`${field} must be an integer greater or equal to 1`);
+          } else {
+            clean[field] = value;
+          }
+        }
+      }
+    }
+
+    for (const [field, message] of [['Not_Ven_Cor_Var', 'Not_Ven_Cor_Var'], ['Not_Ven_Wsp_Var', 'Not_Ven_Wsp_Var']]) {
+      try {
+        const normalized = normalizeBoolean(clean[field], message);
+        if (normalized !== undefined) {
+          clean[field] = normalized;
+        }
+      } catch (error) {
+        errors.push(error.message);
+      }
+    }
+
+    if (clean.Est_Var !== undefined && !estados.includes(clean.Est_Var)) {
+      errors.push('Est_Var must be activo or inactivo');
+    }
+
+    try {
+      const attrs = normalizeAtrVar(clean.Atr_Var);
+      if (attrs !== undefined) {
+        clean.Atr_Var = attrs;
+      }
+    } catch (error) {
+      errors.push(error.message);
+    }
+
+    if (errors.length > 0) {
+      throw new z.ZodError(errors.map((message) => ({ code: 'custom', path: [], message })));
+    }
+
+    return clean;
+  });
+}
+
 function validatePayload(payload = {}, { isUpdate = false } = {}) {
-  const errors = [];
-  const clean = pickAllowed(payload);
-
-  if (!isUpdate) {
-    if (!isNumericId(clean.Id_Prd)) {
-      errors.push('Id_Prd is required and must be a positive integer');
-    }
-
-    if (!clean.Nom_Var || String(clean.Nom_Var).trim() === '') {
-      errors.push('Nom_Var is required');
-    }
-
-    if (clean.Pre_Cos_Var === undefined || clean.Pre_Cos_Var === null || clean.Pre_Cos_Var === '') {
-      errors.push('Pre_Cos_Var is required');
-    }
-
-    if (clean.Pre_Ven_Var === undefined || clean.Pre_Ven_Var === null || clean.Pre_Ven_Var === '') {
-      errors.push('Pre_Ven_Var is required');
-    }
-  }
-
-  if (clean.Id_Prd !== undefined && clean.Id_Prd !== null && clean.Id_Prd !== '') {
-    const productId = Number(clean.Id_Prd);
-    if (!Number.isInteger(productId) || productId <= 0) {
-      errors.push('Id_Prd must be a positive integer');
-    } else {
-      clean.Id_Prd = productId;
-    }
-  }
-
-  if (clean.Nom_Var !== undefined) {
-    clean.Nom_Var = String(clean.Nom_Var).trim();
-    if (clean.Nom_Var === '') {
-      errors.push('Nom_Var cannot be empty');
-    }
-  }
-
-  clean.Des_Var = normalizeOptionalString(clean.Des_Var);
-
-  if (clean.Pre_Cos_Var !== undefined) {
-    if (clean.Pre_Cos_Var === null || clean.Pre_Cos_Var === '') {
-      errors.push('Pre_Cos_Var is required');
-    } else {
-      const price = Number(clean.Pre_Cos_Var);
-      if (Number.isNaN(price) || price < 0) {
-        errors.push('Pre_Cos_Var must be a number greater or equal to 0');
-      } else {
-        clean.Pre_Cos_Var = price;
-      }
-    }
-  }
-
-  if (clean.Pre_Ven_Var !== undefined) {
-    if (clean.Pre_Ven_Var === null || clean.Pre_Ven_Var === '') {
-      errors.push('Pre_Ven_Var is required');
-    } else {
-      const price = Number(clean.Pre_Ven_Var);
-      if (Number.isNaN(price) || price < 0) {
-        errors.push('Pre_Ven_Var must be a number greater or equal to 0');
-      } else {
-        clean.Pre_Ven_Var = price;
-      }
-    }
-  }
-
-  if (clean.Pre_Rev_Var !== undefined) {
-    if (clean.Pre_Rev_Var === null || clean.Pre_Rev_Var === '') {
-      clean.Pre_Rev_Var = null;
-    } else {
-      const price = Number(clean.Pre_Rev_Var);
-      if (Number.isNaN(price) || price < 0) {
-        errors.push('Pre_Rev_Var must be a number greater or equal to 0');
-      } else {
-        clean.Pre_Rev_Var = price;
-      }
-    }
-  }
-
-  if (clean.Dur_Tip_Var !== undefined && !durationTypes.includes(clean.Dur_Tip_Var)) {
-    errors.push('Dur_Tip_Var must be dias, meses or anios');
-  }
-
-  if (clean.Dur_Val_Var !== undefined) {
-    if (clean.Dur_Val_Var === null || clean.Dur_Val_Var === '') {
-      clean.Dur_Val_Var = null;
-    } else {
-      const durationValue = Number(clean.Dur_Val_Var);
-      if (!Number.isInteger(durationValue) || durationValue < 1) {
-        errors.push('Dur_Val_Var must be an integer greater or equal to 1');
-      } else {
-        clean.Dur_Val_Var = durationValue;
-      }
-    }
-  }
-
-  if (clean.Max_Usu_Var !== undefined) {
-    if (clean.Max_Usu_Var === null || clean.Max_Usu_Var === '') {
-      clean.Max_Usu_Var = null;
-    } else {
-      const maxUsers = Number(clean.Max_Usu_Var);
-      if (!Number.isInteger(maxUsers) || maxUsers < 1) {
-        errors.push('Max_Usu_Var must be an integer greater or equal to 1');
-      } else {
-        clean.Max_Usu_Var = maxUsers;
-      }
-    }
-  }
-
-  try {
-    const notifyEmail = normalizeBoolean(clean.Not_Ven_Cor_Var, 'Not_Ven_Cor_Var');
-    if (notifyEmail !== undefined) {
-      clean.Not_Ven_Cor_Var = notifyEmail;
-    }
-  } catch (error) {
-    errors.push(error.message);
-  }
-
-  try {
-    const notifyWhatsapp = normalizeBoolean(clean.Not_Ven_Wsp_Var, 'Not_Ven_Wsp_Var');
-    if (notifyWhatsapp !== undefined) {
-      clean.Not_Ven_Wsp_Var = notifyWhatsapp;
-    }
-  } catch (error) {
-    errors.push(error.message);
-  }
-
-  if (clean.Est_Var !== undefined && !estados.includes(clean.Est_Var)) {
-    errors.push('Est_Var must be activo or inactivo');
-  }
-
-  try {
-    const attrs = normalizeAtrVar(clean.Atr_Var);
-    if (attrs !== undefined) {
-      clean.Atr_Var = attrs;
-    }
-  } catch (error) {
-    errors.push(error.message);
-  }
-
-  const isValid = errors.length === 0;
-  return { isValid, errors, payload: clean };
+  return validationResult(getVariantesPayloadSchema(isUpdate), payload);
 }
 
 module.exports = { validatePayload, isNumericId };

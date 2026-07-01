@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { mapProductoFromApi } from "../../productos/helpers/producto.mapper";
 import { productosService } from "../../productos/services/productos.service";
 import { mapVariantFromApi } from "../../variantes/helpers/variant.mapper";
@@ -7,42 +10,62 @@ import { mapProveedorProductoFromApi, mapProveedorProductoPayload } from "../hel
 import proveedoresProductosService from "../services/proveedoresProductos.service";
 
 export default function useProveedoresProductos() {
-	const [relaciones, setRelaciones] = useState([]);
-	const [productos, setProductos] = useState([]);
-	const [variantes, setVariantes] = useState([]);
-	const [loading, setLoading] = useState(false);
+	const queryClient = useQueryClient();
+	const [actionLoading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
+	const relacionesQueryKey = queryKeys.proveedoresProductos.list();
+	const productosQueryKey = queryKeys.productos.list();
+	const variantesQueryKey = queryKeys.variantes.list();
+
+	const relacionesQuery = useQuery({
+		queryKey: relacionesQueryKey,
+		queryFn: async () => toArray(await proveedoresProductosService.list()).map((item) => mapProveedorProductoFromApi(item)),
+	});
+	const productosQuery = useQuery({
+		queryKey: productosQueryKey,
+		queryFn: async () => toArray(await productosService.list()).map((item) => mapProductoFromApi(item)),
+	});
+	const variantesQuery = useQuery({
+		queryKey: variantesQueryKey,
+		queryFn: async () => toArray(await variantesService.list()).map((item) => mapVariantFromApi(item)),
+	});
+
+	const relaciones = relacionesQuery.data ?? [];
+	const productos = productosQuery.data ?? [];
+	const variantes = variantesQuery.data ?? [];
+	const setRelaciones = createQueryDataSetter(queryClient, relacionesQueryKey, []);
+	const setProductos = createQueryDataSetter(queryClient, productosQueryKey, []);
+	const setVariantes = createQueryDataSetter(queryClient, variantesQueryKey, []);
+	const loading =
+		actionLoading ||
+		relacionesQuery.isLoading ||
+		relacionesQuery.isFetching ||
+		productosQuery.isLoading ||
+		productosQuery.isFetching ||
+		variantesQuery.isLoading ||
+		variantesQuery.isFetching;
 
 	const cargarRelaciones = async () => {
-		setLoading(true);
 		setError("");
 		try {
-			const list = await proveedoresProductosService.list();
-			const mapped = Array.isArray(list) ? list.map((item) => mapProveedorProductoFromApi(item)) : [];
-			setRelaciones(mapped);
-			return mapped;
+			return await queryClient.fetchQuery({
+				queryKey: relacionesQueryKey,
+				queryFn: async () => toArray(await proveedoresProductosService.list()).map((item) => mapProveedorProductoFromApi(item)),
+			});
 		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudieron cargar las relaciones proveedor-producto.");
+			setError(getErrorMessage(err, "No se pudieron cargar las relaciones proveedor-producto."));
 			return [];
-		} finally {
-			setLoading(false);
 		}
 	};
 
-	useEffect(() => {
-		cargarRelaciones();
-		cargarProductos();
-		cargarVariantes();
-	}, []);
-
 	const cargarProductos = async () => {
 		try {
-			const list = await productosService.list();
-			const mapped = Array.isArray(list) ? list.map((item) => mapProductoFromApi(item)) : [];
-			setProductos(mapped);
-			return mapped;
-		} catch (_err) {
+			return await queryClient.fetchQuery({
+				queryKey: productosQueryKey,
+				queryFn: async () => toArray(await productosService.list()).map((item) => mapProductoFromApi(item)),
+			});
+		} catch {
 			setProductos([]);
 			return [];
 		}
@@ -50,11 +73,11 @@ export default function useProveedoresProductos() {
 
 	const cargarVariantes = async () => {
 		try {
-			const list = await variantesService.list();
-			const mapped = Array.isArray(list) ? list.map((item) => mapVariantFromApi(item)) : [];
-			setVariantes(mapped);
-			return mapped;
-		} catch (_err) {
+			return await queryClient.fetchQuery({
+				queryKey: variantesQueryKey,
+				queryFn: async () => toArray(await variantesService.list()).map((item) => mapVariantFromApi(item)),
+			});
+		} catch {
 			setVariantes([]);
 			return [];
 		}
@@ -69,7 +92,7 @@ export default function useProveedoresProductos() {
 			await cargarRelaciones();
 			return { ok: true, data: created };
 		} catch (err) {
-			const message = err?.data?.message || err?.message || "No se pudo crear la relación.";
+			const message = getErrorMessage(err, "No se pudo crear la relación.");
 			setError(message);
 			return { ok: false, message };
 		} finally {
@@ -87,7 +110,7 @@ export default function useProveedoresProductos() {
 			await cargarRelaciones();
 			return { ok: true, data: updated };
 		} catch (err) {
-			const message = err?.data?.message || err?.message || "No se pudo actualizar la relación.";
+			const message = getErrorMessage(err, "No se pudo actualizar la relación.");
 			setError(message);
 			return { ok: false, message };
 		} finally {
@@ -104,7 +127,7 @@ export default function useProveedoresProductos() {
 			await cargarRelaciones();
 			return true;
 		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudo eliminar la relación.");
+			setError(getErrorMessage(err, "No se pudo eliminar la relación."));
 			return false;
 		} finally {
 			setSaving(false);
@@ -124,10 +147,14 @@ export default function useProveedoresProductos() {
 
 	return {
 		relaciones,
+		setRelaciones,
 		relacionesPorProveedor,
 		productos,
+		setProductos,
 		variantes,
+		setVariantes,
 		loading,
+		setLoading,
 		saving,
 		error,
 		setError,

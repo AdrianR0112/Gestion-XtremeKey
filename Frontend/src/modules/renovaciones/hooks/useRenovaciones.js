@@ -1,47 +1,54 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { mapRenovacionFromApi } from "../helpers/renovacion.mapper";
 import { RENOVACION_INICIAL, isRenovacionFormValid } from "../schemas/renovacion.schema";
 import renovacionesService from "../services/renovaciones.service";
 import useRenovacionesActions from "./useRenovacionesActions";
 
 export default function useRenovaciones() {
-	const [renovaciones, setRenovaciones] = useState([]);
+	const queryClient = useQueryClient();
 	const [selectedRenovacionId, setSelectedRenovacionId] = useState(null);
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [sheetMode, setSheetMode] = useState("create");
 	const [form, setForm] = useState(RENOVACION_INICIAL);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [estadoFilter, setEstadoFilter] = useState("todos");
-	const [loading, setLoading] = useState(false);
+	const [actionLoading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 	const [renovacionDeleteDialogOpen, setRenovacionDeleteDialogOpen] = useState(false);
 	const [renovacionAEliminar, setRenovacionAEliminar] = useState(null);
+	const renovacionesQueryKey = queryKeys.renovaciones.list();
+	const renovacionesQuery = useQuery({
+		queryKey: renovacionesQueryKey,
+		queryFn: async () => toArray(await renovacionesService.list()).map((item) => mapRenovacionFromApi(item)),
+	});
+	const renovaciones = renovacionesQuery.data ?? [];
+	const setRenovaciones = createQueryDataSetter(queryClient, renovacionesQueryKey, []);
+	const loading = actionLoading || renovacionesQuery.isLoading || renovacionesQuery.isFetching;
 
 	const cargarRenovaciones = async () => {
-		setLoading(true);
 		setError("");
 		try {
-			const list = await renovacionesService.list();
-			const mapped = Array.isArray(list) ? list.map((item) => mapRenovacionFromApi(item)) : [];
-			setRenovaciones(mapped);
-			setSelectedRenovacionId((prev) => {
-				if (prev && mapped.some((item) => item.Id_Ren === prev)) return prev;
-				return mapped[0]?.Id_Ren ?? null;
+			return await queryClient.fetchQuery({
+				queryKey: renovacionesQueryKey,
+				queryFn: async () => toArray(await renovacionesService.list()).map((item) => mapRenovacionFromApi(item)),
 			});
-			return mapped;
 		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudo cargar renovaciones.");
+			setError(getErrorMessage(err, "No se pudo cargar renovaciones."));
 			return [];
-		} finally {
-			setLoading(false);
 		}
 	};
 
 	useEffect(() => {
-		cargarRenovaciones();
-	}, []);
+		setSelectedRenovacionId((prev) => {
+			if (prev && renovaciones.some((item) => item.Id_Ren === prev)) return prev;
+			return renovaciones[0]?.Id_Ren ?? null;
+		});
+	}, [renovaciones]);
 
 	const renovacionSeleccionada = useMemo(
 		() => renovaciones.find((item) => item.Id_Ren === selectedRenovacionId) || null,
@@ -81,6 +88,7 @@ export default function useRenovaciones() {
 		setSheetOpen,
 		setRenovacionAEliminar,
 		setRenovacionDeleteDialogOpen,
+		setRenovaciones,
 		resetForm,
 		cargarRenovaciones,
 	});
@@ -101,6 +109,7 @@ export default function useRenovaciones() {
 		estadoFilter,
 		setEstadoFilter,
 		loading,
+		setLoading,
 		saving,
 		error,
 		setError,

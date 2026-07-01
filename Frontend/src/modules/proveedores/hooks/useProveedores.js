@@ -1,45 +1,51 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { matchesPhoneSearch, matchesTextSearch, normalizeSearchText } from "../../../utils/search";
 import { mapProveedorFromApi } from "../helpers/proveedor.mapper";
 import { PROVEEDOR_INICIAL, isProveedorFormValid } from "../schemas/proveedor.schema";
 import proveedoresService from "../services/proveedores.service";
 
 export default function useProveedores() {
-	const [proveedores, setProveedores] = useState([]);
+	const queryClient = useQueryClient();
 	const [selectedProveedorId, setSelectedProveedorId] = useState(null);
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [sheetMode, setSheetMode] = useState("create");
 	const [form, setForm] = useState(PROVEEDOR_INICIAL);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [estadoFilter, setEstadoFilter] = useState("todos");
-	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
+	const proveedoresQueryKey = queryKeys.proveedores.list();
+	const proveedoresQuery = useQuery({
+		queryKey: proveedoresQueryKey,
+		queryFn: async () => toArray(await proveedoresService.list()).map((item) => mapProveedorFromApi(item)),
+	});
+	const proveedores = proveedoresQuery.data ?? [];
+	const setProveedores = createQueryDataSetter(queryClient, proveedoresQueryKey, []);
+	const loading = proveedoresQuery.isLoading || proveedoresQuery.isFetching;
 
 	const cargarProveedores = async () => {
-		setLoading(true);
 		setError("");
 		try {
-			const list = await proveedoresService.list();
-			const mapped = Array.isArray(list) ? list.map((item) => mapProveedorFromApi(item)) : [];
-			setProveedores(mapped);
-			setSelectedProveedorId((prev) => {
-				if (prev && mapped.some((item) => item.Id_Pro === prev)) return prev;
-				return mapped[0]?.Id_Pro ?? null;
+			return await queryClient.fetchQuery({
+				queryKey: proveedoresQueryKey,
+				queryFn: async () => toArray(await proveedoresService.list()).map((item) => mapProveedorFromApi(item)),
 			});
-			return mapped;
 		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudo cargar proveedores.");
+			setError(getErrorMessage(err, "No se pudo cargar proveedores."));
 			return [];
-		} finally {
-			setLoading(false);
 		}
 	};
 
 	useEffect(() => {
-		cargarProveedores();
-	}, []);
+		setSelectedProveedorId((prev) => {
+			if (prev && proveedores.some((item) => item.Id_Pro === prev)) return prev;
+			return proveedores[0]?.Id_Pro ?? null;
+		});
+	}, [proveedores]);
 
 	const proveedorSeleccionado = useMemo(
 		() => proveedores.find((item) => item.Id_Pro === selectedProveedorId) || null,

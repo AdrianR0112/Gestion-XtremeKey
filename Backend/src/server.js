@@ -2,12 +2,18 @@
 const { env } = require('./config/env');
 const { logger } = require('./config/logger');
 const { connectDatabase } = require('./config/database');
+const { migrateDatabase } = require('./database/drizzle/migrate');
 const { startJobs } = require('./jobs');
 
 let server;
 
 async function bootstrap() {
   await connectDatabase();
+
+  if (env.runDbMigrations) {
+    await migrateDatabase();
+  }
+
   startJobs();
 
   server = app.listen(env.port, () => {

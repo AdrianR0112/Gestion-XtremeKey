@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
 	Activity,
 	ArrowDownLeft,
@@ -25,6 +25,7 @@ import {
 	YAxis,
 } from "recharts";
 import { Badge } from "../../components/ui/badge";
+import { queryKeys } from "../../app/query-keys";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Progress } from "../../components/ui/progress";
@@ -77,29 +78,10 @@ const EMPTY_RESUMEN = {
 };
 
 export default function DashboardPage() {
-	const [data, setData] = useState(EMPTY_RESUMEN);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState("");
-
-	useEffect(() => {
-		let mounted = true;
-		setLoading(true);
-		setError("");
-		dashboardService
-			.getResumen()
-			.then((res) => {
-				if (!mounted) return;
-				setData(res || EMPTY_RESUMEN);
-			})
-			.catch((err) => {
-				if (!mounted) return;
-				setError(err?.data?.message || err?.message || "No se pudo cargar el dashboard.");
-			})
-			.finally(() => {
-				if (mounted) setLoading(false);
-			});
-		return () => { mounted = false; };
-	}, []);
+	const { data = EMPTY_RESUMEN, isLoading: loading, error, refetch } = useQuery({
+		queryKey: queryKeys.dashboard.resumen(),
+		queryFn: async () => (await dashboardService.getResumen()) || EMPTY_RESUMEN,
+	});
 
 	const ventasChart = data.ventasPorMes.map((item) => ({
 		month: toMonthLabel(item.mes),
@@ -142,8 +124,8 @@ export default function DashboardPage() {
 		return (
 			<div className="mx-auto w-full max-w-7xl space-y-6">
 				<section className="overflow-hidden rounded-2xl border border-red-200 bg-red-50 p-10 text-center">
-					<p className="text-red-600">{error}</p>
-					<Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>Reintentar</Button>
+					<p className="text-red-600">{error?.data?.message || error?.message || "No se pudo cargar el dashboard."}</p>
+					<Button variant="outline" className="mt-4" onClick={() => refetch()}>Reintentar</Button>
 				</section>
 			</div>
 		);
