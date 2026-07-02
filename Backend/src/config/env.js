@@ -22,7 +22,6 @@ const env = {
   resendFromEmail: process.env.RESEND_FROM_EMAIL || '',
   resendFromName: process.env.RESEND_FROM_NAME || '',
   resendReplyTo: process.env.RESEND_REPLY_TO || '',
-  runDbMigrations: String(process.env.RUN_DB_MIGRATIONS || 'true').toLowerCase() === 'true',
   remindersEnabled: String(process.env.REMINDERS_ENABLED || 'false').toLowerCase() === 'true',
   remindersCron: process.env.REMINDERS_CRON || '0 9 * * *',
   remindersDryRun: String(process.env.REMINDERS_DRY_RUN || 'true').toLowerCase() === 'true'
