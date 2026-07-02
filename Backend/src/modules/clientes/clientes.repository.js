@@ -12,15 +12,39 @@ async function findById(id) {
   return rows[0] || null;
 }
 
+async function findByUuid(uuid) {
+  const pool = getPool();
+  const [rows] = await pool.query('SELECT * FROM clientes WHERE Uuid_Cli = ? LIMIT 1', [String(uuid ?? '').trim()]);
+  return rows[0] || null;
+}
+
 async function findByEmail(email) {
   const pool = getPool();
-  const [rows] = await pool.query('SELECT * FROM clientes WHERE Ema_Cli = ? LIMIT 1', [String(email).trim().toLowerCase()]);
+  const normalized = String(email ?? '').trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+  // Comparacion case-insensitive: los correos historicos pueden tener mayusculas.
+  const [rows] = await pool.query(
+    'SELECT * FROM clientes WHERE LOWER(TRIM(Ema_Cli)) = ? ORDER BY Id_Cli ASC LIMIT 1',
+    [normalized]
+  );
   return rows[0] || null;
 }
 
 async function findByAuthUserId(authUserId) {
   const pool = getPool();
   const [rows] = await pool.query('SELECT * FROM clientes WHERE Auth_User_Id = ? LIMIT 1', [authUserId]);
+  return rows[0] || null;
+}
+
+async function findByPhone(phone) {
+  const pool = getPool();
+  const normalized = String(phone ?? '').trim();
+  if (!normalized) {
+    return null;
+  }
+  const [rows] = await pool.query('SELECT * FROM clientes WHERE Tel_Cli = ? ORDER BY Id_Cli ASC LIMIT 1', [normalized]);
   return rows[0] || null;
 }
 
@@ -36,6 +60,9 @@ async function createOne(data) {
       Usu_Tel_Cli,
       Pai_Cli,
       Doc_Cli,
+      Origen_Cli,
+      Dir_Cli,
+      Tip_Cli,
       Cat_Cli,
       Pre_Con_Cli,
       Ace_Not_Tel_Cli,
@@ -46,7 +73,7 @@ async function createOne(data) {
       Email_Verificado,
       Token_Verificacion,
       Fec_Ultimo_Acceso
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
@@ -58,6 +85,9 @@ async function createOne(data) {
     data.Usu_Tel_Cli ?? null,
     data.Pai_Cli ?? 'Ecuador',
     data.Doc_Cli ?? null,
+    data.Origen_Cli ?? 'manual',
+    data.Dir_Cli ?? null,
+    data.Tip_Cli ?? 'persona',
     data.Cat_Cli ?? 'nuevo',
     data.Pre_Con_Cli ?? 'whatsapp',
     data.Ace_Not_Tel_Cli ?? 0,
@@ -95,7 +125,9 @@ async function removeById(id) {
 module.exports = {
   findAll,
   findById,
+  findByUuid,
   findByEmail,
+  findByPhone,
   findByAuthUserId,
   createOne,
   updateById,

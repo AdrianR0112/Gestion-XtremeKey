@@ -641,12 +641,96 @@ async function ensureEcommerceSchema(connection) {
   `);
 }
 
+async function foreignKeyExists(connection, constraintName) {
+  const [rows] = await connection.query(
+    `
+      SELECT CONSTRAINT_NAME
+      FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+      WHERE TABLE_SCHEMA = ? AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+      LIMIT 1
+    `,
+    [env.mysqlDatabase, constraintName]
+  );
+  return rows.length > 0;
+}
+
+/**
+ * Unifica la relacion cliente comercial <-> usuario de Better Auth <-> venta.
+ *
+ * Idempotente: en instalaciones nuevas crea las columnas/indices/llaves que en
+ * la BD actual ya existen, y en instalaciones existentes no repite nada.
+ *
+ *   - clientes.Origen_Cli / Dir_Cli / Tip_Cli   (datos comerciales)
+ *   - user.cliente_id -> clientes.Id_Cli         (relacion pedida por el spec)
+ *   - ventas.Auth_User_Id / Origen_Ven
+ */
+async function ensureClienteUserVentaRelationSchema(connection) {
+  // --- clientes: datos comerciales ---
+  if (await tableExists(connection, 'clientes')) {
+    if (!(await columnExists(connection, 'clientes', 'Origen_Cli'))) {
+      await connection.query("ALTER TABLE `clientes` ADD COLUMN `Origen_Cli` ENUM('whatsapp','ecommerce','manual') NOT NULL DEFAULT 'manual' AFTER `Doc_Cli`");
+    }
+    if (!(await columnExists(connection, 'clientes', 'Dir_Cli'))) {
+      await connection.query('ALTER TABLE `clientes` ADD COLUMN `Dir_Cli` TEXT DEFAULT NULL AFTER `Origen_Cli`');
+    }
+    if (!(await columnExists(connection, 'clientes', 'Tip_Cli'))) {
+      await connection.query("ALTER TABLE `clientes` ADD COLUMN `Tip_Cli` VARCHAR(30) DEFAULT 'persona' AFTER `Dir_Cli`");
+    }
+    if (!(await indexExists(connection, 'clientes', 'idx_ema_cli'))) {
+      await connection.query('ALTER TABLE `clientes` ADD KEY `idx_ema_cli` (`Ema_Cli`)');
+    }
+  }
+
+  // --- user.cliente_id -> clientes.Id_Cli ---
+  if ((await tableExists(connection, 'user')) && (await tableExists(connection, 'clientes'))) {
+    if (!(await columnExists(connection, 'user', 'cliente_id'))) {
+      await connection.query('ALTER TABLE `user` ADD COLUMN `cliente_id` INT(11) DEFAULT NULL AFTER `role`');
+    }
+    if (!(await indexExists(connection, 'user', 'idx_user_cliente_id'))) {
+      await connection.query('ALTER TABLE `user` ADD KEY `idx_user_cliente_id` (`cliente_id`)');
+    }
+    // Backfill desde el enlace inverso ya existente (clientes.Auth_User_Id).
+    if (await columnExists(connection, 'clientes', 'Auth_User_Id')) {
+      await connection.query(`
+        UPDATE \`user\` u
+        JOIN clientes c ON c.Auth_User_Id = u.id
+        SET u.cliente_id = c.Id_Cli
+        WHERE u.cliente_id IS NULL AND c.Id_Cli IS NOT NULL
+      `);
+    }
+    if (!(await foreignKeyExists(connection, 'fk_user_cliente'))) {
+      // ON DELETE SET NULL: borrar un cliente comercial no debe destruir la cuenta de acceso.
+      await connection.query(`
+        ALTER TABLE \`user\`
+        ADD CONSTRAINT \`fk_user_cliente\` FOREIGN KEY (\`cliente_id\`)
+        REFERENCES \`clientes\` (\`Id_Cli\`) ON DELETE SET NULL ON UPDATE CASCADE
+      `);
+    }
+  }
+
+  // --- ventas: relacion con cliente comercial + usuario + origen ---
+  if (await tableExists(connection, 'ventas')) {
+    if (!(await columnExists(connection, 'ventas', 'Auth_User_Id'))) {
+      await connection.query('ALTER TABLE `ventas` ADD COLUMN `Auth_User_Id` VARCHAR(36) DEFAULT NULL AFTER `Id_Rev`');
+    }
+    if (!(await columnExists(connection, 'ventas', 'Origen_Ven'))) {
+      await connection.query("ALTER TABLE `ventas` ADD COLUMN `Origen_Ven` ENUM('ecommerce','whatsapp','manual') NOT NULL DEFAULT 'manual' AFTER `Est_Ven`");
+    }
+    if (!(await indexExists(connection, 'ventas', 'idx_ventas_auth_user'))) {
+      await connection.query('ALTER TABLE `ventas` ADD KEY `idx_ventas_auth_user` (`Auth_User_Id`)');
+    }
+  }
+
+  logger.info('Schema verificado: relacion clientes <-> user <-> ventas.');
+}
+
 async function ensureAuthAndDomainSchema(connection) {
   await ensureBetterAuthSchema(connection);
   await ensureStaffTable(connection);
   await migrateLegacyUsuariosToStaff(connection);
   await ensureClientesAuthSchema(connection);
   await ensureEcommerceSchema(connection);
+  await ensureClienteUserVentaRelationSchema(connection);
 }
 
 async function connectDatabase() {

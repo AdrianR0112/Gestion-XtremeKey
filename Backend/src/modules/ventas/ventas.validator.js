@@ -1,4 +1,4 @@
-﻿const { estados, allowedFields } = require('./ventas.schemas');
+﻿const { estados, origenes, allowedFields } = require('./ventas.schemas');
 const { toEcuadorDateTime } = require('../../utils/dateHelper');
 const { z, validationResult, isNumericId, optionalTrimmedNullableString } = require('../../utils/zod');
 
@@ -35,6 +35,10 @@ function getVentasPayloadSchema(isUpdate) {
     Tot_Ven: z.any().optional(),
     Met_Pag_Ven: optionalTrimmedNullableString,
     Not_Ven: optionalTrimmedNullableString,
+    Auth_User_Id: optionalTrimmedNullableString,
+    Origen_Ven: z.enum(origenes).optional().refine((value) => value === undefined || origenes.includes(value), {
+      message: 'Origen_Ven must be ecommerce, whatsapp or manual',
+    }),
     Est_Ven: z.enum(estados).optional().refine((value) => value === undefined || estados.includes(value), {
       message: 'Est_Ven must be pendiente, completada, cancelada or reembolsada',
     }),

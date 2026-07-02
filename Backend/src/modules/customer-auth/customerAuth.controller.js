@@ -2,8 +2,9 @@ const { fromNodeHeaders } = require('better-auth/node');
 
 const { getBetterAuthInstance, getBetterAuthSession } = require('../../auth/bridge');
 const { applyBetterAuthCookies, relayBetterAuthResponse } = require('../../auth/http');
-const { createAuthIdentity, findAuthUserByEmail } = require('../../auth/identity.repository');
+const { createAuthIdentity, findAuthUserByEmail, linkAuthUserToCliente } = require('../../auth/identity.repository');
 const clientesRepository = require('../clientes/clientes.repository');
+const { findOrCreateClienteByCorreo } = require('../clientes/clientes.identity');
 const staffRepository = require('../staff/staff.repository');
 const { successResponse } = require('../../utils/apiResponse');
 
@@ -82,14 +83,23 @@ async function register(req, res, next) {
 
     const authUser = await createAuthIdentity({ name, email, password, role: 'cliente' });
     const { nombre, apellido } = splitName(name);
-    await clientesRepository.createOne({
-      Nom_Cli: nombre,
-      Ape_Cli: apellido,
-      Tel_Cli: null,
-      Ema_Cli: email,
-      Auth_User_Id: authUser.id,
-      Email_Verificado: 0,
+
+    // Resuelve o crea el cliente comercial por correo (evita duplicados si ya
+    // existia desde WhatsApp/manual) y enlaza la identidad de Better Auth en
+    // ambos sentidos: clientes.Auth_User_Id <-> user.cliente_id.
+    const { cliente: clienteComercial } = await findOrCreateClienteByCorreo({
+      correo: email,
+      nombre,
+      apellido,
+      origen: 'ecommerce',
+      authUserId: authUser.id,
+      emailVerificado: false,
     });
+
+    if (!clienteComercial.Auth_User_Id) {
+      await clientesRepository.updateById(Number(clienteComercial.Id_Cli), { Auth_User_Id: authUser.id });
+    }
+    await linkAuthUserToCliente(authUser.id, Number(clienteComercial.Id_Cli));
 
     const auth = await getBetterAuthInstance();
     const response = await auth.api.signInEmail({

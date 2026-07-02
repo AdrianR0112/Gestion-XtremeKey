@@ -2,6 +2,7 @@
   categorias,
   preferenciasContacto,
   estados,
+  origenes,
   allowedFields
 } = require('./clientes.schemas');
 const {
@@ -45,6 +46,9 @@ function getClientePayloadSchema(isUpdate) {
     }),
     Usu_Tel_Cli: optionalTrimmedNullableString,
     Doc_Cli: optionalTrimmedNullableString,
+    Dir_Cli: optionalTrimmedNullableString,
+    Tip_Cli: optionalTrimmedNullableString,
+    Origen_Cli: z.enum(origenes).optional().refine((value) => value === undefined || origenes.includes(value), { message: 'Origen_Cli must be whatsapp, ecommerce or manual' }),
     Not_Cli: optionalTrimmedNullableString,
     Password_Hash: optionalTrimmedNullableString,
     Token_Verificacion: optionalTrimmedNullableString,

@@ -14,6 +14,7 @@ function mapAuthUser(row) {
     email: row.email,
     emailVerified: Boolean(row.emailVerified),
     role: row.role,
+    clienteId: row.cliente_id ?? null,
     banned: Boolean(row.banned),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -112,6 +113,15 @@ async function updateAuthPassword(userId, password) {
   );
 }
 
+async function linkAuthUserToCliente(userId, clienteId) {
+  const pool = getPool();
+  await pool.query(
+    'UPDATE `user` SET cliente_id = ?, updatedAt = ? WHERE id = ?',
+    [clienteId ?? null, new Date(), userId]
+  );
+  return findAuthUserById(userId);
+}
+
 async function deleteAuthIdentity(userId) {
   const pool = getPool();
   const [result] = await pool.query('DELETE FROM `user` WHERE id = ?', [userId]);
@@ -124,5 +134,6 @@ module.exports = {
   createAuthIdentity,
   updateAuthIdentity,
   updateAuthPassword,
+  linkAuthUserToCliente,
   deleteAuthIdentity,
 };

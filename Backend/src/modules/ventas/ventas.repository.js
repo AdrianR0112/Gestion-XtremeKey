@@ -35,6 +35,8 @@ async function createOne(data, connection) {
     INSERT INTO ventas (
       Id_Cli,
       Id_Rev,
+      Auth_User_Id,
+      Origen_Ven,
       Fec_Ven,
       Des_Tot_Ven,
       Imp_Tot_Ven,
@@ -42,12 +44,14 @@ async function createOne(data, connection) {
       Met_Pag_Ven,
       Not_Ven,
       Est_Ven
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
     data.Id_Cli ?? null,
     data.Id_Rev ?? null,
+    data.Auth_User_Id ?? null,
+    data.Origen_Ven ?? 'manual',
     data.Fec_Ven ?? null,
     data.Des_Tot_Ven ?? 0,
     data.Imp_Tot_Ven ?? 0,

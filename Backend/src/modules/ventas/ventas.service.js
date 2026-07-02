@@ -1,5 +1,6 @@
 ﻿const ventasRepository = require('./ventas.repository');
 const clientesRepository = require('../clientes/clientes.repository');
+const { findOrCreateClienteByCorreo } = require('../clientes/clientes.identity');
 const revendedoresRepository = require('../revendedores/revendedores.repository');
 const detalleVentasRepository = require('../detalle-ventas/detalleVentas.repository');
 const detalleVentasValidator = require('../detalle-ventas/detalleVentas.validator');
@@ -154,6 +155,55 @@ async function deleteVenta(id) {
   }
 }
 
+/**
+ * Crea una venta de ecommerce resolviendo el cliente comercial por correo.
+ *
+ * La venta se asocia principalmente a clientes.Id_Cli (no depende unicamente
+ * del usuario autenticado, dejando espacio para compras invitadas/manuales).
+ * Si el correo ya existe en clientes se reutiliza; si no, se crea con
+ * origen = ecommerce. El authUserId, cuando existe, queda registrado en la venta.
+ *
+ * @param {Object} params
+ * @param {string} params.correo       Correo del comprador (obligatorio).
+ * @param {string} [params.nombre]     Nombre del comprador.
+ * @param {string} [params.apellido]   Apellido del comprador.
+ * @param {string} [params.telefono]   Telefono del comprador.
+ * @param {string} [params.authUserId] Id de Better Auth del usuario autenticado.
+ * @param {Object} params.venta        Datos de la venta (Tot_Ven, Met_Pag_Ven, etc.).
+ */
+async function createVentaEcommerce(params = {}) {
+  const correo = String(params.correo ?? '').trim().toLowerCase();
+  if (!correo) {
+    throw createHttpError(400, 'El correo del cliente es obligatorio para una venta de ecommerce.');
+  }
+
+  const { cliente } = await findOrCreateClienteByCorreo({
+    correo,
+    nombre: params.nombre,
+    apellido: params.apellido,
+    telefono: params.telefono,
+    documento: params.documento,
+    origen: 'ecommerce',
+    authUserId: params.authUserId ?? null,
+  });
+
+  const ventaPayload = {
+    ...(params.venta || {}),
+    Id_Cli: Number(cliente.Id_Cli),
+    Id_Rev: null,
+    Auth_User_Id: params.authUserId ?? cliente.Auth_User_Id ?? null,
+    Origen_Ven: 'ecommerce',
+  };
+
+  const normalizedPayload = await applyImpuestoConfig(ventaPayload);
+  const validation = validatePayload(normalizedPayload);
+  if (!validation.isValid) {
+    throw createHttpError(400, 'Payload invalido.', validation.errors);
+  }
+
+  return ventasRepository.createOne(validation.payload);
+}
+
 async function createVentaConDetallesYRenovaciones(payload) {
   const { venta: ventaPayload, detalles } = payload;
   if (!Array.isArray(detalles) || detalles.length === 0) {
@@ -305,6 +355,7 @@ module.exports = {
   listVentas,
   getVentaById,
   createVenta,
+  createVentaEcommerce,
   updateVenta,
   deleteVenta,
   createVentaConDetallesYRenovaciones,
