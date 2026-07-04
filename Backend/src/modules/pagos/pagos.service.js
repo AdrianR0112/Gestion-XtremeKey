@@ -14,6 +14,19 @@ async function listPagos() {
   return pagosRepository.findAll();
 }
 
+async function listPagosByCliente(idCli) {
+  if (!isNumericId(idCli)) return [];
+  return pagosRepository.findAllByCliente(Number(idCli));
+}
+
+async function ensureOrdenPerteneceACliente(idOrd, idCli) {
+  const orden = await ordenesRepository.findById(idOrd);
+  if (!orden) throw createHttpError(400, 'La orden indicada no existe.');
+  if (Number(orden.Id_Cli) !== Number(idCli)) {
+    throw createHttpError(403, 'La orden no pertenece al usuario autenticado.');
+  }
+}
+
 async function getPagoById(id) {
   if (!isNumericId(id)) throw createHttpError(400, 'Id_Pag invalido.');
   const pago = await pagosRepository.findById(Number(id));
@@ -46,4 +59,12 @@ async function deletePago(id) {
   if (!deleted) throw createHttpError(404, 'Pago no encontrado.');
 }
 
-module.exports = { listPagos, getPagoById, createPago, updatePago, deletePago };
+module.exports = {
+  listPagos,
+  listPagosByCliente,
+  ensureOrdenPerteneceACliente,
+  getPagoById,
+  createPago,
+  updatePago,
+  deletePago,
+};

@@ -17,6 +17,15 @@ const listByCliente = asyncHandler(async (req, res) => {
   res.status(200).json(successResponse(data, 'Suscripciones del cliente obtenidas correctamente.'));
 });
 
+const listMine = asyncHandler(async (req, res) => {
+  const idCli = req.user?.Id_Cli;
+  if (!idCli) {
+    return res.status(200).json(successResponse([], 'Sin suscripciones asociadas al usuario.'));
+  }
+  const data = await suscripcionesService.listSuscripcionesByCliente(idCli);
+  res.status(200).json(successResponse(data, 'Suscripciones del cliente obtenidas correctamente.'));
+});
+
 const getById = asyncHandler(async (req, res) => {
   const data = await suscripcionesService.getSuscripcionById(req.params.id);
   res.status(200).json(successResponse(data, 'Suscripcion obtenida correctamente.'));
@@ -37,4 +46,4 @@ const remove = asyncHandler(async (req, res) => {
   res.status(200).json(successResponse(null, 'Suscripcion eliminada correctamente.'));
 });
 
-module.exports = { list, listByCliente, getById, create, update, remove };
+module.exports = { list, listByCliente, listMine, getById, create, update, remove };

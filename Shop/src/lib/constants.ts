@@ -3,22 +3,79 @@ import type { Order } from "@/types/order";
 import type { Product, ProductCategory } from "@/types/product";
 import type { User } from "@/types/user";
 
-export const APP_NAME = "Shop";
+export const APP_NAME = "XtremeKey";
+export const APP_TAGLINE = "Licencias premium para trabajo digital";
 
 export const NAV_LINKS = [
   { href: "/", label: "Inicio" },
   { href: "/productos", label: "Productos" },
   { href: "/carrito", label: "Carrito" },
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard", label: "Mi cuenta" },
 ];
 
-export const DASHBOARD_LINKS = [
-  { href: "/dashboard", label: "Resumen" },
-  { href: "/dashboard/compras", label: "Compras" },
-  { href: "/dashboard/licencias", label: "Licencias" },
-  { href: "/dashboard/renovaciones", label: "Renovaciones" },
-  { href: "/dashboard/perfil", label: "Perfil" },
+export const FOOTER_SECTIONS = [
+  {
+    title: "Catálogo",
+    links: [
+      { href: "/productos", label: "Todos los productos" },
+      { href: "/productos?categoria=productividad", label: "Productividad" },
+      { href: "/productos?categoria=diseno", label: "Diseño" },
+      { href: "/productos?categoria=seguridad", label: "Seguridad" },
+      { href: "/productos?categoria=desarrollo", label: "Desarrollo" },
+    ],
+  },
+  {
+    title: "Cuenta",
+    links: [
+      { href: "/login", label: "Iniciar sesión" },
+      { href: "/registro", label: "Crear cuenta" },
+      { href: "/dashboard", label: "Panel" },
+      { href: "/dashboard/compras", label: "Mis compras" },
+    ],
+  },
+  {
+    title: "Compra",
+    links: [
+      { href: "/carrito", label: "Carrito" },
+      { href: "/checkout", label: "Checkout" },
+      { href: "/dashboard/pagos", label: "Pagos" },
+      { href: "/dashboard/suscripciones", label: "Suscripciones" },
+    ],
+  },
 ];
+
+export type DashboardLink = { href: string; label: string; icon: string };
+export type DashboardSection = { title: string; links: DashboardLink[] };
+
+export const DASHBOARD_SECTIONS: DashboardSection[] = [
+  {
+    title: "Actividad",
+    links: [
+      { href: "/dashboard", label: "Resumen", icon: "LayoutDashboard" },
+      { href: "/dashboard/compras", label: "Compras", icon: "ShoppingBag" },
+      { href: "/dashboard/pagos", label: "Pagos", icon: "CreditCard" },
+      { href: "/dashboard/notificaciones", label: "Notificaciones", icon: "Bell" },
+    ],
+  },
+  {
+    title: "Catálogo",
+    links: [
+      { href: "/dashboard/licencias", label: "Licencias", icon: "KeyRound" },
+      { href: "/dashboard/renovaciones", label: "Renovaciones", icon: "RefreshCw" },
+      { href: "/dashboard/suscripciones", label: "Suscripciones", icon: "Repeat" },
+      { href: "/dashboard/deseos", label: "Lista de deseos", icon: "Heart" },
+      { href: "/dashboard/resenias", label: "Mis reseñas", icon: "Star" },
+    ],
+  },
+  {
+    title: "Cuenta",
+    links: [
+      { href: "/dashboard/perfil", label: "Perfil", icon: "UserCircle2" },
+    ],
+  },
+];
+
+export const DASHBOARD_LINKS: DashboardLink[] = DASHBOARD_SECTIONS.flatMap((s) => s.links);
 
 export const PAYMENT_METHODS = [
   { id: "card", label: "Tarjeta" },
@@ -146,6 +203,8 @@ export const ORDERS: Order[] = [
     createdAt: "2026-06-12",
     total: 69.98,
     status: "pagado",
+    source: "orden",
+    sourceLabel: "Tienda",
     items: [
       { productName: "Microsoft Office 2024", quantity: 1 },
       { productName: "ESET Smart Security Premium", quantity: 2 },
@@ -157,6 +216,8 @@ export const ORDERS: Order[] = [
     createdAt: "2026-06-26",
     total: 54.99,
     status: "procesando",
+    source: "orden",
+    sourceLabel: "Tienda",
     items: [{ productName: "JetBrains All Products Pack", quantity: 1 }],
   },
 ];

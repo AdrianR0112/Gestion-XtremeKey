@@ -4,6 +4,7 @@ const productosRepository = require('../productos/productos.repository');
 const variantesRepository = require('../variantes/variantes.repository');
 const cuentasRepository = require('../cuentas/cuentas.repository');
 const keysRepository = require('../keys/keys.repository');
+const suscripcionesService = require('../suscripciones/suscripciones.service');
 const { validatePayload, isNumericId } = require('./detalleVentas.validator');
 
 function createHttpError(statusCode, message, errors = null) {
@@ -14,11 +15,12 @@ function createHttpError(statusCode, message, errors = null) {
 }
 
 async function ensureVentaExiste(idVen) {
-  if (idVen === undefined || idVen === null) return;
+  if (idVen === undefined || idVen === null) return null;
   const venta = await ventasRepository.findById(idVen);
   if (!venta) {
     throw createHttpError(400, 'La venta indicada no existe.');
   }
+  return venta;
 }
 
 async function ensureProductoExiste(idPrd) {
@@ -76,13 +78,60 @@ async function createDetalleVenta(payload) {
     throw createHttpError(400, 'Payload invalido.', validation.errors);
   }
 
-  await ensureVentaExiste(validation.payload.Id_Ven);
+  const venta = await ensureVentaExiste(validation.payload.Id_Ven);
   await ensureProductoExiste(validation.payload.Id_Prd);
   await ensureVarianteExiste(validation.payload.Id_Var);
   await ensureCuentaExiste(validation.payload.Id_Cue);
   await ensureKeyExiste(validation.payload.Id_Key);
 
-  return detalleVentasRepository.createOne(validation.payload);
+  const detalle = await detalleVentasRepository.createOne(validation.payload);
+
+  // Si la linea corresponde a un producto de tipo suscripcion, registra la
+  // suscripcion del cliente y enlaza Id_Sus de vuelta al detalle.
+  await registrarSuscripcionSiAplica(detalle, venta);
+
+  return detalleVentasRepository.findById(detalle.Id_Dve);
+}
+
+/**
+ * Crea una suscripcion a partir de un detalle recien insertado cuando el producto
+ * es de tipo 'suscripcion', y enlaza el Id_Sus resultante al detalle.
+ * Requiere la venta (para resolver el cliente). No-op si no hay cliente o no aplica.
+ */
+async function registrarSuscripcionSiAplica(detalle, venta, connection) {
+  if (!detalle || !venta) return null;
+
+  const clienteRef = venta.Uuid_Cli || venta.Id_Cli;
+  if (!clienteRef) {
+    // Ventas a revendedor (sin cliente) no generan suscripcion de cliente final.
+    return null;
+  }
+
+  // El validador de detalle iguala Fec_Fin_Dve a Fec_Ini_Dve cuando se deja vacio.
+  // En ese caso preferimos calcular el fin por la duracion de la variante en vez
+  // de crear una suscripcion de duracion cero; solo respetamos un fin explicito
+  // que sea realmente posterior al inicio.
+  const finExplicito =
+    detalle.Fec_Fin_Dve && detalle.Fec_Ini_Dve && new Date(detalle.Fec_Fin_Dve) > new Date(detalle.Fec_Ini_Dve)
+      ? detalle.Fec_Fin_Dve
+      : null;
+
+  const suscripcion = await suscripcionesService.crearSuscripcionDesdeLinea(
+    {
+      clienteRef,
+      idProducto: detalle.Id_Prd,
+      idVariante: detalle.Id_Var ?? null,
+      fechaInicio: detalle.Fec_Ini_Dve,
+      fechaFin: finExplicito,
+    },
+    connection
+  );
+
+  if (suscripcion) {
+    await detalleVentasRepository.updateById(detalle.Id_Dve, { Id_Sus: suscripcion.Id_Sus }, connection);
+  }
+
+  return suscripcion;
 }
 
 async function updateDetalleVenta(id, payload) {
@@ -145,4 +194,5 @@ module.exports = {
   updateDetalleVenta,
   deleteDetalleVenta,
   listByCliente,
+  registrarSuscripcionSiAplica,
 };

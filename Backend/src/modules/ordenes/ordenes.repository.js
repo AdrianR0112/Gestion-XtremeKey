@@ -33,6 +33,12 @@ async function findAll() {
   return rows.map(mapOrder);
 }
 
+async function findAllByCliente(idCli) {
+  const pool = getPool();
+  const [rows] = await pool.query(`${ORDER_SELECT} WHERE o.Id_Cli = ? ORDER BY o.Id_Ord DESC`, [idCli]);
+  return rows.map(mapOrder);
+}
+
 async function findById(id) {
   const pool = getPool();
   const [rows] = await pool.query(`${ORDER_SELECT} WHERE o.Id_Ord = ? LIMIT 1`, [id]);
@@ -164,6 +170,7 @@ async function removeItemById(id) {
 
 module.exports = {
   findAll,
+  findAllByCliente,
   findById,
   findByNumber,
   createOne,

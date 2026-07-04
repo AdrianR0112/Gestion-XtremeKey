@@ -1,5 +1,5 @@
 ﻿const estados = ['pendiente', 'completada', 'cancelada', 'reembolsada'];
-const origenes = ['ecommerce', 'whatsapp', 'manual'];
+const origenes = ['ecommerce', 'whatsapp'];
 
 const allowedFields = [
   'Id_Cli',

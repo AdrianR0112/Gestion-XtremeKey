@@ -37,7 +37,7 @@ function getVentasPayloadSchema(isUpdate) {
     Not_Ven: optionalTrimmedNullableString,
     Auth_User_Id: optionalTrimmedNullableString,
     Origen_Ven: z.enum(origenes).optional().refine((value) => value === undefined || origenes.includes(value), {
-      message: 'Origen_Ven must be ecommerce, whatsapp or manual',
+      message: 'Origen_Ven must be ecommerce or whatsapp',
     }),
     Est_Ven: z.enum(estados).optional().refine((value) => value === undefined || estados.includes(value), {
       message: 'Est_Ven must be pendiente, completada, cancelada or reembolsada',

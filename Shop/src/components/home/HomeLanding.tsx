@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -8,196 +9,85 @@ import {
   CircleDollarSign,
   CreditCard,
   Headset,
-  Home,
   Key,
   KeyRound,
-  LayoutGrid,
+  Package,
   Shield,
   ShieldCheck,
-  ShoppingCart,
   Sparkles,
-  UserRound,
   WandSparkles,
   Zap,
 } from "lucide-react";
 import { motion, type Variants } from "framer-motion";
 
-const mobileDockItems = [
-  { label: "Inicio", icon: Home, href: "#home" },
-  { label: "Categorias", icon: LayoutGrid, href: "#categorias" },
-  { label: "Ofertas", icon: Sparkles, href: "#productos" },
-  { label: "Carrito", icon: ShoppingCart, href: "/carrito" },
-  { label: "Cuenta", icon: UserRound, href: "/login" },
-];
+import { ProductoCard } from "@/components/products/ProductoCard";
+import { useProductos } from "@/hooks/useProductos";
+import { useVariantes } from "@/hooks/useVariantes";
+import type { Variante } from "@/modules/variants/variants.types";
 
 const benefits = [
-  {
-    title: "Entrega rapida",
-    text: "Recibe tu licencia y guia de activacion en minutos.",
-    icon: Zap,
-  },
-  {
-    title: "Activacion segura",
-    text: "Claves verificadas con soporte paso a paso.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Soporte personalizado",
-    text: "Asistencia humana por WhatsApp y correo.",
-    icon: Headset,
-  },
-  {
-    title: "Precios accesibles",
-    text: "Planes flexibles para estudio, trabajo y negocio.",
-    icon: CircleDollarSign,
-  },
-];
-
-const products = [
-  {
-    name: "Adobe Creative Cloud",
-    price: "$39.99",
-    duration: "12 meses",
-    badge: "20% OFF",
-    status: "Entrega inmediata",
-    accent: "from-pink-500 to-violet-500",
-    icon: Sparkles,
-  },
-  {
-    name: "JetBrains All Products",
-    price: "$54.99",
-    duration: "Licencia anual",
-    badge: "Top pro",
-    status: "Activacion guiada",
-    accent: "from-blue-500 to-cyan-400",
-    icon: BriefcaseBusiness,
-  },
-  {
-    name: "Canva Pro",
-    price: "$12.99",
-    duration: "12 meses",
-    badge: "Popular",
-    status: "Disponible hoy",
-    accent: "from-cyan-500 to-indigo-500",
-    icon: WandSparkles,
-  },
-  {
-    name: "Microsoft Office",
-    price: "$29.99",
-    duration: "Licencia perpetua",
-    badge: "Bundle",
-    status: "Stock verificado",
-    accent: "from-orange-400 to-rose-500",
-    icon: BriefcaseBusiness,
-  },
+  { title: "Entrega rápida", text: "Recibe tu licencia y guía de activación en minutos.", icon: Zap },
+  { title: "Activación segura", text: "Claves verificadas con soporte paso a paso.", icon: ShieldCheck },
+  { title: "Soporte personalizado", text: "Asistencia humana por WhatsApp y correo.", icon: Headset },
+  { title: "Precios accesibles", text: "Planes flexibles para estudio, trabajo y negocio.", icon: CircleDollarSign },
 ];
 
 const categories = [
-  {
-    title: "Diseno grafico",
-    copy: "Creative Cloud, Canva, plug-ins y recursos visuales.",
-    icon: WandSparkles,
-  },
-  {
-    title: "Productividad",
-    copy: "Office, suites colaborativas y licencias empresariales.",
-    icon: BriefcaseBusiness,
-  },
-  {
-    title: "Seguridad",
-    copy: "Antivirus, respaldos y proteccion para tu operacion.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Sistemas operativos",
-    copy: "Windows y activaciones seguras para equipos nuevos.",
-    icon: KeyRound,
-  },
+  { title: "Diseño gráfico", copy: "Creative Cloud, Canva, plug-ins y recursos visuales.", icon: WandSparkles, accent: "from-pink-500 to-violet-500" },
+  { title: "Productividad", copy: "Office, suites colaborativas y licencias empresariales.", icon: BriefcaseBusiness, accent: "from-blue-500 to-cyan-400" },
+  { title: "Seguridad", copy: "Antivirus, respaldos y protección para tu operación.", icon: ShieldCheck, accent: "from-emerald-500 to-teal-400" },
+  { title: "Sistemas operativos", copy: "Windows y activaciones seguras para equipos nuevos.", icon: KeyRound, accent: "from-orange-400 to-rose-500" },
 ];
 
 const stats = [
   { value: "5000+", label: "Licencias entregadas" },
   { value: "1200+", label: "Clientes satisfechos" },
   { value: "24/7", label: "Soporte activo" },
-  { value: "15 min", label: "Activacion promedio" },
+  { value: "15 min", label: "Activación promedio" },
 ];
 
 const trustCards = [
-  {
-    title: "Garantia segun producto",
-    text: "Cobertura clara por tipo de licencia y renovacion.",
-    icon: BadgeCheck,
-  },
-  {
-    title: "Soporte por WhatsApp",
-    text: "Atencion directa para instalacion, pago y activacion.",
-    icon: Headset,
-  },
-  {
-    title: "Metodos de pago seguros",
-    text: "Checkout protegido con validacion y confirmacion inmediata.",
-    icon: CreditCard,
-  },
-  {
-    title: "Entrega digital inmediata",
-    text: "Recibes la clave, instrucciones y comprobante en linea.",
-    icon: KeyRound,
-  },
+  { title: "Garantía por producto", text: "Cobertura clara por tipo de licencia y renovación.", icon: BadgeCheck, accent: "from-blue-500 to-indigo-500" },
+  { title: "Soporte por WhatsApp", text: "Atención directa para instalación, pago y activación.", icon: Headset, accent: "from-emerald-500 to-green-400" },
+  { title: "Métodos de pago seguros", text: "Checkout protegido con validación y confirmación inmediata.", icon: CreditCard, accent: "from-violet-500 to-fuchsia-500" },
+  { title: "Entrega digital inmediata", text: "Recibes la clave, instrucciones y comprobante en línea.", icon: KeyRound, accent: "from-cyan-500 to-sky-400" },
 ];
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 32 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.65 },
-  },
+  show: { opacity: 1, y: 0, transition: { duration: 0.65 } },
 };
 
 const stagger: Variants = {
   hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+  show: { transition: { staggerChildren: 0.1 } },
 };
 
-const hoverLift = {
-  y: -10,
-  transition: { duration: 0.28 },
-};
+const hoverLift = { y: -10, transition: { duration: 0.28 } };
 
 export function HomeLanding() {
-  return (
-    <div className="relative overflow-hidden px-4 pb-28 pt-4 sm:px-6 lg:px-8">
-      <motion.header animate={{ opacity: 1, y: 0 }} className="topbar surface-panel" initial={{ opacity: 0, y: -20 }} transition={{ duration: 0.55, ease: "easeOut" }}>
-        <div className="flex items-center gap-3">
-          <motion.div
-            animate={{ rotate: [0, -6, 0], y: [0, -2, 0] }}
-            className="brand-font grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-500 text-sm font-bold text-white shadow-lg shadow-blue-500/30"
-            transition={{ duration: 5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-          >
-            XK
-          </motion.div>
-          <div>
-            <strong className="brand-font block text-lg text-slate-950">XtremeKey</strong>
-            <span className="block text-xs text-slate-500">Licencias premium para trabajo digital</span>
-          </div>
-        </div>
-        <nav className="hidden items-center gap-6 md:flex">
-          <a className="page-link" href="#home">Inicio</a>
-          <a className="page-link" href="#productos">Productos</a>
-          <a className="page-link" href="#categorias">Categorias</a>
-          <Link className="page-link" href="/dashboard">Dashboard</Link>
-        </nav>
-        <div className="hidden items-center gap-3 md:flex">
-          <Link className="secondary-button" href="/login">Ingresar</Link>
-          <Link className="primary-button" href="/productos">Comprar ahora</Link>
-        </div>
-      </motion.header>
+  const { productos, loading, error } = useProductos({ sort: "mas_vendidos" });
+  const { variantes } = useVariantes();
 
-      <main className="mx-auto max-w-7xl space-y-12 pt-8">
+  const variantesByProducto = useMemo(() => {
+    const map = new Map<string, Variante[]>();
+    for (const v of variantes) {
+      const list = map.get(v.Id_Prd) ?? [];
+      list.push(v);
+      map.set(v.Id_Prd, list);
+    }
+    return map;
+  }, [variantes]);
+
+  // Destacados: primeros productos activos del catálogo del backend.
+  const destacados = useMemo(
+    () => productos.filter((p) => p.Est_Prd !== "inactivo").slice(0, 4),
+    [productos],
+  );
+
+  return (
+    <div className="relative overflow-hidden">
+      <div className="mx-auto max-w-7xl space-y-24 px-4 py-14 sm:px-6 lg:px-8">
         <section className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12" id="home">
           <motion.div className="space-y-6" initial="hidden" variants={stagger} whileInView="show" viewport={{ once: true, amount: 0.2 }}>
             <motion.div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-blue-700 shadow-sm" variants={fadeUp}>
@@ -209,13 +99,13 @@ export function HomeLanding() {
                 SOFTWARE THAT <span className="bg-gradient-to-r from-blue-600 to-violet-500 bg-clip-text text-transparent">EMPOWERS</span> EVERY PIXEL
               </h1>
               <p className="max-w-xl text-lg leading-relaxed text-slate-600">
-                Ditch the monthly drain. Secure authentic licenses for the world&apos;s most powerful creative, productivity and security tools.
+                Olvida las mensualidades. Consigue licencias auténticas para las herramientas de creatividad, productividad y seguridad más potentes del mundo.
               </p>
             </motion.div>
             <motion.div className="flex flex-wrap gap-4" variants={fadeUp}>
               <motion.div whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.985 }}>
                 <Link className="primary-button group" href="/productos">
-                  Claim your access
+                  Ver catálogo
                   <motion.span animate={{ x: [0, 4, 0] }} transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}>
                     <ArrowRight className="h-4 w-4" />
                   </motion.span>
@@ -251,10 +141,10 @@ export function HomeLanding() {
                     <KeyRound className="h-8 w-8 text-cyan-300" />
                   </div>
                   <div className="space-y-3 text-sm text-slate-300">
-                    <p>Entrega, soporte y activacion guiada en una experiencia de compra limpia.</p>
+                    <p>Entrega, soporte y activación guiada en una experiencia de compra limpia.</p>
                     <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/6 px-4 py-3">
-                      <span>System status</span>
-                      <span className="text-cyan-300">Optimal</span>
+                      <span>Estado del sistema</span>
+                      <span className="text-cyan-300">Óptimo</span>
                     </div>
                   </div>
                 </motion.div>
@@ -263,7 +153,7 @@ export function HomeLanding() {
                   <div className="mb-7 inline-flex rounded-2xl bg-blue-50 p-3 text-blue-700">
                     <Shield className="h-5 w-5" />
                   </div>
-                  <p className="text-sm text-slate-500">Proteccion</p>
+                  <p className="text-sm text-slate-500">Protección</p>
                   <p className="brand-font mt-1 text-2xl font-semibold text-slate-950">Quantum Secure</p>
                 </motion.div>
 
@@ -281,7 +171,7 @@ export function HomeLanding() {
                       <Key className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">Injected key</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">Clave activada</p>
                       <p className="brand-font text-sm font-semibold text-slate-950">ABCD-2026-XY</p>
                     </div>
                   </div>
@@ -290,17 +180,6 @@ export function HomeLanding() {
                 <div className="absolute bottom-[108px] left-1/2 z-10 h-20 w-64 -translate-x-1/2 rounded-full bg-blue-900/18 blur-2xl" />
                 <div className="absolute bottom-[82px] left-1/2 z-0 h-14 w-48 -translate-x-1/2 rounded-full bg-violet-500/18 blur-2xl" />
               </div>
-
-              <motion.div className="relative z-30 mt-2 grid gap-4 sm:grid-cols-2" initial="hidden" variants={stagger} whileInView="show" viewport={{ once: true }}>
-                <motion.div className="hero-glass-card rounded-[26px] p-5" variants={fadeUp} whileHover={hoverLift}>
-                  <p className="text-sm text-slate-500">Entrega</p>
-                  <p className="brand-font mt-2 text-2xl font-semibold text-slate-950">Inmediata</p>
-                </motion.div>
-                <motion.div className="hero-glass-card rounded-[26px] p-5" variants={fadeUp} whileHover={hoverLift}>
-                  <p className="text-sm text-slate-500">Cobertura</p>
-                  <p className="brand-font mt-2 text-2xl font-semibold text-slate-950">24/7</p>
-                </motion.div>
-              </motion.div>
             </div>
           </motion.div>
         </section>
@@ -317,9 +196,9 @@ export function HomeLanding() {
         <section className="section-shell">
           <motion.div className="section-head" initial="hidden" variants={fadeUp} whileInView="show" viewport={{ once: true, amount: 0.5 }}>
             <div>
-              <p className="section-kicker">Por que elegirnos</p>
-              <h2 className="brand-font text-4xl font-semibold text-slate-950">Compra con velocidad, soporte y activacion real</h2>
-              <p className="section-copy">La interfaz ahora separa beneficios, catalogo y confianza en bloques mas claros para mejorar lectura, foco y conversion.</p>
+              <p className="section-kicker">Por qué elegirnos</p>
+              <h2 className="brand-font text-4xl font-semibold text-slate-950">Compra con velocidad, soporte y activación real</h2>
+              <p className="section-copy">Beneficios, catálogo y confianza en bloques claros para mejorar lectura, foco y conversión.</p>
             </div>
           </motion.div>
           <motion.div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" initial="hidden" variants={stagger} whileInView="show" viewport={{ once: true, amount: 0.2 }}>
@@ -339,61 +218,69 @@ export function HomeLanding() {
         <section className="section-shell" id="productos">
           <motion.div className="section-head" initial="hidden" variants={fadeUp} whileInView="show" viewport={{ once: true, amount: 0.5 }}>
             <div>
-              <p className="section-kicker">Curated catalog</p>
-              <h2 className="brand-font text-4xl font-semibold text-slate-950">Premium Collections</h2>
-              <p className="section-copy">Separo mejor el encabezado del grid y hago que cada producto tenga mas presencia, profundidad y microinteraccion en hover.</p>
+              <p className="section-kicker">Lo más comprado</p>
+              <h2 className="brand-font text-4xl font-semibold text-slate-950">Los favoritos de nuestros clientes</h2>
+              <p className="section-copy">Las licencias más vendidas primero, con precios y variantes en tiempo real desde el catálogo.</p>
             </div>
             <motion.div whileHover={{ y: -3 }} whileTap={{ scale: 0.985 }}>
-              <Link className="secondary-button" href="/productos">Ver catalogo completo</Link>
+              <Link className="secondary-button" href="/productos">Ver catálogo completo</Link>
             </motion.div>
           </motion.div>
           <motion.div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4" initial="hidden" variants={stagger} whileInView="show" viewport={{ once: true, amount: 0.15 }}>
-            {products.map((product) => (
-              <motion.article className="landing-card interactive-card group flex h-full flex-col gap-4 overflow-hidden" key={product.name} variants={fadeUp} whileHover={hoverLift}>
-                <motion.div className={`rounded-[28px] bg-gradient-to-br ${product.accent} p-5 text-white`} whileHover={{ y: -3, scale: 1.02 }}>
-                  <div className="mb-12 flex items-center justify-between text-sm">
-                    <span className="rounded-full bg-white/20 px-3 py-1">{product.badge}</span>
-                    <motion.div whileHover={{ rotate: 10, scale: 1.1 }}>
-                      <product.icon className="h-5 w-5" />
-                    </motion.div>
-                  </div>
-                  <p className="text-sm text-white/80">{product.status}</p>
+            {loading ? (
+              [0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-80 animate-pulse rounded-[30px] border border-slate-200 bg-slate-100/70" />
+              ))
+            ) : error ? (
+              <div className="col-span-full rounded-[30px] border border-rose-200 bg-rose-50/60 p-6 text-sm text-rose-700">
+                No pudimos cargar el catálogo. {error}
+              </div>
+            ) : destacados.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center gap-3 rounded-[30px] border border-slate-200 bg-white/70 p-10 text-center text-slate-500">
+                <Package className="h-6 w-6" />
+                <p className="text-sm">Aún no hay productos disponibles en el catálogo.</p>
+              </div>
+            ) : (
+              destacados.map((producto) => (
+                <motion.div key={producto.Id_Prd} variants={fadeUp} whileHover={hoverLift}>
+                  <ProductoCard producto={producto} variantes={variantesByProducto.get(producto.Id_Prd) ?? []} />
                 </motion.div>
-                <div className="space-y-2">
-                  <h3 className="brand-font text-xl font-semibold text-slate-950">{product.name}</h3>
-                  <p className="text-sm text-slate-500">{product.duration}</p>
-                </div>
-                <div className="mt-auto flex items-end justify-between gap-3">
-                  <p className="text-2xl font-semibold text-slate-950">{product.price}</p>
-                  <Link className="inline-flex items-center gap-1 text-sm font-medium text-blue-700" href="/productos">
-                    Comprar
-                    <motion.span animate={{ x: [0, 4, 0] }} transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}>
-                      <ArrowRight className="h-4 w-4" />
-                    </motion.span>
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
+              ))
+            )}
           </motion.div>
         </section>
 
         <section className="section-shell" id="categorias">
           <motion.div className="section-head" initial="hidden" variants={fadeUp} whileInView="show" viewport={{ once: true, amount: 0.5 }}>
             <div>
-              <p className="section-kicker">Categorias</p>
+              <p className="section-kicker">Categorías</p>
               <h2 className="brand-font text-4xl font-semibold text-slate-950">Explora por necesidad</h2>
-              <p className="section-copy">Cada categoria ahora respira mejor y reacciona al hover para guiar la exploracion del catalogo.</p>
+              <p className="section-copy">Cada categoría respira mejor y reacciona al hover para guiar la exploración.</p>
             </div>
           </motion.div>
-          <motion.div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4" initial="hidden" variants={stagger} whileInView="show" viewport={{ once: true, amount: 0.2 }}>
-            {categories.map((category) => (
-              <motion.article className="landing-card interactive-card group" key={category.title} variants={fadeUp} whileHover={hoverLift}>
-                <motion.div className="mb-4 inline-flex rounded-2xl bg-violet-50 p-3 text-violet-700" whileHover={{ rotate: 6, scale: 1.08 }}>
-                  <category.icon className="h-5 w-5" />
-                </motion.div>
-                <h3 className="brand-font text-xl font-semibold text-slate-950">{category.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{category.copy}</p>
-              </motion.article>
+          <motion.div className="grid gap-4 lg:grid-cols-2" initial="hidden" variants={stagger} whileInView="show" viewport={{ once: true, amount: 0.2 }}>
+            {categories.map((category, index) => (
+              <motion.div key={category.title} variants={fadeUp} whileHover={{ x: 6 }}>
+                <Link
+                  href="/productos"
+                  className="landing-card interactive-card group relative flex items-center gap-5 overflow-hidden !py-5"
+                >
+                  <span className="brand-font text-2xl font-semibold text-slate-300 transition group-hover:text-slate-400">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <motion.div
+                    className={`inline-flex shrink-0 rounded-2xl bg-gradient-to-br ${category.accent} p-3.5 text-white shadow-md`}
+                    whileHover={{ rotate: 6, scale: 1.08 }}
+                  >
+                    <category.icon className="h-6 w-6" />
+                  </motion.div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="brand-font text-xl font-semibold text-slate-950">{category.title}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">{category.copy}</p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 shrink-0 -translate-x-2 text-slate-400 opacity-0 transition duration-300 group-hover:translate-x-0 group-hover:text-blue-600 group-hover:opacity-100" />
+                </Link>
+              </motion.div>
             ))}
           </motion.div>
         </section>
@@ -403,18 +290,36 @@ export function HomeLanding() {
             <div>
               <p className="section-kicker">Confianza operativa</p>
               <h2 className="brand-font text-4xl font-semibold text-slate-950">Tu compra respaldada de principio a fin</h2>
+              <p className="section-copy">Cada paso de tu compra tiene respaldo, soporte humano y entrega garantizada.</p>
             </div>
           </motion.div>
-          <motion.div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4" initial="hidden" variants={stagger} whileInView="show" viewport={{ once: true, amount: 0.2 }}>
+          <motion.div
+            className="overflow-hidden rounded-[30px] border border-white/60 bg-white/80 shadow-sm"
+            initial="hidden"
+            variants={stagger}
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             {trustCards.map((card) => (
-              <motion.article className="landing-card interactive-card group relative overflow-hidden" key={card.title} variants={fadeUp} whileHover={hoverLift}>
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-blue-500 via-violet-500 to-cyan-400 opacity-0 transition duration-300 group-hover:opacity-100" />
-                <motion.div className="mb-4 inline-flex rounded-2xl bg-slate-100 p-3 text-slate-800" whileHover={{ rotate: 6, scale: 1.08 }}>
-                  <card.icon className="h-5 w-5" />
+              <motion.div
+                key={card.title}
+                className="group relative flex items-center gap-5 border-b border-slate-100 p-6 transition duration-300 last:border-b-0 hover:bg-slate-50/70"
+                variants={fadeUp}
+                whileHover={{ x: 6 }}
+              >
+                <span className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${card.accent} opacity-0 transition duration-300 group-hover:opacity-100`} />
+                <motion.div
+                  className={`inline-flex shrink-0 rounded-2xl bg-gradient-to-br ${card.accent} p-3.5 text-white shadow-md`}
+                  whileHover={{ rotate: 6, scale: 1.08 }}
+                >
+                  <card.icon className="h-6 w-6" />
                 </motion.div>
-                <h3 className="brand-font text-xl font-semibold text-slate-950">{card.title}</h3>
-                <p className="mt-2 text-sm text-slate-600">{card.text}</p>
-              </motion.article>
+                <div className="min-w-0 flex-1">
+                  <h3 className="brand-font text-lg font-semibold text-slate-950">{card.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{card.text}</p>
+                </div>
+                <BadgeCheck className="h-5 w-5 shrink-0 text-slate-300 transition duration-300 group-hover:text-emerald-500" />
+              </motion.div>
             ))}
           </motion.div>
         </section>
@@ -423,8 +328,8 @@ export function HomeLanding() {
           <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-blue-200">Activa tu siguiente stack</p>
-              <h2 className="brand-font mt-3 text-4xl font-semibold">Licencias premium con entrega, soporte y renovacion.</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300">Mejoré la organización general del recorrido para que el usuario pase de impacto visual a beneficios, catalogo, categorias y cierre comercial con menos ruido.</p>
+              <h2 className="brand-font mt-3 text-4xl font-semibold">Licencias premium con entrega, soporte y renovación.</h2>
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300">De impacto visual a beneficios, catálogo, categorías y cierre comercial con menos ruido.</p>
             </div>
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.985 }}>
               <Link className="secondary-button group border-white/20 bg-white/10 text-white hover:bg-white/15" href="/registro">
@@ -436,20 +341,7 @@ export function HomeLanding() {
             </motion.div>
           </div>
         </motion.section>
-
-        <footer className="pb-8 pt-4 text-center text-sm text-slate-500">
-          XtremeKey. Software, activaciones y soporte en una experiencia ecommerce moderna.
-        </footer>
-      </main>
-
-      <motion.nav animate={{ y: [0, -4, 0] }} className="mobile-dock" transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}>
-        {mobileDockItems.map((item) => (
-          <motion.a className="flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[11px] text-slate-600" href={item.href} key={item.label} whileHover={{ y: -3, scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-            <item.icon className="h-4 w-4" />
-            <span>{item.label}</span>
-          </motion.a>
-        ))}
-      </motion.nav>
+      </div>
     </div>
   );
 }

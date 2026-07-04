@@ -7,6 +7,15 @@ const list = asyncHandler(async (_req, res) => {
   res.status(200).json(successResponse(data, 'Ventas obtenidas correctamente.'));
 });
 
+const listMine = asyncHandler(async (req, res) => {
+  const idCli = req.user?.Id_Cli;
+  if (!idCli) {
+    return res.status(200).json(successResponse([], 'Sin ventas asociadas al usuario.'));
+  }
+  const data = await ventasService.listVentasByCliente(idCli);
+  res.status(200).json(successResponse(data, 'Ventas del cliente obtenidas correctamente.'));
+});
+
 const getById = asyncHandler(async (req, res) => {
   const data = await ventasService.getVentaById(req.params.id);
   res.status(200).json(successResponse(data, 'Venta obtenida correctamente.'));
@@ -32,4 +41,4 @@ const createConRenovaciones = asyncHandler(async (req, res) => {
   res.status(201).json(successResponse(data, 'Venta creada con renovaciones correctamente.'));
 });
 
-module.exports = { list, getById, create, update, remove, createConRenovaciones };
+module.exports = { list, listMine, getById, create, update, remove, createConRenovaciones };

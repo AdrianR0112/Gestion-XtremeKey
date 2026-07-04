@@ -1,7 +1,7 @@
 ﻿const categorias = ['nuevo', 'ocasional', 'frecuente', 'vip'];
 const preferenciasContacto = ['whatsapp', 'email', 'instagram', 'messenger', 'telegram'];
 const estados = ['activo', 'inactivo', 'suspendido'];
-const origenes = ['whatsapp', 'ecommerce', 'manual'];
+const origenes = ['whatsapp', 'ecommerce'];
 
 const allowedFields = [
   'Nom_Cli',

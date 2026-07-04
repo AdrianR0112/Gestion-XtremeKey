@@ -85,7 +85,7 @@ async function createOne(data) {
     data.Usu_Tel_Cli ?? null,
     data.Pai_Cli ?? 'Ecuador',
     data.Doc_Cli ?? null,
-    data.Origen_Cli ?? 'manual',
+    data.Origen_Cli ?? 'whatsapp',
     data.Dir_Cli ?? null,
     data.Tip_Cli ?? 'persona',
     data.Cat_Cli ?? 'nuevo',

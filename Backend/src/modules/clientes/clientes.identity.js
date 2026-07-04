@@ -110,14 +110,14 @@ function buildMissingUpdates(cliente, data) {
  * @param {string} [data.apellido]   Apellido.
  * @param {string} [data.telefono]   Telefono (referencia secundaria).
  * @param {string} [data.documento]  Documento de identidad.
- * @param {'whatsapp'|'ecommerce'|'manual'} [data.origen='manual']  Origen del cliente si se crea.
+ * @param {'whatsapp'|'ecommerce'} [data.origen='whatsapp']  Origen del cliente si se crea.
  * @param {string} [data.authUserId] Id del usuario de Better Auth a enlazar al crear.
  * @returns {Promise<{cliente: Object, created: boolean}>}
  */
 async function findOrCreateClienteByCorreo(data = {}) {
   const correo = normalizeCorreo(data.correo ?? data.Ema_Cli);
   const telefono = normalizeTelefono(data.telefono ?? data.Tel_Cli);
-  const origen = ['whatsapp', 'ecommerce', 'manual'].includes(data.origen) ? data.origen : 'manual';
+  const origen = ['whatsapp', 'ecommerce'].includes(data.origen) ? data.origen : 'whatsapp';
 
   // 1-3. Buscar cliente existente: primero por correo, luego por telefono.
   let existing = null;

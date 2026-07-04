@@ -23,6 +23,15 @@ async function findAll(connection) {
   return rows;
 }
 
+async function findAllByCliente(idCli, connection) {
+  const pool = resolvePool(connection);
+  const [rows] = await pool.query(
+    `${BASE_SELECT} WHERE v.Id_Cli = ? ORDER BY v.Fec_Ven DESC, v.Id_Ven DESC`,
+    [idCli],
+  );
+  return rows;
+}
+
 async function findById(id, connection) {
   const pool = resolvePool(connection);
   const [rows] = await pool.query(`${BASE_SELECT} WHERE v.Id_Ven = ? LIMIT 1`, [id]);
@@ -51,7 +60,7 @@ async function createOne(data, connection) {
     data.Id_Cli ?? null,
     data.Id_Rev ?? null,
     data.Auth_User_Id ?? null,
-    data.Origen_Ven ?? 'manual',
+    data.Origen_Ven ?? 'whatsapp',
     data.Fec_Ven ?? null,
     data.Des_Tot_Ven ?? 0,
     data.Imp_Tot_Ven ?? 0,
@@ -85,6 +94,7 @@ async function removeById(id, connection) {
 
 module.exports = {
   findAll,
+  findAllByCliente,
   findById,
   createOne,
   updateById,

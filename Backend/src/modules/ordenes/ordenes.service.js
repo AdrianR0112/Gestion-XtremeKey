@@ -5,6 +5,8 @@ const variantesRepository = require('../variantes/variantes.repository');
 const keysRepository = require('../keys/keys.repository');
 const cuentasRepository = require('../cuentas/cuentas.repository');
 const cuponesRepository = require('../cupones/cupones.repository');
+const suscripcionesService = require('../suscripciones/suscripciones.service');
+const { findOrCreateClienteByCorreo } = require('../clientes/clientes.identity');
 const { createHttpError } = require('../../utils/entityHelpers');
 const { validateOrderPayload, validateOrderItemPayload, isNumericId } = require('./ordenes.validator');
 
@@ -53,6 +55,11 @@ async function ensureNumeroDisponible(numeroOrd, currentId = null) {
 
 async function listOrdenes() {
   return ordenesRepository.findAll();
+}
+
+async function listOrdenesByCliente(idCli) {
+  if (!isNumericId(idCli)) return [];
+  return ordenesRepository.findAllByCliente(Number(idCli));
 }
 
 async function getOrdenById(id) {
@@ -110,7 +117,7 @@ async function getItemById(id) {
 }
 
 async function createItem(orderId, payload) {
-  await getOrdenById(orderId);
+  const orden = await getOrdenById(orderId);
 
   const validation = validateOrderItemPayload(payload);
   if (!validation.isValid) throw createHttpError(400, 'Payload invalido.', validation.errors);
@@ -119,7 +126,60 @@ async function createItem(orderId, payload) {
   await ensureVarianteExiste(validation.payload.Id_Var);
   await ensureKeyExiste(validation.payload.Id_Key);
   await ensureCuentaExiste(validation.payload.Id_Cue);
-  return ordenesRepository.createItem(Number(orderId), validation.payload);
+
+  const item = await ordenesRepository.createItem(Number(orderId), validation.payload);
+
+  // Si el item corresponde a un producto de tipo suscripcion, registra la
+  // suscripcion del cliente de la orden (compra desde el ecommerce).
+  await registrarSuscripcionOrdenSiAplica(orden, item);
+
+  return item;
+}
+
+/**
+ * Resuelve el cliente asociado a una orden de ecommerce. Usa Id_Cli si la orden
+ * pertenece a un cliente autenticado; si es compra de invitado, resuelve/crea el
+ * cliente por el correo (Email_Invitado) con origen 'ecommerce'. Devuelve una
+ * referencia (Id_Cli o Uuid_Cli) o null si no hay forma de identificar al cliente.
+ */
+async function resolveClienteRefDeOrden(orden) {
+  if (orden.Id_Cli) return orden.Id_Cli;
+
+  const correo = String(orden.Email_Invitado ?? '').trim().toLowerCase();
+  if (!correo) return null;
+
+  const { cliente } = await findOrCreateClienteByCorreo({
+    correo,
+    nombre: orden.Notas_Cliente || undefined,
+    origen: 'ecommerce',
+  });
+
+  return cliente?.Uuid_Cli || cliente?.Id_Cli || null;
+}
+
+/**
+ * Crea una suscripcion a partir de un item de orden cuando el producto es de tipo
+ * 'suscripcion'. La duracion se toma de la variante comprada. No-op si no aplica o
+ * si no se puede identificar al cliente de la orden.
+ */
+async function registrarSuscripcionOrdenSiAplica(orden, item) {
+  if (!orden || !item || !item.Id_Prd) return null;
+
+  const producto = await productosRepository.findById(Number(item.Id_Prd));
+  if (!producto || producto.Tip_Prd !== 'suscripcion') return null;
+
+  const clienteRef = await resolveClienteRefDeOrden(orden);
+  if (!clienteRef) return null;
+
+  return suscripcionesService.crearSuscripcionDesdeLinea({
+    clienteRef,
+    idProducto: item.Id_Prd,
+    idVariante: item.Id_Var ?? null,
+    fechaInicio: item.Fec_Ini_Licencia || undefined,
+    fechaFin: item.Fec_Fin_Licencia || null,
+    producto,
+    nota: `Ecommerce · orden ${orden.Numero_Ord}`,
+  });
 }
 
 async function updateItem(id, payload) {
@@ -143,6 +203,7 @@ async function deleteItem(id) {
 
 module.exports = {
   listOrdenes,
+  listOrdenesByCliente,
   getOrdenById,
   createOrden,
   updateOrden,

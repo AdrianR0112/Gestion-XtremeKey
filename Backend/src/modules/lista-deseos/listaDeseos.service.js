@@ -6,6 +6,13 @@ const { validatePayload, isNumericId } = require('./listaDeseos.validator');
 
 async function ensureExists(repository, id, label) { const item = await repository.findById(id); if (!item) throw createHttpError(400, `El ${label} indicado no existe.`); }
 async function listItems() { return repo.findAll(); }
+async function listItemsByCliente(idCli) { if (!isNumericId(idCli)) return []; return repo.findAllByCliente(Number(idCli)); }
+async function removeByClienteAndProducto(idCli, idPrd) {
+  const item = await repo.findByClienteAndProducto(Number(idCli), Number(idPrd));
+  if (!item) throw createHttpError(404, 'El producto no esta en tu lista de deseos.');
+  await repo.removeById(item.Id_Des);
+  return item;
+}
 async function getItemById(id) { if (!isNumericId(id)) throw createHttpError(400, 'Id_Des invalido.'); const item = await repo.findById(Number(id)); if (!item) throw createHttpError(404, 'Registro de lista de deseos no encontrado.'); return item; }
 async function createItem(payload) {
   const validation = validatePayload(payload); if (!validation.isValid) throw createHttpError(400, 'Payload invalido.', validation.errors);
@@ -22,4 +29,4 @@ async function updateItem(id, payload) {
 }
 async function deleteItem(id) { if (!isNumericId(id)) throw createHttpError(400, 'Id_Des invalido.'); const deleted = await repo.removeById(Number(id)); if (!deleted) throw createHttpError(404, 'Registro de lista de deseos no encontrado.'); }
 
-module.exports = { listItems, getItemById, createItem, updateItem, deleteItem };
+module.exports = { listItems, listItemsByCliente, removeByClienteAndProducto, getItemById, createItem, updateItem, deleteItem };

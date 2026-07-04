@@ -1,36 +1,44 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Mail, Building2, User } from "lucide-react";
 
-import { Button } from "@/components/ui/Button";
+import { LogoutButton } from "@/components/layout/LogoutButton";
 import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/hooks/useAuth";
 
+function Field({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white/60 px-4 py-3">
+      <span className="mt-0.5 rounded-full bg-slate-950/5 p-2 text-slate-600">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-xs uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-medium text-slate-900">{value ?? "—"}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
-  const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
-    <Card className="space-y-5">
-      <div>
-        <h1 className="section-title text-4xl font-semibold text-slate-950">Perfil</h1>
-        <p className="mt-2 text-sm text-slate-600">Datos actuales del cliente autenticado con better auth.</p>
-      </div>
-      <div className="space-y-2 text-sm text-slate-700">
-        <p><strong>Nombre:</strong> {user?.name ?? "Sin sesion"}</p>
-        <p><strong>Correo:</strong> {user?.email ?? "Sin sesion"}</p>
-        <p><strong>Empresa:</strong> {user?.company ?? "No especificada"}</p>
-      </div>
-      <Button
-        onClick={async () => {
-          await logout();
-          router.push("/login");
-        }}
-        type="button"
-        variant="ghost"
-      >
-        Cerrar sesion
-      </Button>
-    </Card>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Cuenta"
+        title="Perfil"
+        description="Datos del cliente autenticado."
+      />
+      <Card className="space-y-5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field icon={<User className="h-4 w-4" />} label="Nombre" value={user?.name} />
+          <Field icon={<Mail className="h-4 w-4" />} label="Correo" value={user?.email} />
+          <Field icon={<Building2 className="h-4 w-4" />} label="Empresa" value={user?.company} />
+        </div>
+        <div className="pt-3">
+          <LogoutButton variant="compact" />
+        </div>
+      </Card>
+    </div>
   );
 }

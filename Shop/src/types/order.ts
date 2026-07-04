@@ -6,6 +6,8 @@ export type Order = {
   createdAt: string;
   total: number;
   status: OrderStatus;
+  source: "orden" | "venta_whatsapp";
+  sourceLabel: string;
   items: Array<{
     productName: string;
     quantity: number;

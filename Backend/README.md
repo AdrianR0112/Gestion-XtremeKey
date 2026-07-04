@@ -29,39 +29,24 @@ Las respuestas de error usan este formato:
 
 ## Autenticación y permisos
 
-- Login con JWT Bearer en el header `Authorization: Bearer <token>`.
-- Roles disponibles: `admin`, `vendedor`.
-- Endpoints públicos:
-	- `POST /api/v1/auth/register`
-	- `POST /api/v1/auth/login`
-	- `GET /api/v1/configuracion`
-	- `GET /api/v1/configuracion/actual`
-	- `GET /api/v1/configuracion/:id`
-	- `POST /api/v1/configuracion`
-	- `PUT /api/v1/configuracion/:id`
-	- `DELETE /api/v1/configuracion/:id`
-- Endpoints protegidos con JWT y roles `admin` o `vendedor`:
-	- clientes, proveedores, categorias, productos, variantes, proveedores-productos, cuentas, keys, ventas, detalle-ventas, compras, detalle-compras, gastos, renovaciones, tareas, calendario, plantillas.
-- Endpoints protegidos solo para `admin`:
-	- usuarios.
-- Token JWT devuelve al menos:
-	- `sub` = Id_Usu
-	- `email` = Ema_Usu
-	- `role` = Rol_Usu
-	- `status` = Est_Usu
+- La autenticación de staff usa JWT Bearer en el header `Authorization: Bearer <token>`.
+- Los módulos de gestión suelen requerir `admin` o `vendedor`.
+- `staff` y `jobs` quedan restringidos a `admin`.
+- La autenticación de clientes expone sesión propia para ecommerce.
 
-## Endpoints reales
+## Mapa de endpoints
+
+### Gestión
 
 | Método | Ruta | Propósito |
 | --- | --- | --- |
 | GET | /api/v1 | Estado base de la API |
-| POST | /api/v1/auth/register | Registrar usuario |
-| POST | /api/v1/auth/login | Iniciar sesión |
-| GET | /api/v1/auth/me | Obtener perfil autenticado |
-| PATCH | /api/v1/auth/change-password | Cambiar contraseña |
-| POST | /api/v1/auth/logout | Cerrar sesión |
+| POST | /api/v1/staff-auth/login | Iniciar sesión de staff |
+| GET | /api/v1/staff-auth/session | Obtener sesión de staff |
+| POST | /api/v1/staff-auth/logout | Cerrar sesión de staff |
+| POST | /api/v1/staff-auth/change-password | Cambiar contraseña de staff |
 | GET/POST/PUT/DELETE | /api/v1/configuracion | CRUD de configuración |
-| GET/POST/PUT/PATCH/DELETE | /api/v1/usuarios | CRUD de usuarios y cambio de estado |
+| GET/POST/PUT/PATCH/DELETE | /api/v1/staff | CRUD de usuarios internos |
 | GET/POST/PUT/DELETE | /api/v1/clientes | CRUD de clientes |
 | POST | /api/v1/clientes/import | Importar clientes desde CSV o XLSX |
 | GET/POST/PUT/DELETE | /api/v1/proveedores | CRUD de proveedores |
@@ -80,39 +65,48 @@ Las respuestas de error usan este formato:
 | GET/POST/PUT/DELETE | /api/v1/tareas | CRUD de tareas |
 | GET | /api/v1/calendario?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD | Eventos agregados de tareas y detalle-ventas |
 | GET/POST/PUT/DELETE | /api/v1/plantillas | CRUD de plantillas de notificación |
+| GET | /api/v1/dashboard | Resumen general para panel administrativo |
+| GET/POST/PUT/DELETE | /api/v1/imagenes-productos | CRUD de imágenes de productos |
+| GET/POST/PUT/DELETE | /api/v1/revendedores | CRUD de revendedores |
+| POST | /api/v1/jobs/vencimientos-email/run | Ejecutar el job de recordatorios por vencimiento |
 
-## Contratos generales
+### Ecommerce
 
-### Autenticación
+| Método | Ruta | Propósito |
+| --- | --- | --- |
+| POST | /api/v1/customer-auth/register | Registrar cliente |
+| POST | /api/v1/customer-auth/login | Iniciar sesión de cliente |
+| GET | /api/v1/customer-auth/session | Obtener sesión de cliente |
+| POST | /api/v1/customer-auth/logout | Cerrar sesión de cliente |
+| GET/POST/PUT/DELETE | /api/v1/carrito | CRUD del carrito |
+| GET/POST/PUT/DELETE | /api/v1/carrito/:id/items | CRUD de items del carrito |
+| GET/PUT/DELETE | /api/v1/carrito/items/:itemId | Operaciones directas sobre un item del carrito |
+| GET/POST/PUT/DELETE | /api/v1/ordenes | CRUD de órdenes |
+| GET/POST/PUT/DELETE | /api/v1/ordenes/:id/items | CRUD de items de la orden |
+| GET/PUT/DELETE | /api/v1/ordenes/items/:itemId | Operaciones directas sobre un item de la orden |
+| GET/POST/PUT/DELETE | /api/v1/pagos | CRUD de pagos |
+| GET/POST/PUT/DELETE | /api/v1/cupones | CRUD de cupones |
+| GET | /api/v1/cupones/usos | Listado de usos de cupones |
+| GET | /api/v1/cupones/usos/:usoId | Obtener uso de cupón |
+| POST/PUT/DELETE | /api/v1/cupones/usos | CRUD de usos de cupones |
+| GET/POST/DELETE | /api/v1/cupones/:id/productos | Asignar o listar productos por cupón |
+| DELETE | /api/v1/cupones/:id/productos/:productoId | Quitar producto de un cupón |
+| GET/POST/PUT/DELETE | /api/v1/lista-deseos | CRUD de lista de deseos |
+| GET/POST/PUT/DELETE | /api/v1/resenias | CRUD de reseñas |
+| GET/POST/PUT/DELETE | /api/v1/notificaciones | CRUD de notificaciones de ecommerce |
+| GET/POST/PUT/DELETE | /api/v1/suscripciones | CRUD de suscripciones |
+| GET | /api/v1/suscripciones/by-cliente | Listar suscripciones por cliente |
 
-#### POST /api/v1/auth/register
-Body:
+## Gestión
 
-```json
-{
-	"Nom_Usu": "Ana",
-	"Ape_Usu": "Pérez",
-	"Ema_Usu": "ana@correo.com",
-	"Pas_Usu": "123456",
-	"Tel_Usu": "0999999999",
-	"Rol_Usu": "admin"
-}
-```
+### Endpoints de staff
 
-Respuesta exitosa:
+- `POST /api/v1/staff-auth/login`
+- `GET /api/v1/staff-auth/session`
+- `POST /api/v1/staff-auth/logout`
+- `POST /api/v1/staff-auth/change-password`
 
-```json
-{
-	"ok": true,
-	"message": "Usuario registrado correctamente.",
-	"data": {
-		"user": {},
-		"token": "jwt..."
-	}
-}
-```
-
-#### POST /api/v1/auth/login
+#### POST /api/v1/staff-auth/login
 Body:
 
 ```json
@@ -122,23 +116,7 @@ Body:
 }
 ```
 
-Respuesta exitosa:
-
-```json
-{
-	"ok": true,
-	"message": "Inicio de sesion correcto.",
-	"data": {
-		"user": {},
-		"token": "jwt..."
-	}
-}
-```
-
-#### GET /api/v1/auth/me
-Devuelve el perfil público del usuario autenticado.
-
-#### PATCH /api/v1/auth/change-password
+#### POST /api/v1/staff-auth/change-password
 Body:
 
 ```json
@@ -148,16 +126,7 @@ Body:
 }
 ```
 
-#### POST /api/v1/auth/logout
-No body. Respuesta de confirmación.
-
-### Paginación, filtros y búsqueda
-
-No hay paginación, filtros ni búsqueda implementados actualmente en los listados. Los `GET /` de cada módulo devuelven la colección completa.
-
-## Esquemas de datos por módulo
-
-### configuracion
+### Configuración
 
 - Endpoints: `GET /configuracion`, `GET /configuracion/actual`, `GET /configuracion/:id`, `POST /configuracion`, `PUT /configuracion/:id`, `DELETE /configuracion/:id`
 - Campos:
@@ -173,9 +142,9 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Log_Con` se envía como ruta o string plano en JSON.
 	- `Ema_Con` se valida como correo si se envía.
 
-### usuarios
+### Staff
 
-- Endpoints: `GET /usuarios`, `GET /usuarios/:id`, `POST /usuarios`, `PUT /usuarios/:id`, `PATCH /usuarios/:id/estado`, `DELETE /usuarios/:id`
+- Endpoints: `GET /staff`, `GET /staff/:id`, `POST /staff`, `PUT /staff/:id`, `PATCH /staff/:id/estado`, `DELETE /staff/:id`
 - Campos:
 	- `Nom_Usu` requerido, string
 	- `Ape_Usu` requerido, string
@@ -188,7 +157,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- Solo `admin` puede acceder.
 	- Password se guarda con hash bcrypt.
 
-### clientes
+### Clientes
 
 - Endpoints: `GET /clientes`, `GET /clientes/:id`, `POST /clientes`, `PUT /clientes/:id`, `DELETE /clientes/:id`, `POST /clientes/import`
 - Importación masiva:
@@ -210,7 +179,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Not_Cli` opcional, text
 	- `Est_Cli` opcional, enum `activo`, `inactivo`, `suspendido`
 
-### proveedores
+### Proveedores
 
 - Endpoints: `GET /proveedores`, `GET /proveedores/:id`, `POST /proveedores`, `PUT /proveedores/:id`, `DELETE /proveedores/:id`
 - Campos:
@@ -229,7 +198,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Not_Pro` opcional, text
 	- `Est_Pro` opcional, enum `activo`, `inactivo`, `suspendido`
 
-### categorias
+### Categorías
 
 - Endpoints: `GET /categorias`, `GET /categorias/:id`, `POST /categorias`, `PUT /categorias/:id`, `DELETE /categorias/:id`
 - Campos:
@@ -240,7 +209,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Ord_Cat` opcional, número
 	- `Est_Cat` opcional, enum `activo`, `inactivo`
 
-### productos
+### Productos
 
 - Endpoints: `GET /productos`, `GET /productos/:id`, `POST /productos`, `PUT /productos/:id`, `DELETE /productos/:id`
 - Campos:
@@ -256,7 +225,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Ima_Prd` se envía como ruta o string plano en JSON.
 	- `Cod_Prd` debe ser único si se envía.
 
-### variantes
+### Variantes
 
 - Endpoints: `GET /variantes`, `GET /variantes/:id`, `POST /variantes`, `PUT /variantes/:id`, `DELETE /variantes/:id`
 - Campos:
@@ -274,7 +243,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 - Reglas:
 	- `Dur_Tip_Var` y `Dur_Val_Var` pueden enviarse como `null`.
 
-### proveedores-productos
+### Proveedores-productos
 
 - Endpoints: `GET /proveedores-productos`, `GET /proveedores-productos/:id`, `POST /proveedores-productos`, `PUT /proveedores-productos/:id`, `DELETE /proveedores-productos/:id`
 - Campos:
@@ -285,10 +254,9 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Es_Pri_Pro_Prd` opcional, boolean/tinyint
 	- `Not_Pro_Prd` opcional, text
 - Reglas:
-	- Se usa para relacionar proveedor con producto o variante y precio de compra.
 	- Al crear, debe enviarse `Id_Pro` y al menos uno entre `Id_Prd` o `Id_Var`.
 
-### cuentas
+### Cuentas
 
 - Endpoints: `GET /cuentas`, `GET /cuentas/:id`, `POST /cuentas`, `PUT /cuentas/:id`, `DELETE /cuentas/:id`
 - Campos:
@@ -310,7 +278,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 - Reglas:
 	- Al crear, debe enviarse al menos uno entre `Id_Prd` o `Id_Var`.
 
-### keys
+### Keys
 
 - Endpoints: `GET /keys`, `GET /keys/:id`, `POST /keys`, `PUT /keys/:id`, `DELETE /keys/:id`
 - Campos:
@@ -329,7 +297,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 - Reglas:
 	- Al crear, debe enviarse `Cla_Key` y al menos uno entre `Id_Prd` o `Id_Var`.
 
-### ventas
+### Ventas
 
 - Endpoints: `GET /ventas`, `GET /ventas/:id`, `POST /ventas`, `PUT /ventas/:id`, `DELETE /ventas/:id`
 - Campos:
@@ -343,10 +311,10 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Not_Ven` opcional, text
 	- `Est_Ven` opcional, enum `pendiente`, `completada`, `cancelada`, `reembolsada`
 - Reglas:
-	- `Tot_Ven` = `Sub_Tot_Ven - Des_Tot_Ven + Imp_Tot_Ven`.
+	- `Tot_Ven = Sub_Tot_Ven - Des_Tot_Ven + Imp_Tot_Ven`.
 	- Si `Est_Ven` es `completada`, `Met_Pag_Ven` es obligatorio.
 
-### detalle-ventas
+### Detalle de ventas
 
 - Endpoints: `GET /detalle-ventas`, `GET /detalle-ventas/:id`, `POST /detalle-ventas`, `PUT /detalle-ventas/:id`, `DELETE /detalle-ventas/:id`
 - Campos:
@@ -365,12 +333,12 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Not_Dve` opcional, text
 	- `Est_Dve` opcional, enum `activo`, `vencido`, `cancelado`, `renovado`
 - Reglas:
-	- `Sub_Tot_Dve` = `Can_Dve * (Pre_Uni_Dve - Des_Uni_Dve)`.
+	- `Sub_Tot_Dve = Can_Dve * (Pre_Uni_Dve - Des_Uni_Dve)`.
 	- Si `Fec_Ini_Dve` no se envía, se toma la fecha actual.
 	- Si `Fec_Fin_Dve` no se envía, se usa el mismo valor que `Fec_Ini_Dve`.
 	- `Fec_Fin_Dve` no puede ser anterior a `Fec_Ini_Dve`.
 
-### compras
+### Compras
 
 - Endpoints: `GET /compras`, `GET /compras/:id`, `POST /compras`, `PUT /compras/:id`, `DELETE /compras/:id`
 - Campos:
@@ -383,9 +351,9 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Not_Com` opcional, text
 	- `Est_Com` opcional, enum `pendiente`, `completada`, `cancelada`
 - Reglas:
-	- `Tot_Com` = `Sub_Tot_Com + Imp_Tot_Com`.
+	- `Tot_Com = Sub_Tot_Com + Imp_Tot_Com`.
 
-### detalle-compras
+### Detalle de compras
 
 - Endpoints: `GET /detalle-compras`, `GET /detalle-compras/:id`, `POST /detalle-compras`, `PUT /detalle-compras/:id`, `DELETE /detalle-compras/:id`
 - Campos:
@@ -397,9 +365,9 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Sub_Tot_Dco` requerido al crear, número >= 0
 	- `Not_Dco` opcional, text
 - Reglas:
-	- `Sub_Tot_Dco` = `Can_Dco * Pre_Uni_Dco`.
+	- `Sub_Tot_Dco = Can_Dco * Pre_Uni_Dco`.
 
-### gastos
+### Gastos
 
 - Endpoints: `GET /gastos`, `GET /gastos/:id`, `POST /gastos`, `PUT /gastos/:id`, `DELETE /gastos/:id`
 - Campos:
@@ -415,7 +383,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 - Reglas:
 	- `Com_Gas` se envía como ruta o string plano en JSON.
 
-### renovaciones
+### Renovaciones
 
 - Endpoints: `GET /renovaciones`, `GET /renovaciones/:id`, `POST /renovaciones`, `PUT /renovaciones/:id`, `DELETE /renovaciones/:id`
 - Campos:
@@ -437,7 +405,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Pre_Ren` debe ser igual a `Pre_Ori_Ren - Des_Ren` cuando esos valores se envían juntos.
 	- `Fec_Fin_Nue_Ren` no puede ser anterior a `Fec_Ini_Nue_Ren`.
 
-### tareas
+### Tareas
 
 - Endpoints: `GET /tareas`, `GET /tareas/:id`, `POST /tareas`, `PUT /tareas/:id`, `DELETE /tareas/:id`
 - Campos:
@@ -456,7 +424,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Fec_Com_Tar` solo se acepta cuando la tarea está completada.
 	- Si la tarea se marca como `completada` y no se envía `Fec_Com_Tar`, el backend la autocompleta con la fecha y hora actuales.
 
-### calendario
+### Calendario
 
 - Endpoint: `GET /calendario`
 - Query params:
@@ -475,7 +443,7 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- Una tarea aparece en el calendario según su fecha límite `Fec_Lim_Tar`.
 	- El calendario no crea ni modifica registros; solo agrega información de otras entidades.
 
-### plantillas de notificación
+### Plantillas de notificación
 
 - Endpoints: `GET /plantillas`, `GET /plantillas/:id`, `POST /plantillas`, `PUT /plantillas/:id`, `DELETE /plantillas/:id`
 - Campos:
@@ -489,27 +457,92 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 - Reglas:
 	- `Var_Pla` puede enviarse como objeto JSON o como string JSON válido.
 
-## Relaciones entre tablas
+### Operación y soporte
 
-- `usuarios` se relaciona con gastos y autenticación.
-- `clientes` se relaciona con ventas, renovaciones y tareas.
-- `proveedores` se relaciona con productos, compras, gastos, cuentas y keys.
-- `productos` se relaciona con categorías, variantes, proveedores-productos, ventas, compras, gastos y renovaciones.
-- `ventas` se relaciona con clientes.
-- `detalle_ventas` se relaciona con ventas, productos, variantes, cuentas y keys.
-- `compras` se relaciona con proveedores.
-- `detalle_compras` se relaciona con compras, productos y variantes.
-- `gastos` puede apuntar a proveedor, compra y usuario.
-- `renovaciones` se apoya en detalle_ventas, clientes, productos y variantes.
-- `tareas` puede apuntar a clientes y ventas.
-- `calendario` agrega datos de `tareas` y `detalle_ventas` para visualización.
-- `keys` se relaciona con productos, variantes y proveedores.
+- `GET /api/v1/dashboard` devuelve un resumen general para el panel.
+- `GET/POST/PUT/DELETE /api/v1/imagenes-productos` administra las imágenes asociadas a productos.
+- `GET/POST/PUT/DELETE /api/v1/revendedores` administra revendedores.
+- `POST /api/v1/jobs/vencimientos-email/run` ejecuta el proceso manual de notificaciones por vencimiento.
+
+## Ecommerce
+
+### Autenticación de clientes
+
+- `POST /api/v1/customer-auth/register`
+- `POST /api/v1/customer-auth/login`
+- `GET /api/v1/customer-auth/session`
+- `POST /api/v1/customer-auth/logout`
+
+#### POST /api/v1/customer-auth/register
+Registro del cliente para acceso al flujo de compra.
+
+#### POST /api/v1/customer-auth/login
+Inicio de sesión del cliente para acceder a carrito, órdenes y suscripciones.
+
+#### GET /api/v1/customer-auth/session
+Devuelve la sesión actual del cliente autenticado.
+
+#### POST /api/v1/customer-auth/logout
+Cierra la sesión de cliente.
+
+### Carrito
+
+- Endpoints: `GET /carrito`, `GET /carrito/:id`, `POST /carrito`, `PUT /carrito/:id`, `DELETE /carrito/:id`
+- Endpoints de items: `GET /carrito/:id/items`, `POST /carrito/:id/items`, `GET /carrito/items/:itemId`, `PUT /carrito/items/:itemId`, `DELETE /carrito/items/:itemId`
+- Uso:
+	- El carrito agrupa items antes de crear una orden.
+	- Los items tienen operaciones directas por `itemId` y operaciones por carrito padre.
+
+### Órdenes
+
+- Endpoints: `GET /ordenes`, `GET /ordenes/:id`, `POST /ordenes`, `PUT /ordenes/:id`, `DELETE /ordenes/:id`
+- Endpoints de items: `GET /ordenes/:id/items`, `POST /ordenes/:id/items`, `GET /ordenes/items/:itemId`, `PUT /ordenes/items/:itemId`, `DELETE /ordenes/items/:itemId`
+- Uso:
+	- La orden conserva el detalle de compra finalizada y sus items.
+	- Estas rutas están protegidas con JWT y roles `admin` o `vendedor`.
+
+### Pagos
+
+- Endpoints: `GET /pagos`, `GET /pagos/:id`, `POST /pagos`, `PUT /pagos/:id`, `DELETE /pagos/:id`
+- Uso:
+	- Registra y consulta los pagos asociados al flujo ecommerce.
+
+### Cupones
+
+- Endpoints: `GET /cupones`, `GET /cupones/:id`, `POST /cupones`, `PUT /cupones/:id`, `DELETE /cupones/:id`
+- Endpoints adicionales: `GET /cupones/usos`, `GET /cupones/usos/:usoId`, `POST /cupones/usos`, `PUT /cupones/usos/:usoId`, `DELETE /cupones/usos/:usoId`, `GET /cupones/:id/productos`, `POST /cupones/:id/productos`, `DELETE /cupones/:id/productos/:productoId`
+- Uso:
+	- Permite administrar el cupón, sus usos y su alcance por producto.
+
+### Lista de deseos
+
+- Endpoints: `GET /lista-deseos`, `GET /lista-deseos/:id`, `POST /lista-deseos`, `PUT /lista-deseos/:id`, `DELETE /lista-deseos/:id`
+- Uso:
+	- Gestiona los productos guardados por el cliente para compra futura.
+
+### Reseñas
+
+- Endpoints: `GET /resenias`, `GET /resenias/:id`, `POST /resenias`, `PUT /resenias/:id`, `DELETE /resenias/:id`
+- Uso:
+	- Administra la opinión de clientes sobre productos o servicios.
+
+### Notificaciones
+
+- Endpoints: `GET /notificaciones`, `GET /notificaciones/:id`, `POST /notificaciones`, `PUT /notificaciones/:id`, `DELETE /notificaciones/:id`
+- Uso:
+	- Persistencia de notificaciones operativas y de ecommerce.
+
+### Suscripciones
+
+- Endpoints: `GET /suscripciones`, `GET /suscripciones/by-cliente`, `GET /suscripciones/:id`, `POST /suscripciones`, `PUT /suscripciones/:id`, `DELETE /suscripciones/:id`
+- Uso:
+	- Controla suscripciones asociadas a clientes y su trazabilidad.
 
 ## Reglas de negocio importantes
 
-- Los listados no usan paginación ni filtros en el backend actual.
-- Las rutas de negocio están protegidas con JWT y roles, salvo `configuracion`.
-- En creación de usuarios y autenticación, los passwords se guardan con bcrypt.
+- Los listados no usan paginación ni filtros en el backend actual, salvo donde se indica explícitamente.
+- Las rutas de gestión están protegidas con JWT y roles, salvo `configuracion`.
+- En autenticación de staff y creación de usuarios, los passwords se guardan con bcrypt.
 - Los campos calculados o validados por fórmula deben respetar el contrato:
 	- ventas: `Tot_Ven = Sub_Tot_Ven - Des_Tot_Ven + Imp_Tot_Ven`
 	- compras: `Tot_Com = Sub_Tot_Com + Imp_Tot_Com`

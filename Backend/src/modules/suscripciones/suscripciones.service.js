@@ -3,6 +3,9 @@ const { findClienteByReference, isUuid, resolveClienteInternalId, resolveCliente
 const productosRepository = require('../productos/productos.repository');
 const variantesRepository = require('../variantes/variantes.repository');
 const { validatePayload, isNumericId } = require('./suscripciones.validator');
+const { toEcuadorDateTime, addDuration } = require('../../utils/dateHelper');
+
+const DURACIONES_VALIDAS = ['dias', 'meses', 'anios'];
 
 function createHttpError(statusCode, message, errors = null) {
   const error = new Error(message);
@@ -147,6 +150,100 @@ async function deleteSuscripcion(id) {
   }
 }
 
+/**
+ * Calcula la fecha de fin de una suscripcion a partir de la duracion de la variante.
+ * Devuelve null si la variante no define una duracion valida (suscripcion sin vencimiento).
+ *
+ * @param {string|Date} fechaInicio Fecha de inicio (string local o Date).
+ * @param {Object|null} variante    Variante con Dur_Tip_Var / Dur_Val_Var.
+ * @returns {string|null} Fecha de fin en formato local, o null.
+ */
+function calcularFechaFinSuscripcion(fechaInicio, variante) {
+  if (!variante) return null;
+
+  const tipo = variante.Dur_Tip_Var;
+  const valor = Number(variante.Dur_Val_Var);
+  if (!DURACIONES_VALIDAS.includes(tipo) || !Number.isInteger(valor) || valor <= 0) {
+    return null;
+  }
+
+  return addDuration(fechaInicio, tipo, valor);
+}
+
+/**
+ * Crea una suscripcion a partir de una linea de venta/orden, SOLO si el producto
+ * es de tipo 'suscripcion'. Centraliza la logica para los flujos manual/WhatsApp
+ * y ecommerce, de modo que cualquier venta de una suscripcion quede registrada.
+ *
+ * No lanza si el producto no es suscripcion: simplemente devuelve null (no-op),
+ * asi los callers pueden invocarla para toda linea sin ramificar.
+ *
+ * @param {Object} params
+ * @param {number|string} params.clienteRef      Id_Cli o Uuid_Cli del cliente (obligatorio).
+ * @param {number} params.idProducto             Id del producto vendido (obligatorio).
+ * @param {number|null} [params.idVariante]      Id de la variante vendida (define la duracion).
+ * @param {string|Date} [params.fechaInicio]     Inicio de la suscripcion (por defecto: ahora).
+ * @param {string|Date|null} [params.fechaFin]   Fin explicito; si se omite se calcula por la variante.
+ * @param {'activa'|'suspendida'|'cancelada'|'expirada'} [params.estado='activa']
+ * @param {boolean|number} [params.renovacionAuto=1]
+ * @param {string|null} [params.nota]
+ * @param {Object} [params.producto]             Producto ya cargado (evita re-consulta).
+ * @param {Object} [params.variante]             Variante ya cargada (evita re-consulta).
+ * @param {import('mysql2/promise').PoolConnection} [connection] Conexion para operar dentro de una transaccion.
+ * @returns {Promise<Object|null>} La suscripcion creada, o null si el producto no es suscripcion.
+ */
+async function crearSuscripcionDesdeLinea(params = {}, connection) {
+  const {
+    clienteRef,
+    idProducto,
+    idVariante = null,
+    fechaInicio,
+    fechaFin,
+    estado = 'activa',
+    renovacionAuto = 1,
+    nota = null,
+  } = params;
+
+  if (idProducto === undefined || idProducto === null) {
+    return null;
+  }
+
+  const producto = params.producto || (await productosRepository.findById(Number(idProducto)));
+  if (!producto || producto.Tip_Prd !== 'suscripcion') {
+    return null;
+  }
+
+  const clienteReference = await resolveClienteReference(clienteRef);
+  if (!clienteReference) {
+    throw createHttpError(400, 'No se pudo resolver el cliente para registrar la suscripcion.');
+  }
+
+  let variante = params.variante ?? null;
+  if (!variante && idVariante !== undefined && idVariante !== null) {
+    variante = await variantesRepository.findById(Number(idVariante));
+  }
+
+  const inicio = toEcuadorDateTime(fechaInicio || new Date());
+  const fin = fechaFin !== undefined && fechaFin !== null
+    ? toEcuadorDateTime(fechaFin)
+    : calcularFechaFinSuscripcion(inicio, variante);
+
+  return suscripcionesRepository.createOne(
+    {
+      Id_Cli: clienteReference.Id_Cli,
+      Uuid_Cli: clienteReference.Uuid_Cli,
+      Id_Prd: Number(idProducto),
+      Id_Var: idVariante !== undefined && idVariante !== null ? Number(idVariante) : null,
+      Fec_Ini_Sus: inicio,
+      Fec_Fin_Sus: fin,
+      Est_Sus: estado,
+      Ren_Auto: renovacionAuto ? 1 : 0,
+      Not_Sus: nota,
+    },
+    connection
+  );
+}
+
 module.exports = {
   listSuscripciones,
   getSuscripcionById,
@@ -154,4 +251,6 @@ module.exports = {
   createSuscripcion,
   updateSuscripcion,
   deleteSuscripcion,
+  calcularFechaFinSuscripcion,
+  crearSuscripcionDesdeLinea,
 };

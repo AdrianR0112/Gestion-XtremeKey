@@ -5,6 +5,11 @@ const { roleMiddleware } = require('../middlewares/role.middleware');
 
 const router = Router();
 
+// Rutas para clientes autenticados
+router.get('/mis', authMiddleware, pagosController.listMine);
+router.post('/mis', authMiddleware, pagosController.createMine);
+
+// Rutas de administracion
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin', 'vendedor']));
 

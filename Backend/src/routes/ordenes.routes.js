@@ -5,6 +5,12 @@ const { roleMiddleware } = require('../middlewares/role.middleware');
 
 const router = Router();
 
+// Rutas para clientes autenticados: solo pueden ver/crear sus propias ordenes
+router.get('/mis', authMiddleware, ordenesController.listMine);
+router.post('/mis', authMiddleware, ordenesController.createMine);
+router.get('/mis/:id', authMiddleware, ordenesController.getMine);
+
+// Rutas de administracion (staff)
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin', 'vendedor']));
 

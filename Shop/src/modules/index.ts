@@ -1,0 +1,11 @@
+export { authApi } from "@/modules/auth/auth.api";
+export { cartApi } from "@/modules/cart/cart.api";
+export { ordersApi } from "@/modules/orders/orders.api";
+export { paymentsApi } from "@/modules/payments/payments.api";
+export { couponsApi } from "@/modules/coupons/coupons.api";
+export { wishlistApi } from "@/modules/wishlist/wishlist.api";
+export { reviewsApi } from "@/modules/reviews/reviews.api";
+export { notificationsApi } from "@/modules/notifications/notifications.api";
+export { subscriptionsApi } from "@/modules/subscriptions/subscriptions.api";
+export { productosApi } from "@/modules/products/products.backend.api";
+export { variantesApi } from "@/modules/variants/variants.api";

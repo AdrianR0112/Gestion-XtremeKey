@@ -8,6 +8,14 @@ const BASE_SELECT = `
 `;
 
 async function findAll() { const [rows] = await getPool().query(`${BASE_SELECT} ORDER BY ld.Id_Des DESC`); return rows; }
+async function findAllByCliente(idCli) {
+  const [rows] = await getPool().query(`${BASE_SELECT} WHERE ld.Id_Cli = ? ORDER BY ld.Id_Des DESC`, [idCli]);
+  return rows;
+}
+async function findByClienteAndProducto(idCli, idPrd) {
+  const [rows] = await getPool().query(`${BASE_SELECT} WHERE ld.Id_Cli = ? AND ld.Id_Prd = ? LIMIT 1`, [idCli, idPrd]);
+  return rows[0] || null;
+}
 async function findById(id) { const [rows] = await getPool().query(`${BASE_SELECT} WHERE ld.Id_Des = ? LIMIT 1`, [id]); return rows[0] || null; }
 async function createOne(data) { const [result] = await getPool().query('INSERT INTO lista_deseos (Id_Cli, Id_Prd) VALUES (?, ?)', [data.Id_Cli, data.Id_Prd]); return findById(result.insertId); }
 async function updateById(id, data) {
@@ -20,4 +28,4 @@ async function updateById(id, data) {
 }
 async function removeById(id) { const [result] = await getPool().query('DELETE FROM lista_deseos WHERE Id_Des = ?', [id]); return result.affectedRows > 0; }
 
-module.exports = { findAll, findById, createOne, updateById, removeById };
+module.exports = { findAll, findAllByCliente, findByClienteAndProducto, findById, createOne, updateById, removeById };

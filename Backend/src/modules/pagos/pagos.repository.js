@@ -20,6 +20,15 @@ async function findAll() {
   return rows.map(mapRow);
 }
 
+async function findAllByCliente(idCli) {
+  const pool = getPool();
+  const [rows] = await pool.query(
+    `${BASE_SELECT} WHERE o.Id_Cli = ? ORDER BY p.Id_Pag DESC`,
+    [idCli],
+  );
+  return rows.map(mapRow);
+}
+
 async function findById(id) {
   const pool = getPool();
   const [rows] = await pool.query(`${BASE_SELECT} WHERE p.Id_Pag = ? LIMIT 1`, [id]);
@@ -73,4 +82,4 @@ async function removeById(id) {
   return result.affectedRows > 0;
 }
 
-module.exports = { findAll, findById, createOne, updateById, removeById };
+module.exports = { findAll, findAllByCliente, findById, createOne, updateById, removeById };

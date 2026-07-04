@@ -60,7 +60,12 @@ async function ensureSlugDisponible(slug, currentId = null) {
   }
 }
 
-async function listProductos() {
+async function listProductos({ sort } = {}) {
+  // Orden opcional por mas vendidos (opt-in desde el ecommerce). El panel admin
+  // sigue recibiendo el orden por defecto (Id_Prd DESC) al no enviar sort.
+  if (sort === 'mas_vendidos') {
+    return productosRepository.findAllRankedBySales();
+  }
   return productosRepository.findAll();
 }
 

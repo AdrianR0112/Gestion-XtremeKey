@@ -3,7 +3,7 @@ const { getPool } = require('../../config/database');
 const BASE_SELECT = `
   SELECT
     s.*,
-    c.Auth_Usu_Id,
+    c.Auth_User_Id,
     c.Nom_Cli,
     c.Ape_Cli,
     c.Ema_Cli,

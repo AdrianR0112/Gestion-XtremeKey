@@ -7,6 +7,38 @@ const list = asyncHandler(async (_req, res) => {
   res.status(200).json(successResponse(data, 'Ordenes obtenidas correctamente.'));
 });
 
+const listMine = asyncHandler(async (req, res) => {
+  const idCli = req.user?.Id_Cli;
+  if (!idCli) {
+    return res.status(200).json(successResponse([], 'Sin ordenes asociadas al usuario.'));
+  }
+  const data = await ordenesService.listOrdenesByCliente(idCli);
+  res.status(200).json(successResponse(data, 'Ordenes del cliente obtenidas correctamente.'));
+});
+
+const createMine = asyncHandler(async (req, res) => {
+  const idCli = req.user?.Id_Cli;
+  if (!idCli) {
+    const error = new Error('El usuario autenticado no tiene un cliente asociado.');
+    error.statusCode = 400;
+    throw error;
+  }
+  const payload = { ...(req.body || {}), Id_Cli: idCli };
+  const data = await ordenesService.createOrden(payload);
+  res.status(201).json(successResponse(data, 'Orden creada correctamente.'));
+});
+
+const getMine = asyncHandler(async (req, res) => {
+  const idCli = req.user?.Id_Cli;
+  const orden = await ordenesService.getOrdenById(req.params.id);
+  if (!idCli || Number(orden.Id_Cli) !== Number(idCli)) {
+    const error = new Error('No autorizado para ver esta orden.');
+    error.statusCode = 403;
+    throw error;
+  }
+  res.status(200).json(successResponse(orden, 'Orden obtenida correctamente.'));
+});
+
 const getById = asyncHandler(async (req, res) => {
   const data = await ordenesService.getOrdenById(req.params.id);
   res.status(200).json(successResponse(data, 'Orden obtenida correctamente.'));
@@ -54,6 +86,9 @@ const removeItem = asyncHandler(async (req, res) => {
 
 module.exports = {
   list,
+  listMine,
+  createMine,
+  getMine,
   getById,
   create,
   update,

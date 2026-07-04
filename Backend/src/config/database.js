@@ -47,6 +47,20 @@ async function indexExists(connection, tableName, indexName) {
   return rows.length > 0;
 }
 
+async function columnTypeIncludes(connection, tableName, columnName, needle) {
+  const [rows] = await connection.query(
+    `
+      SELECT COLUMN_TYPE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+      LIMIT 1
+    `,
+    [env.mysqlDatabase, tableName, columnName]
+  );
+
+  return rows.length > 0 && String(rows[0].COLUMN_TYPE).includes(needle);
+}
+
 async function ensureStaffTable(connection) {
   const hasStaff = await tableExists(connection, 'staff');
   const hasUsuarios = await tableExists(connection, 'usuarios');
@@ -668,7 +682,11 @@ async function ensureClienteUserVentaRelationSchema(connection) {
   // --- clientes: datos comerciales ---
   if (await tableExists(connection, 'clientes')) {
     if (!(await columnExists(connection, 'clientes', 'Origen_Cli'))) {
-      await connection.query("ALTER TABLE `clientes` ADD COLUMN `Origen_Cli` ENUM('whatsapp','ecommerce','manual') NOT NULL DEFAULT 'manual' AFTER `Doc_Cli`");
+      await connection.query("ALTER TABLE `clientes` ADD COLUMN `Origen_Cli` ENUM('whatsapp','ecommerce') NOT NULL DEFAULT 'whatsapp' AFTER `Doc_Cli`");
+    } else if (await columnTypeIncludes(connection, 'clientes', 'Origen_Cli', 'manual')) {
+      // Unificar 'manual' -> 'whatsapp' y reducir el enum (primero datos, luego DDL).
+      await connection.query("UPDATE `clientes` SET `Origen_Cli` = 'whatsapp' WHERE `Origen_Cli` = 'manual'");
+      await connection.query("ALTER TABLE `clientes` MODIFY COLUMN `Origen_Cli` ENUM('whatsapp','ecommerce') NOT NULL DEFAULT 'whatsapp'");
     }
     if (!(await columnExists(connection, 'clientes', 'Dir_Cli'))) {
       await connection.query('ALTER TABLE `clientes` ADD COLUMN `Dir_Cli` TEXT DEFAULT NULL AFTER `Origen_Cli`');
@@ -714,7 +732,11 @@ async function ensureClienteUserVentaRelationSchema(connection) {
       await connection.query('ALTER TABLE `ventas` ADD COLUMN `Auth_User_Id` VARCHAR(36) DEFAULT NULL AFTER `Id_Rev`');
     }
     if (!(await columnExists(connection, 'ventas', 'Origen_Ven'))) {
-      await connection.query("ALTER TABLE `ventas` ADD COLUMN `Origen_Ven` ENUM('ecommerce','whatsapp','manual') NOT NULL DEFAULT 'manual' AFTER `Est_Ven`");
+      await connection.query("ALTER TABLE `ventas` ADD COLUMN `Origen_Ven` ENUM('ecommerce','whatsapp') NOT NULL DEFAULT 'whatsapp' AFTER `Est_Ven`");
+    } else if (await columnTypeIncludes(connection, 'ventas', 'Origen_Ven', 'manual')) {
+      // Unificar 'manual' -> 'whatsapp' y reducir el enum (primero datos, luego DDL).
+      await connection.query("UPDATE `ventas` SET `Origen_Ven` = 'whatsapp' WHERE `Origen_Ven` = 'manual'");
+      await connection.query("ALTER TABLE `ventas` MODIFY COLUMN `Origen_Ven` ENUM('ecommerce','whatsapp') NOT NULL DEFAULT 'whatsapp'");
     }
     if (!(await indexExists(connection, 'ventas', 'idx_ventas_auth_user'))) {
       await connection.query('ALTER TABLE `ventas` ADD KEY `idx_ventas_auth_user` (`Auth_User_Id`)');

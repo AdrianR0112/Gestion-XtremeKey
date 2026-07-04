@@ -8,6 +8,7 @@ const renovacionesRepository = require('../renovaciones/renovaciones.repository'
 const productosRepository = require('../productos/productos.repository');
 const variantesRepository = require('../variantes/variantes.repository');
 const configuracionRepository = require('../configuracion/configuracion.repository');
+const detalleVentasService = require('../detalle-ventas/detalleVentas.service');
 const { validatePayload, isNumericId } = require('./ventas.validator');
 const { getPool } = require('../../config/database');
 
@@ -84,6 +85,23 @@ async function applyImpuestoConfig(payload, { current = null, isUpdate = false }
 
 async function listVentas() {
   return ventasRepository.findAll();
+}
+
+async function listVentasByCliente(idCli) {
+  if (!isNumericId(idCli)) return [];
+  const ventas = await ventasRepository.findAllByCliente(Number(idCli));
+  if (ventas.length === 0) return [];
+  const detalles = await detalleVentasRepository.findByClienteId(Number(idCli));
+  const byVenta = new Map();
+  for (const d of detalles) {
+    const key = Number(d.Id_Ven);
+    if (!byVenta.has(key)) byVenta.set(key, []);
+    byVenta.get(key).push(d);
+  }
+  return ventas.map((v) => ({
+    ...v,
+    detalles: byVenta.get(Number(v.Id_Ven)) ?? [],
+  }));
 }
 
 async function getVentaById(id) {
@@ -318,6 +336,18 @@ async function createVentaConDetallesYRenovaciones(payload) {
         renovacionesCreadas.push(renovacionCreada);
 
         await detalleVentasRepository.updateById(idDveOri, { Est_Dve: 'renovado' }, connection);
+      } else {
+        // Linea de venta normal (no renovacion): si el producto es una suscripcion,
+        // registra la suscripcion del cliente y enlaza Id_Sus al detalle. Reutiliza
+        // la conexion para que todo quede dentro de la misma transaccion.
+        const suscripcion = await detalleVentasService.registrarSuscripcionSiAplica(
+          detalleCreado,
+          ventaCreada,
+          connection
+        );
+        if (suscripcion) {
+          detalleCreado.Id_Sus = suscripcion.Id_Sus;
+        }
       }
     }
 
@@ -353,6 +383,7 @@ async function createVentaConDetallesYRenovaciones(payload) {
 
 module.exports = {
   listVentas,
+  listVentasByCliente,
   getVentaById,
   createVenta,
   createVentaEcommerce,
