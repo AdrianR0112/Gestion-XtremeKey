@@ -1,6 +1,5 @@
 ﻿const { getBetterAuthSession } = require('../auth/bridge');
 const staffRepository = require('../modules/staff/staff.repository');
-const clientesRepository = require('../modules/clientes/clientes.repository');
 
 async function authMiddleware(req, _res, next) {
   try {
@@ -11,10 +10,7 @@ async function authMiddleware(req, _res, next) {
       return next(error);
     }
 
-    const [staff, cliente] = await Promise.all([
-      staffRepository.findByAuthUserId(session.user.id),
-      clientesRepository.findByAuthUserId(session.user.id),
-    ]);
+    const staff = await staffRepository.findByAuthUserId(session.user.id);
 
     req.auth = session;
     req.user = {
@@ -23,9 +19,7 @@ async function authMiddleware(req, _res, next) {
       email: session.user.email,
       role: session.user.role,
       Id_Staff: staff ? Number(staff.Id_Staff) : null,
-      Id_Cli: cliente ? Number(cliente.Id_Cli) : null,
       staff,
-      cliente,
     };
 
     return next();

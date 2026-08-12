@@ -2,6 +2,7 @@ const estados = ['activo', 'vencido', 'cancelado', 'renovado'];
 
 const allowedFields = [
   'Id_Ven',
+  'Id_Dve_Ant',
   'Id_Prd',
   'Id_Var',
   'Id_Cue',

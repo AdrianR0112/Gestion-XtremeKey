@@ -4,7 +4,6 @@ const {
   z,
   validationResult,
   isNumericId,
-  isClientReference,
   optionalTrimmedNullableString,
   optionalTinyIntBoolean,
 } = require('../../utils/zod');
@@ -34,7 +33,8 @@ function normalizeDateTime(value, fieldName, errors) {
 
 function getSuscripcionPayloadSchema(isUpdate) {
   return z.object({
-    Id_Cli: isUpdate ? z.any().optional() : z.any().refine((value) => isClientReference(value), { message: 'Id_Cli is required and must be a positive integer or UUID' }),
+    Id_Cli: z.any().optional(),
+    Id_Rev: z.any().optional(),
     Id_Prd: isUpdate ? z.any().optional() : z.any().refine((value) => isNumericId(value), { message: 'Id_Prd is required and must be a positive integer' }),
     Id_Var: z.any().optional(),
     Fec_Ini_Sus: isUpdate ? z.any().optional() : z.any().refine((value) => value !== undefined && value !== null && value !== '', { message: 'Fec_Ini_Sus is required' }),
@@ -44,6 +44,7 @@ function getSuscripcionPayloadSchema(isUpdate) {
     }),
     Ren_Auto: optionalTinyIntBoolean,
     Not_Sus: optionalTrimmedNullableString,
+    Cor_Cue_Sus: optionalTrimmedNullableString,
   }).passthrough().transform((payload) => {
     const clean = pickAllowed(payload);
     const errors = [];
@@ -52,12 +53,43 @@ function getSuscripcionPayloadSchema(isUpdate) {
       if (clean.Id_Cli === null || clean.Id_Cli === '') {
         clean.Id_Cli = null;
       } else {
-        const clientReference = String(clean.Id_Cli).trim();
-        if (!isClientReference(clientReference)) {
-          errors.push('Id_Cli must be a positive integer or UUID');
+        // Solo IDs numericos: clientes.identity ya no resuelve UUIDs (eran del
+        // ecommerce retirado).
+        const idCli = Number(clean.Id_Cli);
+        if (!Number.isInteger(idCli) || idCli <= 0) {
+          errors.push('Id_Cli must be a positive integer or null');
         } else {
-          clean.Id_Cli = clientReference;
+          clean.Id_Cli = idCli;
         }
+      }
+    }
+
+    if (clean.Id_Rev !== undefined) {
+      if (clean.Id_Rev === null || clean.Id_Rev === '') {
+        clean.Id_Rev = null;
+      } else {
+        const idRev = Number(clean.Id_Rev);
+        if (!Number.isInteger(idRev) || idRev <= 0) {
+          errors.push('Id_Rev must be a positive integer or null');
+        } else {
+          clean.Id_Rev = idRev;
+        }
+      }
+    }
+
+    // El titular es un cliente final O un revendedor, nunca ambos ni ninguno
+    // (lo respalda la CHECK chk_suscripciones_titular). En un update parcial
+    // que no toca ninguno de los dos, la comprobacion la hace el service sobre
+    // el payload ya mezclado con la fila actual.
+    const tocaTitular = clean.Id_Cli !== undefined || clean.Id_Rev !== undefined;
+    if (!isUpdate || tocaTitular) {
+      const tieneCliente = clean.Id_Cli !== undefined && clean.Id_Cli !== null;
+      const tieneRevendedor = clean.Id_Rev !== undefined && clean.Id_Rev !== null;
+
+      if (tieneCliente && tieneRevendedor) {
+        errors.push('Una suscripcion no puede tener cliente y revendedor a la vez');
+      } else if (!tieneCliente && !tieneRevendedor) {
+        errors.push('Debe indicar el titular de la suscripcion: Id_Cli o Id_Rev');
       }
     }
 
@@ -83,8 +115,28 @@ function getSuscripcionPayloadSchema(isUpdate) {
       }
     }
 
-    clean.Fec_Ini_Sus = normalizeDateTime(clean.Fec_Ini_Sus, 'Fec_Ini_Sus', errors);
-    clean.Fec_Fin_Sus = normalizeDateTime(clean.Fec_Fin_Sus, 'Fec_Fin_Sus', errors);
+    // Asignar solo cuando el campo viene en el payload: hacerlo siempre crearia
+    // la clave con valor undefined y, al mezclar el update parcial con la fila
+    // actual, borraria la fecha existente.
+    for (const campo of ['Fec_Ini_Sus', 'Fec_Fin_Sus']) {
+      if (clean[campo] !== undefined) {
+        clean[campo] = normalizeDateTime(clean[campo], campo, errors);
+      }
+    }
+
+    // Formato laxo a proposito: es el correo que dicta el revendedor y a veces
+    // llega con mayusculas o espacios. Se normaliza en minusculas pero no se
+    // rechaza, para no bloquear una venta por un correo raro.
+    if (clean.Cor_Cue_Sus) {
+      const correo = String(clean.Cor_Cue_Sus).trim().toLowerCase();
+      if (correo.length > 150) {
+        errors.push('Cor_Cue_Sus cannot exceed 150 characters');
+      } else if (!correo.includes('@')) {
+        errors.push('Cor_Cue_Sus must be a valid email');
+      } else {
+        clean.Cor_Cue_Sus = correo;
+      }
+    }
 
     if (clean.Fec_Ini_Sus && clean.Fec_Fin_Sus) {
       const start = new Date(clean.Fec_Ini_Sus);

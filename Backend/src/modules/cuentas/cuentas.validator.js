@@ -36,7 +36,6 @@ function getCuentasPayloadSchema(isUpdate) {
   return z.object({
     Id_Prd: z.any().optional(),
     Id_Var: z.any().optional(),
-    Id_Pro: z.any().optional(),
     Nom_Cue: optionalTrimmedNullableString,
     Usu_Cue: optionalTrimmedNullableString,
     Pas_Cue: optionalTrimmedNullableString,
@@ -57,7 +56,7 @@ function getCuentasPayloadSchema(isUpdate) {
     const errors = [];
     const clean = pickAllowed(payload);
 
-    for (const field of ['Id_Prd', 'Id_Var', 'Id_Pro']) {
+    for (const field of ['Id_Prd', 'Id_Var']) {
       if (clean[field] !== undefined) {
         if (clean[field] === null || clean[field] === '') {
           clean[field] = null;

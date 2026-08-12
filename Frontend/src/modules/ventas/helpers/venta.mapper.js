@@ -62,6 +62,7 @@ export function mapVentaToForm(venta = {}) {
 
 export function mapDetalleToForm(detalle = {}) {
 	return {
+		Id_Dve_Ant: detalle.Id_Dve_Ant ? String(detalle.Id_Dve_Ant) : "",
 		Id_Prd: detalle.Id_Prd ? String(detalle.Id_Prd) : "",
 		Id_Var: detalle.Id_Var ? String(detalle.Id_Var) : "",
 		Id_Cue: detalle.Id_Cue ? String(detalle.Id_Cue) : "",
@@ -108,6 +109,7 @@ export function buildDetallePayload(detalleForm, ventaDateTime = "") {
 
 	return {
 		Id_Prd: detalleForm.Id_Prd === NONE_VALUE ? undefined : detalleForm.Id_Prd ? Number(detalleForm.Id_Prd) : undefined,
+		Id_Dve_Ant: detalleForm.Id_Dve_Ant ? Number(detalleForm.Id_Dve_Ant) : null,
 		Id_Var: detalleForm.Id_Var === NONE_VALUE ? undefined : detalleForm.Id_Var ? Number(detalleForm.Id_Var) : undefined,
 		Id_Cue: detalleForm.Id_Cue === NONE_VALUE ? undefined : detalleForm.Id_Cue ? Number(detalleForm.Id_Cue) : undefined,
 		Id_Key: detalleForm.Id_Key === NONE_VALUE ? undefined : detalleForm.Id_Key ? Number(detalleForm.Id_Key) : undefined,
@@ -148,7 +150,7 @@ export function filterVentas(ventas = [], query = "", estadoFilter = "todos", cl
 
 		const matchesSearch =
 			!normalizedQuery ||
-			matchesTextSearch([venta.Id_Ven, nombrePersona, venta.Met_Pag_Ven, venta.Est_Ven, ...personText], normalizedQuery) ||
+			matchesTextSearch([venta.Id_Ven, venta.Cod_Ven, nombrePersona, venta.Met_Pag_Ven, venta.Est_Ven, ...personText], normalizedQuery) ||
 			personPhones.some((phone) => matchesPhoneSearch(phone, normalizedQuery));
 		const matchesEstado = estadoFilter === "todos" || venta.Est_Ven === estadoFilter;
 		return matchesSearch && matchesEstado;

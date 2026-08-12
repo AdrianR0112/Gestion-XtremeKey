@@ -10,7 +10,6 @@ import ReportesPage from "../modules/reportes";
 import ConfiguracionPage from "../modules/configuracion";
 import UsuariosPage from "../modules/usuarios";
 import ClientesPage from "../modules/clientes";
-import ProveedoresPage from "../modules/proveedores";
 import CategoriasPage from "../modules/categorias";
 import ProductosPage from "../modules/productos";
 import VariantesPage from "../modules/variantes";
@@ -18,12 +17,9 @@ import CuentasPage from "../modules/cuentas";
 import KeysPage from "../modules/keys";
 import VentasPage from "../modules/ventas";
 import { VentasCreatePage } from "../modules/ventas";
-import ComprasPage from "../modules/compras";
-import { ComprasCreatePage } from "../modules/compras";
-import DetalleComprasPage from "../modules/detalle-compras";
-import GastosPage from "../modules/gastos";
 import CalendarioPage from "../modules/calendario";
 import RenovacionesPage from "../modules/renovaciones";
+import SuscripcionesPage from "../modules/suscripciones";
 import RevendedoresPage from "../modules/revendedores";
 import TareasPage from "../modules/tareas";
 import PlantillasPage from "../modules/plantillas";
@@ -63,7 +59,6 @@ export default function Router() {
         <Route path="configuracion" element={<ConfiguracionPage />} />
         <Route path="staff" element={<UsuariosPage />} />
         <Route path="clientes" element={<ClientesPage />} />
-        <Route path="proveedores" element={<ProveedoresPage />} />
         <Route path="categorias" element={<CategoriasPage />} />
         <Route path="productos" element={<ProductosPage />} />
         <Route path="variantes" element={<VariantesPage />} />
@@ -71,12 +66,9 @@ export default function Router() {
         <Route path="keys" element={<KeysPage />} />
         <Route path="ventas" element={<VentasPage />} />
         <Route path="ventas/nueva" element={<VentasCreatePage />} />
-        <Route path="compras" element={<ComprasPage />} />
-        <Route path="compras/nueva" element={<ComprasCreatePage />} />
-        <Route path="detalle-compras" element={<DetalleComprasPage />} />
-        <Route path="gastos" element={<GastosPage />} />
         <Route path="calendario" element={<CalendarioPage />} />
         <Route path="renovaciones" element={<RenovacionesPage />} />
+        <Route path="suscripciones" element={<SuscripcionesPage />} />
         <Route path="revendedores" element={<RevendedoresPage />} />
         <Route path="tareas" element={<TareasPage />} />
         <Route path="plantillas" element={<PlantillasPage />} />

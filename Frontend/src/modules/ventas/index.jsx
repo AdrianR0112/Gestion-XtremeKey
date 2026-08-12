@@ -68,6 +68,9 @@ export default function VentasPage() {
 				onVentaFormChange={ventas.setVentaForm}
 				clientes={ventas.clientes}
 				revendedores={ventas.revendedores}
+				ventas={ventas.ventas}
+				detalleVentas={ventas.detalleVentas}
+				graciaDias={ventas.graciaDias}
 				detallesTemporales={ventas.detallesTemporales}
 				detalleFormOpen={ventas.detalleFormOpen}
 				detalleForm={ventas.detalleForm}
@@ -103,6 +106,7 @@ export default function VentasPage() {
 						<div className="px-6 pb-6 space-y-5">
 							<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
 								<VentaCard label="ID venta" value={`#${ventas.ventaSeleccionada.Id_Ven}`} />
+								<VentaCard label="Código" value={ventas.ventaSeleccionada.Cod_Ven || "-"} />
 							<VentaCard
 								label="Cliente / Revendedor"
 								value={

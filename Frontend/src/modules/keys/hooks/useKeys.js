@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { queryKeys } from "../../../app/query-keys";
 import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { productosService } from "../../productos/services/productos.service";
-import { proveedoresService } from "../../proveedores/services/proveedores.service";
 import { variantesService } from "../../variantes/services/variantes.service";
 import { mapKeyFromApi } from "../helpers/key.mapper";
 import { isKeyFormValid, KEY_INICIAL } from "../schemas/key.schema";
@@ -24,7 +23,6 @@ export default function useKeys() {
 	const keysQueryKey = queryKeys.keys.list();
 	const productosQueryKey = queryKeys.productos.list();
 	const variantesQueryKey = queryKeys.variantes.list();
-	const proveedoresQueryKey = queryKeys.proveedores.list();
 
 	const keysQuery = useQuery({
 		queryKey: keysQueryKey,
@@ -38,19 +36,12 @@ export default function useKeys() {
 		queryKey: variantesQueryKey,
 		queryFn: async () => toArray(await variantesService.list()),
 	});
-	const proveedoresQuery = useQuery({
-		queryKey: proveedoresQueryKey,
-		queryFn: async () => toArray(await proveedoresService.list()),
-	});
-
 	const keys = keysQuery.data ?? [];
 	const productos = productosQuery.data ?? [];
 	const variantes = variantesQuery.data ?? [];
-	const proveedores = proveedoresQuery.data ?? [];
 	const setKeys = createQueryDataSetter(queryClient, keysQueryKey, []);
 	const setProductos = createQueryDataSetter(queryClient, productosQueryKey, []);
 	const setVariantes = createQueryDataSetter(queryClient, variantesQueryKey, []);
-	const setProveedores = createQueryDataSetter(queryClient, proveedoresQueryKey, []);
 	const loading =
 		actionLoading ||
 		keysQuery.isLoading ||
@@ -58,19 +49,16 @@ export default function useKeys() {
 		productosQuery.isLoading ||
 		productosQuery.isFetching ||
 		variantesQuery.isLoading ||
-		variantesQuery.isFetching ||
-		proveedoresQuery.isLoading ||
-		proveedoresQuery.isFetching;
+		variantesQuery.isFetching;
 
 	const cargarCatalogos = async () => {
 		try {
 			return await Promise.all([
 				queryClient.fetchQuery({ queryKey: productosQueryKey, queryFn: async () => toArray(await productosService.list()) }),
 				queryClient.fetchQuery({ queryKey: variantesQueryKey, queryFn: async () => toArray(await variantesService.list()) }),
-				queryClient.fetchQuery({ queryKey: proveedoresQueryKey, queryFn: async () => toArray(await proveedoresService.list()) }),
 			]);
 		} catch {
-			return [[], [], []];
+			return [[], []];
 		}
 	};
 
@@ -96,7 +84,6 @@ export default function useKeys() {
 
 	const productoMap = useMemo(() => new Map(productos.map((item) => [Number(item.Id_Prd), item.Nom_Prd || `#${item.Id_Prd}`])), [productos]);
 	const varianteMap = useMemo(() => new Map(variantes.map((item) => [Number(item.Id_Var), item.Nom_Var || `#${item.Id_Var}`])), [variantes]);
-	const proveedorMap = useMemo(() => new Map(proveedores.map((item) => [Number(item.Id_Pro), item.Nom_Pro || `#${item.Id_Pro}`])), [proveedores]);
 
 	const keySeleccionada = useMemo(() => keys.find((key) => Number(key.Id_Key) === Number(selectedKeyId)) || null, [keys, selectedKeyId]);
 
@@ -105,17 +92,16 @@ export default function useKeys() {
 		return keys.filter((key) => {
 			const productoNombre = key.Id_Prd ? productoMap.get(Number(key.Id_Prd)) || "" : "";
 			const varianteNombre = key.Id_Var ? varianteMap.get(Number(key.Id_Var)) || "" : "";
-			const proveedorNombre = key.Id_Pro ? proveedorMap.get(Number(key.Id_Pro)) || "" : "";
 
 			const matchesSearch =
 				!query ||
-				`${key.Cla_Key || ""} ${key.Des_Key || ""} ${productoNombre} ${varianteNombre} ${proveedorNombre} ${key.Es_Per_Vid_Key ? "por vida" : "temporal"}`
+				`${key.Cla_Key || ""} ${key.Des_Key || ""} ${productoNombre} ${varianteNombre} ${key.Es_Per_Vid_Key ? "por vida" : "temporal"}`
 					.toLowerCase()
 					.includes(query);
 			const matchesEstado = estadoFilter === "todos" || key.Est_Key === estadoFilter;
 			return matchesSearch && matchesEstado;
 		});
-	}, [estadoFilter, keys, productoMap, proveedorMap, searchTerm, varianteMap]);
+	}, [estadoFilter, keys, productoMap, searchTerm, varianteMap]);
 
 	const resetForm = () => setForm(KEY_INICIAL);
 	const formValido = isKeyFormValid(form);
@@ -128,11 +114,8 @@ export default function useKeys() {
 		setProductos,
 		variantes,
 		setVariantes,
-		proveedores,
-		setProveedores,
 		productoMap,
 		varianteMap,
-		proveedorMap,
 		selectedKeyId,
 		setSelectedKeyId,
 		sheetOpen,

@@ -52,20 +52,7 @@ async function ensureCodigoDisponible(code, currentId = null) {
   }
 }
 
-async function ensureSlugDisponible(slug, currentId = null) {
-  if (!slug) return;
-  const existing = await productosRepository.findBySlug(slug);
-  if (existing && existing.Id_Prd !== currentId) {
-    throw createHttpError(409, 'El slug del producto ya existe.');
-  }
-}
-
-async function listProductos({ sort } = {}) {
-  // Orden opcional por mas vendidos (opt-in desde el ecommerce). El panel admin
-  // sigue recibiendo el orden por defecto (Id_Prd DESC) al no enviar sort.
-  if (sort === 'mas_vendidos') {
-    return productosRepository.findAllRankedBySales();
-  }
+async function listProductos() {
   return productosRepository.findAll();
 }
 
@@ -92,7 +79,6 @@ async function createProducto(payload) {
 
     await ensureCategoriaExists(validation.payload.Id_Cat);
     await ensureCodigoDisponible(validation.payload.Cod_Prd);
-    await ensureSlugDisponible(validation.payload.Slug_Prd);
 
     return await productosRepository.createOne(validation.payload);
   } catch (error) {
@@ -120,7 +106,6 @@ async function updateProducto(id, payload) {
 
     await ensureCategoriaExists(validation.payload.Id_Cat);
     await ensureCodigoDisponible(validation.payload.Cod_Prd, Number(id));
-    await ensureSlugDisponible(validation.payload.Slug_Prd, Number(id));
 
     const updated = await productosRepository.updateById(Number(id), validation.payload);
 

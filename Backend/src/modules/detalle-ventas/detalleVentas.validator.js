@@ -58,6 +58,7 @@ function normalizeDate(value, fieldName, errors) {
 function getDetalleVentasPayloadSchema(isUpdate) {
   return z.object({
     Id_Ven: isUpdate ? z.any().optional() : z.any().refine((value) => isNumericId(value), { message: 'Id_Ven is required and must be a positive integer' }),
+    Id_Dve_Ant: z.any().optional(),
     Id_Prd: z.any().optional(),
     Id_Var: z.any().optional(),
     Id_Cue: z.any().optional(),
@@ -99,7 +100,7 @@ function getDetalleVentasPayloadSchema(isUpdate) {
       }
     }
 
-    const optionalIds = ['Id_Var', 'Id_Cue', 'Id_Key'];
+    const optionalIds = ['Id_Dve_Ant', 'Id_Var', 'Id_Cue', 'Id_Key'];
     for (const field of optionalIds) {
       if (clean[field] !== undefined) {
         if (clean[field] === null || clean[field] === '') {

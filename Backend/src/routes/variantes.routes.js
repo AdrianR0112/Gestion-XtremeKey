@@ -5,13 +5,12 @@ const { roleMiddleware } = require('../middlewares/role.middleware');
 
 const router = Router();
 
-// Rutas públicas (catálogo del ecommerce)
-router.get('/', variantesController.list);
-router.get('/:id', variantesController.getById);
-
-// Rutas protegidas
+// Rutas protegidas (gestión desde el panel)
 router.use(authMiddleware);
 router.use(roleMiddleware(['admin', 'vendedor']));
+
+router.get('/', variantesController.list);
+router.get('/:id', variantesController.getById);
 
 router.post('/', variantesController.create);
 router.put('/:id', variantesController.update);

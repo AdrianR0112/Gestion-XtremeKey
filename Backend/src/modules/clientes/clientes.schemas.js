@@ -1,7 +1,6 @@
 ﻿const categorias = ['nuevo', 'ocasional', 'frecuente', 'vip'];
 const preferenciasContacto = ['whatsapp', 'email', 'instagram', 'messenger', 'telegram'];
 const estados = ['activo', 'inactivo', 'suspendido'];
-const origenes = ['whatsapp', 'ecommerce'];
 
 const allowedFields = [
   'Nom_Cli',
@@ -11,7 +10,6 @@ const allowedFields = [
   'Usu_Tel_Cli',
   'Pai_Cli',
   'Doc_Cli',
-  'Origen_Cli',
   'Dir_Cli',
   'Tip_Cli',
   'Cat_Cli',
@@ -19,17 +17,12 @@ const allowedFields = [
   'Ace_Not_Tel_Cli',
   'Ace_Not_Cor_Cli',
   'Not_Cli',
-  'Est_Cli',
-  'Password_Hash',
-  'Email_Verificado',
-  'Token_Verificacion',
-  'Fec_Ultimo_Acceso'
+  'Est_Cli'
 ];
 
 module.exports = {
   categorias,
   preferenciasContacto,
   estados,
-  origenes,
   allowedFields
 };

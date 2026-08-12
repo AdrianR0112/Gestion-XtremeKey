@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Textarea } from "../../../components/ui/textarea";
 import FeedbackAlert from "../../../components/feedback-alert";
 import { formatCurrency } from "../../../utils/currency";
+import { opcionesMetodoPago } from "../../../utils/metodosPago";
 import { matchesPhoneSearch, matchesTextSearch, normalizeSearchText } from "../../../utils/search";
 import DetalleVentasManager from "../../detalle-ventas/components/DetalleVentasManager";
+import { buildVentaTitularMap, claveTitular, findLicenciasTitular } from "../helpers/licencias";
 
 function findClientes(clientes, query) {
 	const normalized = normalizeSearchText(query);
@@ -69,7 +71,7 @@ export default function VentaCreateView({
 	onDeleteClick,
 	ventaTotals,
 	impuestoHabilitado,
-	totalesDetalles,
+	graciaDias,
 	saving,
 	error,
 	success,
@@ -93,23 +95,24 @@ export default function VentaCreateView({
 		[revendedores, selectedRevendedorId]
 	);
 
-	const ventaClienteMap = useMemo(() => {
-		const map = new Map();
-		for (const v of ventas) {
-			if (v.Id_Ven && v.Id_Cli) {
-				map.set(Number(v.Id_Ven), Number(v.Id_Cli));
-			}
-		}
-		return map;
-	}, [ventas]);
+	// Se indexa por TITULAR, no por cliente: una venta puede ser de un cliente o
+	// de un revendedor. Con el mapa solo de Id_Cli, las licencias previas de un
+	// revendedor nunca aparecian y sus renovaciones se registraban como ventas
+	// nuevas, rompiendo la cadena de periodos de la suscripcion.
+	const ventaTitularMap = useMemo(() => buildVentaTitularMap(ventas), [ventas]);
 
-	const licenciasCliente = useMemo(() => {
-		if (!selectedClienteId) return [];
-		return detalleVentas.filter((d) => ventaClienteMap.get(Number(d.Id_Ven)) === selectedClienteId);
-	}, [selectedClienteId, detalleVentas, ventaClienteMap]);
+	const licenciasCliente = useMemo(
+		() =>
+			findLicenciasTitular(
+				detalleVentas,
+				ventaTitularMap,
+				claveTitular({ clienteId: selectedClienteId, revendedorId: selectedRevendedorId })
+			),
+		[selectedClienteId, selectedRevendedorId, detalleVentas, ventaTitularMap]
+	);
 
-	const renovacionesCount = detallesTemporales.filter((d) => d.tipoOperacion === "renovacion").length;
-	const nuevasCount = detallesTemporales.filter((d) => !d.tipoOperacion || d.tipoOperacion === "nueva").length;
+	const renovacionesCount = detallesTemporales.filter((d) => d.Id_Dve_Ant).length;
+	const nuevasCount = detallesTemporales.filter((d) => !d.Id_Dve_Ant).length;
 	const suggestedClientes = useMemo(() => findClientes(clientes, clienteQuery).slice(0, 6), [clientes, clienteQuery]);
 	const suggestedRevendedores = useMemo(() => findRevendedores(revendedores, revendedorQuery).slice(0, 6), [revendedores, revendedorQuery]);
 	const requiereMetodoPago = ventaForm.Est_Ven === "completada";
@@ -335,10 +338,11 @@ export default function VentaCreateView({
 										<SelectValue placeholder={requiereMetodoPago ? "Seleccionar metodo de pago" : "Opcional mientras este pendiente"} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="Transferencia">Transferencia</SelectItem>
-										<SelectItem value="tarjeta">Tarjeta</SelectItem>
-										<SelectItem value="paypal">PayPal</SelectItem>
-										<SelectItem value="Binance/Crypto">Binance/Crypto</SelectItem>
+										{opcionesMetodoPago(ventaForm.Met_Pag_Ven).map((metodo) => (
+											<SelectItem key={metodo} value={metodo}>
+												{metodo}
+											</SelectItem>
+										))}
 									</SelectContent>
 								</Select>
 								<p className="text-xs text-zinc-500">
@@ -366,6 +370,7 @@ export default function VentaCreateView({
 							clienteId={selectedClienteId}
 							revendedorId={selectedRevendedorId}
 							licenciasCliente={licenciasCliente}
+							graciaDias={graciaDias}
 							onDetallesChange={onDetallesChange}
 							onFormChange={onFormChange}
 							onFormClose={onFormClose}

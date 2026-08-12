@@ -79,6 +79,9 @@ async function createDetalleVenta(payload) {
   }
 
   const venta = await ensureVentaExiste(validation.payload.Id_Ven);
+  if (validation.payload.Id_Dve_Ant !== undefined && validation.payload.Id_Dve_Ant !== null) {
+    throw createHttpError(400, 'Las renovaciones deben registrarse mediante POST /ventas/con-detalles.');
+  }
   await ensureProductoExiste(validation.payload.Id_Prd);
   await ensureVarianteExiste(validation.payload.Id_Var);
   await ensureCuentaExiste(validation.payload.Id_Cue);
@@ -96,14 +99,16 @@ async function createDetalleVenta(payload) {
 /**
  * Crea una suscripcion a partir de un detalle recien insertado cuando el producto
  * es de tipo 'suscripcion', y enlaza el Id_Sus resultante al detalle.
- * Requiere la venta (para resolver el cliente). No-op si no hay cliente o no aplica.
+ * Requiere la venta para resolver el titular, que puede ser el cliente final
+ * (Id_Cli) o el revendedor (Id_Rev). No-op si la venta no tiene ninguno de los
+ * dos o si el producto no es una suscripcion.
  */
 async function registrarSuscripcionSiAplica(detalle, venta, connection) {
   if (!detalle || !venta) return null;
 
-  const clienteRef = venta.Uuid_Cli || venta.Id_Cli;
-  if (!clienteRef) {
-    // Ventas a revendedor (sin cliente) no generan suscripcion de cliente final.
+  const clienteRef = venta.Id_Cli || null;
+  const revendedorRef = clienteRef ? null : venta.Id_Rev || null;
+  if (!clienteRef && !revendedorRef) {
     return null;
   }
 
@@ -119,10 +124,14 @@ async function registrarSuscripcionSiAplica(detalle, venta, connection) {
   const suscripcion = await suscripcionesService.crearSuscripcionDesdeLinea(
     {
       clienteRef,
+      revendedorRef,
       idProducto: detalle.Id_Prd,
       idVariante: detalle.Id_Var ?? null,
       fechaInicio: detalle.Fec_Ini_Dve,
       fechaFin: finExplicito,
+      // Correo donde se activo el servicio. Para una venta a revendedor es el
+      // de SU cliente final, y es lo que identifica la suscripcion.
+      correoCuenta: detalle.Cor_Cue ?? null,
     },
     connection
   );
@@ -142,6 +151,10 @@ async function updateDetalleVenta(id, payload) {
   const current = await detalleVentasRepository.findById(Number(id));
   if (!current) {
     throw createHttpError(404, 'Detalle de venta no encontrado.');
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'Id_Dve_Ant')) {
+    throw createHttpError(400, 'Id_Dve_Ant no puede modificarse despues de crear el detalle.');
   }
 
   const validation = validatePayload(payload, { isUpdate: true });
@@ -171,6 +184,20 @@ async function updateDetalleVenta(id, payload) {
 async function deleteDetalleVenta(id) {
   if (!isNumericId(id)) {
     throw createHttpError(400, 'Id_Dve invalido.');
+  }
+
+  const detalle = await detalleVentasRepository.findById(Number(id));
+  if (!detalle) {
+    throw createHttpError(404, 'Detalle de venta no encontrado.');
+  }
+
+  const siguiente = await detalleVentasRepository.findByAnteriorId(Number(id));
+  if (siguiente) {
+    throw createHttpError(409, 'No se puede eliminar un detalle que tiene una renovacion posterior.');
+  }
+
+  if (detalle.Id_Dve_Ant) {
+    throw createHttpError(409, 'No se puede eliminar un detalle que forma parte de una cadena de renovaciones.');
   }
 
   const deleted = await detalleVentasRepository.removeById(Number(id));

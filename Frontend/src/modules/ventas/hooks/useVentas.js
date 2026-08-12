@@ -4,6 +4,7 @@ import { queryKeys } from "../../../app/query-keys";
 import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import clientesService from "../../clientes/services/clientes.service";
 import configuracionService from "../../configuracion/services/configuracion.service";
+import { DEFAULT_DIAS_GRACIA } from "../../../utils/duration";
 import { cuentasService } from "../../cuentas/services/cuentas.service";
 import { keysService } from "../../keys/services/keys.service";
 import { productosService } from "../../productos/services/productos.service";
@@ -157,6 +158,11 @@ export default function useVentas() {
 		[detallesTemporales]
 	);
 	const impuestoHabilitado = configuracionActual?.Hab_Imp_Con ?? true;
+	// Gracia para encadenar el periodo de una renovacion desde el vencimiento
+	// anterior. La comparte el modulo de suscripciones: la regla es una sola.
+	const graciaDias = Number.isInteger(Number(configuracionActual?.Dia_Gra_Ren_Con))
+		? Number(configuracionActual.Dia_Gra_Ren_Con)
+		: DEFAULT_DIAS_GRACIA;
 	const ventaTotals = useMemo(() => {
 		const sub = subtotalFinalDetalles;
 		const des = Number(ventaForm.Des_Tot_Ven || 0);
@@ -338,6 +344,7 @@ export default function useVentas() {
 		setKeysData,
 		configuracionActual,
 		impuestoHabilitado,
+		graciaDias,
 		selectedVentaId,
 		searchTerm,
 		estadoFilter,

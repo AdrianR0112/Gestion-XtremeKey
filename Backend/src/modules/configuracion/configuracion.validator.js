@@ -1,4 +1,9 @@
-﻿const { allowedFields, requiredCreateFields } = require('./configuracion.schemas');
+﻿const {
+  allowedFields,
+  requiredCreateFields,
+  MAX_DIAS_GRACIA_RENOVACION,
+  MAX_DIAS_ARCHIVO_VENCIDA
+} = require('./configuracion.schemas');
 const { z, validationResult, isNumericId } = require('../../utils/zod');
 
 const configuracionPayloadSchema = z.object({
@@ -20,6 +25,28 @@ const configuracionPayloadSchema = z.object({
     if (value === null || value === '') return null;
     return String(value).trim() || null;
   }, z.string().nullable().optional()),
+  // Gracia al renovar suscripciones. 0 es valido: significa "nunca encadenar
+  // desde un vencimiento ya pasado".
+  Dia_Gra_Ren_Con: z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  }, z
+    .number(`Dia_Gra_Ren_Con must be an integer between 0 and ${MAX_DIAS_GRACIA_RENOVACION}`)
+    .int(`Dia_Gra_Ren_Con must be an integer between 0 and ${MAX_DIAS_GRACIA_RENOVACION}`)
+    .min(0, `Dia_Gra_Ren_Con must be an integer between 0 and ${MAX_DIAS_GRACIA_RENOVACION}`)
+    .max(MAX_DIAS_GRACIA_RENOVACION, `Dia_Gra_Ren_Con must be an integer between 0 and ${MAX_DIAS_GRACIA_RENOVACION}`)
+    .optional()),
+  // Dias que una vencida sigue visible antes de archivarse. 0 = archivarla en
+  // cuanto vence.
+  Dia_Arc_Ven_Con: z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  }, z
+    .number(`Dia_Arc_Ven_Con must be an integer between 0 and ${MAX_DIAS_ARCHIVO_VENCIDA}`)
+    .int(`Dia_Arc_Ven_Con must be an integer between 0 and ${MAX_DIAS_ARCHIVO_VENCIDA}`)
+    .min(0, `Dia_Arc_Ven_Con must be an integer between 0 and ${MAX_DIAS_ARCHIVO_VENCIDA}`)
+    .max(MAX_DIAS_ARCHIVO_VENCIDA, `Dia_Arc_Ven_Con must be an integer between 0 and ${MAX_DIAS_ARCHIVO_VENCIDA}`)
+    .optional()),
 }).passthrough().transform((payload) => {
   const clean = {};
   for (const key of allowedFields) {

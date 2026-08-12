@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { admin } = require('better-auth/plugins');
-const { adminAc, userAc } = require('better-auth/plugins/admin/access');
+const { adminAc } = require('better-auth/plugins/admin/access');
 
 const { env } = require('../config/env');
 
@@ -13,6 +13,9 @@ function createBetterAuthOptions(database) {
     database,
     emailAndPassword: {
       enabled: true,
+      // El registro publico solo servia al ecommerce; las cuentas de staff se
+      // provisionan desde el panel (staff.service -> createAuthIdentity).
+      disableSignUp: true,
       requireEmailVerification: false,
       password: {
         hash: async (password) => bcrypt.hash(password, 10),
@@ -24,18 +27,17 @@ function createBetterAuthOptions(database) {
         role: {
           type: 'string',
           required: false,
-          defaultValue: 'cliente',
+          defaultValue: 'admin',
           input: false,
         },
       },
     },
     plugins: [
       admin({
-        defaultRole: 'cliente',
+        defaultRole: 'admin',
         adminRoles: ['admin'],
         roles: {
           admin: adminAc,
-          cliente: userAc,
         },
       }),
     ],

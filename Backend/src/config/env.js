@@ -2,7 +2,7 @@
 
 dotenv.config();
 
-const defaultCorsOrigins = 'http://localhost:3000,http://localhost:5173';
+const defaultCorsOrigins = 'http://localhost:5173';
 const rawCorsOrigin = process.env.CORS_ORIGIN || defaultCorsOrigins;
 const corsOrigins = rawCorsOrigin.split(',').map((value) => value.trim()).filter(Boolean);
 
@@ -24,7 +24,19 @@ const env = {
   resendReplyTo: process.env.RESEND_REPLY_TO || '',
   remindersEnabled: String(process.env.REMINDERS_ENABLED || 'false').toLowerCase() === 'true',
   remindersCron: process.env.REMINDERS_CRON || '0 9 * * *',
-  remindersDryRun: String(process.env.REMINDERS_DRY_RUN || 'true').toLowerCase() === 'true'
+  remindersDryRun: String(process.env.REMINDERS_DRY_RUN || 'true').toLowerCase() === 'true',
+  telegramEnabled: String(process.env.TELEGRAM_ENABLED || 'false').toLowerCase() === 'true',
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+  telegramAdminChatId: process.env.TELEGRAM_ADMIN_CHAT_ID || '',
+  telegramCron: process.env.TELEGRAM_CRON || '0 9 * * *',
+  telegramDryRun: String(process.env.TELEGRAM_DRY_RUN || 'true').toLowerCase() === 'true',
+  // A diferencia de los recordatorios, este job viene habilitado por defecto:
+  // no envia mensajes ni consume APIs de pago, solo corrige un estado que ya es
+  // incorrecto. Corre a las 00:10 (America/Guayaquil), recien cambiado el dia y
+  // mucho antes del cron de Telegram de las 09:00.
+  expiracionEnabled: String(process.env.EXPIRACION_ENABLED || 'true').toLowerCase() === 'true',
+  expiracionCron: process.env.EXPIRACION_CRON || '10 0 * * *',
+  expiracionDryRun: String(process.env.EXPIRACION_DRY_RUN || 'false').toLowerCase() === 'true'
 };
 
 module.exports = { env };

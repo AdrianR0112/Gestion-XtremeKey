@@ -1,31 +1,17 @@
 ﻿const { Router } = require('express');
 
 const { router: staffAuthRoutes } = require('./staffAuth.routes');
-const { router: customerAuthRoutes } = require('./customerAuth.routes');
 const { router: configuracionRoutes } = require('./configuracion.routes');
 const { router: staffRoutes } = require('./staff.routes');
 const { router: clientesRoutes } = require('./clientes.routes');
-const { router: proveedoresRoutes } = require('./proveedores.routes');
 const { router: categoriasRoutes } = require('./categorias.routes');
 const { router: productosRoutes } = require('./productos.routes');
 const { router: variantesRoutes } = require('./variantes.routes');
-const { router: proveedoresProductosRoutes } = require('./proveedoresProductos.routes');
 const { router: cuentasRoutes } = require('./cuentas.routes');
 const { router: keysRoutes } = require('./keys.routes');
 const { router: ventasRoutes } = require('./ventas.routes');
 const { router: detalleVentasRoutes } = require('./detalleVentas.routes');
-const { router: comprasRoutes } = require('./compras.routes');
-const { router: detalleComprasRoutes } = require('./detalleCompras.routes');
-const { router: carritoRoutes } = require('./carrito.routes');
-const { router: ordenesRoutes } = require('./ordenes.routes');
-const { router: pagosRoutes } = require('./pagos.routes');
-const { router: cuponesRoutes } = require('./cupones.routes');
-const { router: reseniasRoutes } = require('./resenias.routes');
-const { router: listaDeseosRoutes } = require('./listaDeseos.routes');
-const { router: notificacionesRoutes } = require('./notificaciones.routes');
 const { router: suscripcionesRoutes } = require('./suscripciones.routes');
-const { router: imagenesProductosRoutes } = require('./imagenesProductos.routes');
-const { router: gastosRoutes } = require('./gastos.routes');
 const { router: renovacionesRoutes } = require('./renovaciones.routes');
 const { router: revendedoresRoutes } = require('./revendedores.routes');
 const { router: tareasRoutes } = require('./tareas.routes');
@@ -33,6 +19,7 @@ const { router: calendarioRoutes } = require('./calendario.routes');
 const { router: dashboardRoutes } = require('./dashboard.routes');
 const { router: plantillasRoutes } = require('./plantillas.routes');
 const { router: jobsRoutes } = require('./jobs.routes');
+const { router: telegramRoutes } = require('./telegram.routes');
 
 const apiRouter = Router();
 
@@ -41,31 +28,17 @@ apiRouter.get('/', (_req, res) => {
 });
 
 apiRouter.use('/staff-auth', staffAuthRoutes);
-apiRouter.use('/customer-auth', customerAuthRoutes);
 apiRouter.use('/configuracion', configuracionRoutes);
 apiRouter.use('/staff', staffRoutes);
 apiRouter.use('/clientes', clientesRoutes);
-apiRouter.use('/proveedores', proveedoresRoutes);
 apiRouter.use('/categorias', categoriasRoutes);
 apiRouter.use('/productos', productosRoutes);
 apiRouter.use('/variantes', variantesRoutes);
-apiRouter.use('/proveedores-productos', proveedoresProductosRoutes);
 apiRouter.use('/cuentas', cuentasRoutes);
 apiRouter.use('/keys', keysRoutes);
 apiRouter.use('/ventas', ventasRoutes);
 apiRouter.use('/detalle-ventas', detalleVentasRoutes);
-apiRouter.use('/compras', comprasRoutes);
-apiRouter.use('/detalle-compras', detalleComprasRoutes);
-apiRouter.use('/carrito', carritoRoutes);
-apiRouter.use('/ordenes', ordenesRoutes);
-apiRouter.use('/pagos', pagosRoutes);
-apiRouter.use('/cupones', cuponesRoutes);
-apiRouter.use('/resenias', reseniasRoutes);
-apiRouter.use('/lista-deseos', listaDeseosRoutes);
-apiRouter.use('/notificaciones', notificacionesRoutes);
 apiRouter.use('/suscripciones', suscripcionesRoutes);
-apiRouter.use('/imagenes-productos', imagenesProductosRoutes);
-apiRouter.use('/gastos', gastosRoutes);
 apiRouter.use('/renovaciones', renovacionesRoutes);
 apiRouter.use('/revendedores', revendedoresRoutes);
 apiRouter.use('/tareas', tareasRoutes);
@@ -73,5 +46,6 @@ apiRouter.use('/calendario', calendarioRoutes);
 apiRouter.use('/dashboard', dashboardRoutes);
 apiRouter.use('/plantillas', plantillasRoutes);
 apiRouter.use('/jobs', jobsRoutes);
+apiRouter.use('/telegram', telegramRoutes);
 
 module.exports = { apiRouter };

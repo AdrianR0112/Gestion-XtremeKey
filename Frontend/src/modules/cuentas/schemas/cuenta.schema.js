@@ -6,7 +6,6 @@ export const ESTADOS_CUENTA = ["disponible", "ocupada", "parcial", "vencida", "s
 export const CUENTA_INICIAL = {
 	Id_Prd: "",
 	Id_Var: "",
-	Id_Pro: "",
 	Nom_Cue: "",
 	Usu_Cue: "",
 	Pas_Cue: "",

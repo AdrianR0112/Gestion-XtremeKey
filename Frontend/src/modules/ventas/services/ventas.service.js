@@ -19,7 +19,7 @@ export const ventasService = {
   list: async (options) => extractPayload(await api.get(basePath, options)),
   getById: async (id, options) => extractPayload(await api.get(`${basePath}/${id}`, options)),
   create: async (payload, options) => extractPayload(await api.post(basePath, payload, options)),
-  createConRenovaciones: async (payload, options) => extractPayload(await api.post(`${basePath}/con-renovaciones`, payload, options)),
+  createConDetalles: async (payload, options) => extractPayload(await api.post(`${basePath}/con-detalles`, payload, options)),
   update: async (id, payload, options) => extractPayload(await api.put(`${basePath}/${id}`, payload, options)),
   remove: async (id, options) => extractPayload(await api.del(`${basePath}/${id}`, options)),
 };

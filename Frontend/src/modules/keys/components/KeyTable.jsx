@@ -120,7 +120,7 @@ export default function KeyTable({
 						<Input
 							value={searchTerm}
 							onChange={(event) => onSearchTermChange(event.target.value)}
-							placeholder="Buscar por key, descripcion, producto o proveedor"
+							placeholder="Buscar por key, descripcion o producto"
 							className="pl-8"
 						/>
 					</div>

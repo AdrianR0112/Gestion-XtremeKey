@@ -6,38 +6,6 @@ async function findAll() {
   return rows;
 }
 
-/**
- * Lista productos ordenados por unidades vendidas (mas comprados primero).
- * Suma dos fuentes de venta confirmada:
- *   - detalle_ventas.Can_Dve de ventas con Est_Ven = 'completada' (ventas manuales / WhatsApp)
- *   - items_orden.Cantidad de ordenes con Estado_Ord en ('pagada','completada') (ecommerce)
- * Los productos sin ventas quedan al final (unidades = 0) y se desempata por Id_Prd DESC.
- */
-async function findAllRankedBySales() {
-  const pool = getPool();
-  const sql = `
-    SELECT p.*, (
-      COALESCE((
-        SELECT SUM(dv.Can_Dve)
-        FROM detalle_ventas dv
-        JOIN ventas v ON v.Id_Ven = dv.Id_Ven
-        WHERE dv.Id_Prd = p.Id_Prd AND v.Est_Ven = 'completada'
-      ), 0)
-      +
-      COALESCE((
-        SELECT SUM(io.Cantidad)
-        FROM items_orden io
-        JOIN ordenes o ON o.Id_Ord = io.Id_Ord
-        WHERE io.Id_Prd = p.Id_Prd AND o.Estado_Ord IN ('pagada', 'completada')
-      ), 0)
-    ) AS Unidades_Vendidas
-    FROM productos p
-    ORDER BY Unidades_Vendidas DESC, p.Id_Prd DESC
-  `;
-  const [rows] = await pool.query(sql);
-  return rows;
-}
-
 async function findById(id) {
   const pool = getPool();
   const [rows] = await pool.query('SELECT * FROM productos WHERE Id_Prd = ? LIMIT 1', [id]);
@@ -50,50 +18,30 @@ async function findByCode(code) {
   return rows[0] || null;
 }
 
-async function findBySlug(slug) {
-  const pool = getPool();
-  const [rows] = await pool.query('SELECT * FROM productos WHERE Slug_Prd = ? LIMIT 1', [slug]);
-  return rows[0] || null;
-}
-
 async function createOne(data) {
   const pool = getPool();
   const sql = `
     INSERT INTO productos (
       Cod_Prd,
       Nom_Prd,
-      Slug_Prd,
       Des_Prd,
       Des_Cor_Prd,
-      Precio_Venta,
-      Precio_Regular,
       Id_Cat,
       Tip_Prd,
       Ima_Prd,
-      Est_Prd,
-      Estado_Tienda,
-      Es_Destacado,
-      Meta_Titulo,
-      Meta_Descripcion
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      Est_Prd
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
     data.Cod_Prd ?? null,
     data.Nom_Prd,
-    data.Slug_Prd ?? null,
     data.Des_Prd ?? null,
     data.Des_Cor_Prd ?? null,
-    data.Precio_Venta ?? null,
-    data.Precio_Regular ?? null,
     data.Id_Cat ?? null,
     data.Tip_Prd ?? 'producto',
     data.Ima_Prd ?? null,
-    data.Est_Prd ?? 'activo',
-    data.Estado_Tienda ?? 'activo',
-    data.Es_Destacado ?? 0,
-    data.Meta_Titulo ?? null,
-    data.Meta_Descripcion ?? null
+    data.Est_Prd ?? 'activo'
   ];
 
   const [result] = await pool.query(sql, values);
@@ -120,10 +68,8 @@ async function removeById(id) {
 
 module.exports = {
   findAll,
-  findAllRankedBySales,
   findById,
   findByCode,
-  findBySlug,
   createOne,
   updateById,
   removeById

@@ -15,7 +15,7 @@ router.use(roleMiddleware(['admin', 'vendedor']));
 router.get('/', ventasController.list);
 router.get('/:id', ventasController.getById);
 router.post('/', ventasController.create);
-router.post('/con-renovaciones', ventasController.createConRenovaciones);
+router.post('/con-detalles', ventasController.createConDetalles);
 router.put('/:id', ventasController.update);
 router.delete('/:id', ventasController.remove);
 

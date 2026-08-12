@@ -1,4 +1,14 @@
-﻿const tiposPlantilla = ['bienvenida', 'venta', 'renovacion', 'vencimiento', 'recordatorio', 'personalizado'];
+﻿const tiposPlantilla = [
+  'bienvenida',
+  'venta',
+  'renovacion',
+  'vencimiento',
+  // Los revendedores reciben el aviso de la cuenta de SU cliente final, asi que
+  // llevan su propia redaccion con {{cuenta}}.
+  'vencimiento_revendedor',
+  'recordatorio',
+  'personalizado'
+];
 const canalesPlantilla = ['whatsapp', 'email', 'sms', 'push'];
 const estadosPlantilla = ['activo', 'inactivo'];
 

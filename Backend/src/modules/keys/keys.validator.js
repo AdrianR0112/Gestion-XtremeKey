@@ -36,7 +36,6 @@ function getKeysPayloadSchema(isUpdate) {
   return z.object({
     Id_Prd: z.any().optional(),
     Id_Var: z.any().optional(),
-    Id_Pro: z.any().optional(),
     Cla_Key: z.any().optional(),
     Des_Key: optionalTrimmedNullableString,
     Not_Key: optionalTrimmedNullableString,
@@ -60,7 +59,7 @@ function getKeysPayloadSchema(isUpdate) {
     const errors = [];
     const clean = pickAllowed(payload);
 
-    for (const field of ['Id_Prd', 'Id_Var', 'Id_Pro']) {
+    for (const field of ['Id_Prd', 'Id_Var']) {
       if (clean[field] !== undefined) {
         if (clean[field] === null || clean[field] === '') {
           clean[field] = null;

@@ -9,9 +9,5 @@ router.use(authMiddleware);
 router.use(roleMiddleware(['admin', 'vendedor']));
 
 router.get('/', renovacionesController.list);
-router.get('/:id', renovacionesController.getById);
-router.post('/', renovacionesController.create);
-router.put('/:id', renovacionesController.update);
-router.delete('/:id', renovacionesController.remove);
 
 module.exports = { router };

@@ -47,20 +47,6 @@ async function indexExists(connection, tableName, indexName) {
   return rows.length > 0;
 }
 
-async function columnTypeIncludes(connection, tableName, columnName, needle) {
-  const [rows] = await connection.query(
-    `
-      SELECT COLUMN_TYPE
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
-      LIMIT 1
-    `,
-    [env.mysqlDatabase, tableName, columnName]
-  );
-
-  return rows.length > 0 && String(rows[0].COLUMN_TYPE).includes(needle);
-}
-
 async function ensureStaffTable(connection) {
   const hasStaff = await tableExists(connection, 'staff');
   const hasUsuarios = await tableExists(connection, 'usuarios');
@@ -124,13 +110,6 @@ async function ensureClientesAuthSchema(connection) {
     }
   }
 
-  if (!(await columnExists(connection, 'clientes', 'Auth_User_Id'))) {
-    await connection.query('ALTER TABLE clientes ADD COLUMN Auth_User_Id varchar(36) DEFAULT NULL AFTER Ema_Cli');
-  }
-
-  if (!(await indexExists(connection, 'clientes', 'uq_clientes_auth_user'))) {
-    await connection.query('ALTER TABLE clientes ADD UNIQUE KEY uq_clientes_auth_user (Auth_User_Id)');
-  }
 }
 
 async function ensureBetterAuthSchema(connection) {
@@ -368,328 +347,207 @@ async function ensureReminderEmailLogTable(connection) {
   `);
 }
 
-async function ensureEcommerceSchema(connection) {
-  // Columnas nuevas en productos
-  if (await tableExists(connection, 'productos')) {
-    if (!(await columnExists(connection, 'productos', 'Slug_Prd'))) {
-      await connection.query('ALTER TABLE `productos` ADD COLUMN `Slug_Prd` VARCHAR(200) DEFAULT NULL AFTER `Nom_Prd`');
-    }
-    if (!(await columnExists(connection, 'productos', 'Precio_Venta'))) {
-      await connection.query('ALTER TABLE `productos` ADD COLUMN `Precio_Venta` DECIMAL(10,2) DEFAULT NULL AFTER `Des_Cor_Prd`');
-    }
-    if (!(await columnExists(connection, 'productos', 'Precio_Regular'))) {
-      await connection.query('ALTER TABLE `productos` ADD COLUMN `Precio_Regular` DECIMAL(10,2) DEFAULT NULL AFTER `Precio_Venta`');
-    }
-    if (!(await columnExists(connection, 'productos', 'Estado_Tienda'))) {
-      await connection.query("ALTER TABLE `productos` ADD COLUMN `Estado_Tienda` ENUM('borrador','activo','archivado') DEFAULT 'activo' AFTER `Est_Prd`");
-    }
-    if (!(await columnExists(connection, 'productos', 'Es_Destacado'))) {
-      await connection.query('ALTER TABLE `productos` ADD COLUMN `Es_Destacado` TINYINT(1) NOT NULL DEFAULT 0 AFTER `Estado_Tienda`');
-    }
-    if (!(await columnExists(connection, 'productos', 'Meta_Titulo'))) {
-      await connection.query('ALTER TABLE `productos` ADD COLUMN `Meta_Titulo` VARCHAR(200) DEFAULT NULL AFTER `Es_Destacado`');
-    }
-    if (!(await columnExists(connection, 'productos', 'Meta_Descripcion'))) {
-      await connection.query('ALTER TABLE `productos` ADD COLUMN `Meta_Descripcion` TEXT DEFAULT NULL AFTER `Meta_Titulo`');
-    }
-    if (!(await indexExists(connection, 'productos', 'uk_slug_prd'))) {
-      await connection.query('ALTER TABLE `productos` ADD UNIQUE KEY `uk_slug_prd` (`Slug_Prd`)');
-    }
-    if (!(await indexExists(connection, 'productos', 'idx_estado_tienda_prd'))) {
-      await connection.query('ALTER TABLE `productos` ADD KEY `idx_estado_tienda_prd` (`Estado_Tienda`)');
-    }
-  }
-
-  // Columnas nuevas en clientes
-  if (await tableExists(connection, 'clientes')) {
-    if (!(await columnExists(connection, 'clientes', 'Password_Hash'))) {
-      await connection.query('ALTER TABLE `clientes` ADD COLUMN `Password_Hash` VARCHAR(255) DEFAULT NULL AFTER `Ema_Cli`');
-    }
-    if (!(await columnExists(connection, 'clientes', 'Email_Verificado'))) {
-      await connection.query('ALTER TABLE `clientes` ADD COLUMN `Email_Verificado` TINYINT(1) NOT NULL DEFAULT 0 AFTER `Password_Hash`');
-    }
-    if (!(await columnExists(connection, 'clientes', 'Token_Verificacion'))) {
-      await connection.query('ALTER TABLE `clientes` ADD COLUMN `Token_Verificacion` VARCHAR(255) DEFAULT NULL AFTER `Email_Verificado`');
-    }
-    if (!(await columnExists(connection, 'clientes', 'Fec_Ultimo_Acceso'))) {
-      await connection.query('ALTER TABLE `clientes` ADD COLUMN `Fec_Ultimo_Acceso` DATETIME DEFAULT NULL AFTER `Token_Verificacion`');
-    }
-  }
-
+async function ensureRecordatorioTelegramTable(connection) {
   await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`cupones\` (
-      \`Id_Cup\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Codigo_Cup\` varchar(50) NOT NULL,
-      \`Descripcion_Cup\` text DEFAULT NULL,
-      \`Tipo_Cup\` enum('porcentaje','fijo') DEFAULT 'porcentaje',
-      \`Monto_Descuento\` decimal(10,2) DEFAULT 0.00,
-      \`Minimo_Carrito\` decimal(10,2) DEFAULT 0.00,
-      \`Maximo_Descuento\` decimal(10,2) DEFAULT NULL,
-      \`Fecha_Desde\` datetime NOT NULL,
-      \`Fecha_Hasta\` datetime NOT NULL,
-      \`Limite_Uso\` int(11) DEFAULT NULL,
-      \`Limite_Uso_Por_Usuario\` int(11) DEFAULT 1,
-      \`Veces_Usado\` int(11) DEFAULT 0,
-      \`Esta_Activo\` tinyint(1) DEFAULT 1,
-      \`Estado_Cup\` enum('activo','inactivo','expirado','programado') DEFAULT 'activo',
-      \`Aplica_A\` enum('todos','productos_especificos','categorias_especificas') DEFAULT 'todos',
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      \`Fec_Mod\` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-      PRIMARY KEY (\`Id_Cup\`),
-      UNIQUE KEY \`Codigo_Cup\` (\`Codigo_Cup\`)
+    CREATE TABLE IF NOT EXISTS recordatorios_suscripcion_telegram (
+      Id_Rec int(11) NOT NULL AUTO_INCREMENT,
+      Id_Sus int(11) NOT NULL,
+      Tip_Rec enum('pre_5','pre_1','dia') NOT NULL,
+      Fec_Objetivo date NOT NULL,
+      Chat_Id varchar(64) DEFAULT NULL,
+      Est_Envio enum('pendiente','enviado','omitido','error') NOT NULL DEFAULT 'pendiente',
+      Err_Envio text DEFAULT NULL,
+      Fec_Cre datetime DEFAULT current_timestamp(),
+      Fec_Mod datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+      PRIMARY KEY (Id_Rec),
+      UNIQUE KEY uq_recordatorio_suscripcion_telegram (Id_Sus, Tip_Rec, Fec_Objetivo),
+      KEY idx_recordatorios_telegram_suscripcion (Id_Sus),
+      KEY idx_recordatorios_telegram_chat (Chat_Id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`ordenes\` (
-      \`Id_Ord\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Numero_Ord\` varchar(50) NOT NULL,
-      \`Id_Cli\` int(11) DEFAULT NULL,
-      \`Email_Invitado\` varchar(150) DEFAULT NULL COMMENT 'Si compra sin registro',
-      \`Estado_Ord\` enum('pendiente','pagada','completada','cancelada','reembolsada') DEFAULT 'pendiente',
-      \`Estado_Pago\` enum('pendiente','pagado','fallido','reembolsado','parcial') DEFAULT 'pendiente',
-      \`Moneda\` varchar(10) DEFAULT 'USD',
-      \`Subtotal\` decimal(10,2) NOT NULL,
-      \`Descuento\` decimal(10,2) DEFAULT 0.00,
-      \`Total\` decimal(10,2) NOT NULL,
-      \`Id_Cupon\` int(11) DEFAULT NULL,
-      \`Codigo_Cupon\` varchar(50) DEFAULT NULL,
-      \`Notas_Cliente\` text DEFAULT NULL,
-      \`Notas_Internas\` text DEFAULT NULL,
-      \`Metadatos\` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(\`Metadatos\`)),
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      \`Fec_Mod\` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-      PRIMARY KEY (\`Id_Ord\`),
-      UNIQUE KEY \`Numero_Ord\` (\`Numero_Ord\`),
-      KEY \`idx_orden_cliente\` (\`Id_Cli\`),
-      CONSTRAINT \`ordenes_ibfk_1\` FOREIGN KEY (\`Id_Cli\`) REFERENCES \`clientes\` (\`Id_Cli\`) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`carrito_sesiones\` (
-      \`Id_Car_Ses\` varchar(64) NOT NULL,
-      \`Id_Cli\` int(11) DEFAULT NULL,
-      \`Id_Sesion_Tmp\` varchar(64) DEFAULT NULL,
-      \`Expira_En\` datetime DEFAULT NULL,
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      \`Fec_Mod\` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-      PRIMARY KEY (\`Id_Car_Ses\`),
-      KEY \`idx_carrito_cliente\` (\`Id_Cli\`),
-      KEY \`idx_carrito_sesion_tmp\` (\`Id_Sesion_Tmp\`),
-      CONSTRAINT \`carrito_sesiones_ibfk_1\` FOREIGN KEY (\`Id_Cli\`) REFERENCES \`clientes\` (\`Id_Cli\`) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`imagenes_productos\` (
-      \`Id_Ima\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Id_Prd\` int(11) NOT NULL,
-      \`Url_Ima\` varchar(500) NOT NULL,
-      \`Texto_Alt\` varchar(255) DEFAULT NULL,
-      \`Orden\` int(11) DEFAULT 0,
-      \`Es_Primaria\` tinyint(1) DEFAULT 0,
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      PRIMARY KEY (\`Id_Ima\`),
-      KEY \`idx_imagen_producto\` (\`Id_Prd\`),
-      CONSTRAINT \`imagenes_productos_ibfk_1\` FOREIGN KEY (\`Id_Prd\`) REFERENCES \`productos\` (\`Id_Prd\`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`lista_deseos\` (
-      \`Id_Des\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Id_Cli\` int(11) NOT NULL,
-      \`Id_Prd\` int(11) NOT NULL,
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      PRIMARY KEY (\`Id_Des\`),
-      UNIQUE KEY \`uk_lista_deseos_cliente_producto\` (\`Id_Cli\`,\`Id_Prd\`),
-      KEY \`idx_lista_deseos_producto\` (\`Id_Prd\`),
-      CONSTRAINT \`lista_deseos_ibfk_1\` FOREIGN KEY (\`Id_Cli\`) REFERENCES \`clientes\` (\`Id_Cli\`) ON DELETE CASCADE,
-      CONSTRAINT \`lista_deseos_ibfk_2\` FOREIGN KEY (\`Id_Prd\`) REFERENCES \`productos\` (\`Id_Prd\`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`notificaciones\` (
-      \`Id_Not\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Tipo_Not\` enum('nuevo_pedido','pago','stock_bajo','sistema') NOT NULL,
-      \`Titulo_Not\` varchar(200) NOT NULL,
-      \`Mensaje_Not\` text NOT NULL,
-      \`Datos_Not\` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(\`Datos_Not\`)),
-      \`Leida\` tinyint(1) DEFAULT 0,
-      \`Fecha_Lectura\` datetime DEFAULT NULL,
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      PRIMARY KEY (\`Id_Not\`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`items_orden\` (
-      \`Id_Item_Ord\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Id_Ord\` int(11) NOT NULL,
-      \`Id_Prd\` int(11) NOT NULL,
-      \`Id_Var\` int(11) DEFAULT NULL,
-      \`Id_Key\` int(11) DEFAULT NULL COMMENT 'Clave de licencia asignada tras pago',
-      \`Id_Cue\` int(11) DEFAULT NULL COMMENT 'Cuenta asignada tras pago',
-      \`Nombre_Prd\` varchar(150) NOT NULL,
-      \`Nombre_Var\` varchar(100) DEFAULT NULL,
-      \`Precio_Unitario\` decimal(10,2) NOT NULL,
-      \`Cantidad\` int(11) DEFAULT 1,
-      \`Precio_Total\` decimal(10,2) NOT NULL,
-      \`Descuento_Item\` decimal(10,2) DEFAULT 0.00,
-      \`Clave_Licencia\` text DEFAULT NULL,
-      \`Correo_Asociado\` varchar(150) DEFAULT NULL,
-      \`Contrasena_Asociada\` varchar(255) DEFAULT NULL,
-      \`Fec_Ini_Licencia\` datetime DEFAULT NULL,
-      \`Fec_Fin_Licencia\` datetime DEFAULT NULL,
-      \`Estado_Item\` enum('pendiente','entregado','cancelado') DEFAULT 'pendiente',
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      PRIMARY KEY (\`Id_Item_Ord\`),
-      KEY \`idx_item_orden\` (\`Id_Ord\`),
-      KEY \`idx_item_producto\` (\`Id_Prd\`),
-      KEY \`idx_item_variante\` (\`Id_Var\`),
-      KEY \`idx_item_key\` (\`Id_Key\`),
-      KEY \`idx_item_cuenta\` (\`Id_Cue\`),
-      CONSTRAINT \`items_orden_ibfk_1\` FOREIGN KEY (\`Id_Ord\`) REFERENCES \`ordenes\` (\`Id_Ord\`) ON DELETE CASCADE,
-      CONSTRAINT \`items_orden_ibfk_2\` FOREIGN KEY (\`Id_Prd\`) REFERENCES \`productos\` (\`Id_Prd\`),
-      CONSTRAINT \`items_orden_ibfk_3\` FOREIGN KEY (\`Id_Var\`) REFERENCES \`variantes_productos\` (\`Id_Var\`),
-      CONSTRAINT \`items_orden_ibfk_4\` FOREIGN KEY (\`Id_Key\`) REFERENCES \`keys_productos\` (\`Id_Key\`) ON DELETE SET NULL,
-      CONSTRAINT \`items_orden_ibfk_5\` FOREIGN KEY (\`Id_Cue\`) REFERENCES \`cuentas\` (\`Id_Cue\`) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`pagos\` (
-      \`Id_Pag\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Id_Ord\` int(11) NOT NULL,
-      \`Metodo_Pago\` enum('tarjeta','paypal','cripto','transferencia') NOT NULL,
-      \`Proveedor_Pago\` varchar(50) DEFAULT 'stripe',
-      \`Monto\` decimal(10,2) NOT NULL,
-      \`Moneda\` varchar(10) DEFAULT 'USD',
-      \`Estado_Pago_Prov\` varchar(50) DEFAULT 'pendiente',
-      \`Id_Transaccion\` varchar(255) DEFAULT NULL,
-      \`Stripe_PaymentIntent_Id\` varchar(255) DEFAULT NULL,
-      \`Metadatos\` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(\`Metadatos\`)),
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      \`Fec_Mod\` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-      PRIMARY KEY (\`Id_Pag\`),
-      KEY \`idx_pago_orden\` (\`Id_Ord\`),
-      CONSTRAINT \`pagos_ibfk_1\` FOREIGN KEY (\`Id_Ord\`) REFERENCES \`ordenes\` (\`Id_Ord\`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`cupones_productos\` (
-      \`Id_Cup\` int(11) NOT NULL,
-      \`Id_Prd\` int(11) NOT NULL,
-      PRIMARY KEY (\`Id_Cup\`,\`Id_Prd\`),
-      KEY \`idx_cupones_productos_producto\` (\`Id_Prd\`),
-      CONSTRAINT \`cupones_productos_ibfk_1\` FOREIGN KEY (\`Id_Cup\`) REFERENCES \`cupones\` (\`Id_Cup\`) ON DELETE CASCADE,
-      CONSTRAINT \`cupones_productos_ibfk_2\` FOREIGN KEY (\`Id_Prd\`) REFERENCES \`productos\` (\`Id_Prd\`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`uso_cupones\` (
-      \`Id_Uso\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Id_Cup\` int(11) NOT NULL,
-      \`Id_Cli\` int(11) NOT NULL,
-      \`Id_Ord\` int(11) DEFAULT NULL,
-      \`Descuento_Aplicado\` decimal(10,2) DEFAULT 0.00,
-      \`Usado_En\` datetime DEFAULT current_timestamp(),
-      PRIMARY KEY (\`Id_Uso\`),
-      KEY \`idx_uso_cupon\` (\`Id_Cup\`),
-      KEY \`idx_uso_cliente\` (\`Id_Cli\`),
-      KEY \`idx_uso_orden\` (\`Id_Ord\`),
-      CONSTRAINT \`uso_cupones_ibfk_1\` FOREIGN KEY (\`Id_Cup\`) REFERENCES \`cupones\` (\`Id_Cup\`),
-      CONSTRAINT \`uso_cupones_ibfk_2\` FOREIGN KEY (\`Id_Cli\`) REFERENCES \`clientes\` (\`Id_Cli\`),
-      CONSTRAINT \`uso_cupones_ibfk_3\` FOREIGN KEY (\`Id_Ord\`) REFERENCES \`ordenes\` (\`Id_Ord\`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`resenias\` (
-      \`Id_Res\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Id_Cli\` int(11) NOT NULL,
-      \`Id_Prd\` int(11) NOT NULL,
-      \`Id_Ord\` int(11) NOT NULL,
-      \`Id_Item_Ord\` int(11) NOT NULL,
-      \`Calificacion\` tinyint(4) NOT NULL CHECK (\`Calificacion\` between 1 and 5),
-      \`Titulo_Res\` varchar(200) NOT NULL,
-      \`Comentario_Res\` text NOT NULL,
-      \`Estado_Res\` enum('pendiente','aprobada','rechazada') DEFAULT 'aprobada',
-      \`Votos_Utiles\` int(11) DEFAULT 0,
-      \`Es_Compra_Verificada\` tinyint(1) DEFAULT 1,
-      \`Fec_Cre\` datetime DEFAULT current_timestamp(),
-      \`Fec_Mod\` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-      PRIMARY KEY (\`Id_Res\`),
-      KEY \`idx_resenia_cliente\` (\`Id_Cli\`),
-      KEY \`idx_resenia_producto\` (\`Id_Prd\`),
-      KEY \`idx_resenia_orden\` (\`Id_Ord\`),
-      KEY \`idx_resenia_item_orden\` (\`Id_Item_Ord\`),
-      CONSTRAINT \`resenias_ibfk_1\` FOREIGN KEY (\`Id_Cli\`) REFERENCES \`clientes\` (\`Id_Cli\`),
-      CONSTRAINT \`resenias_ibfk_2\` FOREIGN KEY (\`Id_Prd\`) REFERENCES \`productos\` (\`Id_Prd\`),
-      CONSTRAINT \`resenias_ibfk_3\` FOREIGN KEY (\`Id_Ord\`) REFERENCES \`ordenes\` (\`Id_Ord\`),
-      CONSTRAINT \`resenias_ibfk_4\` FOREIGN KEY (\`Id_Item_Ord\`) REFERENCES \`items_orden\` (\`Id_Item_Ord\`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS \`carrito_items\` (
-      \`Id_Car_Item\` int(11) NOT NULL AUTO_INCREMENT,
-      \`Id_Car_Ses\` varchar(64) NOT NULL,
-      \`Id_Prd\` int(11) NOT NULL,
-      \`Id_Var\` int(11) DEFAULT NULL COMMENT 'Variante elegida (ej. plan mensual/anual)',
-      \`Cantidad\` int(11) DEFAULT 1,
-      \`Fec_Agregado\` datetime DEFAULT current_timestamp(),
-      \`Fec_Mod\` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-      PRIMARY KEY (\`Id_Car_Item\`),
-      KEY \`idx_carrito_item_sesion\` (\`Id_Car_Ses\`),
-      KEY \`idx_carrito_item_producto\` (\`Id_Prd\`),
-      KEY \`idx_carrito_item_variante\` (\`Id_Var\`),
-      CONSTRAINT \`carrito_items_ibfk_1\` FOREIGN KEY (\`Id_Car_Ses\`) REFERENCES \`carrito_sesiones\` (\`Id_Car_Ses\`) ON DELETE CASCADE,
-      CONSTRAINT \`carrito_items_ibfk_2\` FOREIGN KEY (\`Id_Prd\`) REFERENCES \`productos\` (\`Id_Prd\`),
-      CONSTRAINT \`carrito_items_ibfk_3\` FOREIGN KEY (\`Id_Var\`) REFERENCES \`variantes_productos\` (\`Id_Var\`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-}
-
-async function foreignKeyExists(connection, constraintName) {
-  const [rows] = await connection.query(
-    `
-      SELECT CONSTRAINT_NAME
-      FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-      WHERE TABLE_SCHEMA = ? AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-      LIMIT 1
-    `,
-    [env.mysqlDatabase, constraintName]
-  );
-  return rows.length > 0;
 }
 
 /**
- * Unifica la relacion cliente comercial <-> usuario de Better Auth <-> venta.
+ * Plantilla de vencimiento por WhatsApp.
  *
- * Idempotente: en instalaciones nuevas crea las columnas/indices/llaves que en
- * la BD actual ya existen, y en instalaciones existentes no repite nada.
- *
- *   - clientes.Origen_Cli / Dir_Cli / Tip_Cli   (datos comerciales)
- *   - user.cliente_id -> clientes.Id_Cli         (relacion pedida por el spec)
- *   - ventas.Auth_User_Id / Origen_Ven
+ * {{estado}} resuelve por si solo el tiempo verbal y la fecha ("vence en 5
+ * días (11 de agosto de 2026)" / "venció hoy (6 de agosto de 2026)"), de modo
+ * que un unico cuerpo sirve para todos los hitos y para el envio manual. El
+ * marcado *negrita* y _cursiva_ es el nativo de WhatsApp.
  */
-async function ensureClienteUserVentaRelationSchema(connection) {
-  // --- clientes: datos comerciales ---
-  if (await tableExists(connection, 'clientes')) {
-    if (!(await columnExists(connection, 'clientes', 'Origen_Cli'))) {
-      await connection.query("ALTER TABLE `clientes` ADD COLUMN `Origen_Cli` ENUM('whatsapp','ecommerce') NOT NULL DEFAULT 'whatsapp' AFTER `Doc_Cli`");
-    } else if (await columnTypeIncludes(connection, 'clientes', 'Origen_Cli', 'manual')) {
-      // Unificar 'manual' -> 'whatsapp' y reducir el enum (primero datos, luego DDL).
-      await connection.query("UPDATE `clientes` SET `Origen_Cli` = 'whatsapp' WHERE `Origen_Cli` = 'manual'");
-      await connection.query("ALTER TABLE `clientes` MODIFY COLUMN `Origen_Cli` ENUM('whatsapp','ecommerce') NOT NULL DEFAULT 'whatsapp'");
+const PLANTILLA_VENCIMIENTO_CUERPO = [
+  'Hola estimado *{{cliente}}*.',
+  '',
+  'Servicio: *{{producto}}*',
+  'Plan: {{plan}}',
+  'Vencimiento: {{fecha}}',
+  'Estado: *{{estado_corto}}*',
+  '',
+  '¿Deseas renovarla?',
+  '*Confírmanos por este medio.*',
+  '',
+  '_Si no confirmas, retiraremos tu acceso._',
+  '',
+  '*{{empresa}}*'
+].join('\n');
+
+// Se muestra en el panel de plantillas como ayuda: valor de ejemplo real, no
+// solo el nombre de la variable.
+const PLANTILLA_VENCIMIENTO_VARIABLES = {
+  cliente: 'Juan Pérez',
+  servicio: 'Adobe Creative 2026 · Premium',
+  estado: 'venció hoy (6 de agosto de 2026)',
+  estado_corto: 'venció hoy',
+  fecha: '6 de agosto de 2026',
+  producto: 'Adobe Creative 2026',
+  plan: 'Premium (1 mes)',
+  precio: '$9.00',
+  empresa: 'Xtremekey'
+};
+
+/**
+ * Cuerpo para revendedores.
+ *
+ * Un revendedor recibe el aviso en SU telefono pero el servicio es de su
+ * cliente final, asi que el mensaje tiene que nombrar la cuenta: sin eso, un
+ * revendedor con 26 clientes no sabe cual vence.
+ */
+const PLANTILLA_VENCIMIENTO_REV_CUERPO = [
+  'Hola estimado *{{cliente}}*.',
+  '',
+  'Servicio: *{{producto}}*',
+  'Plan: {{plan}}',
+  'Cuenta: {{cuenta}}',
+  'Vencimiento: {{fecha}}',
+  'Estado: *{{estado_corto}}*',
+  '',
+  '¿Deseas renovarla?',
+  '*Confírmanos por este medio.*',
+  '',
+  '_Si no confirmas, retiraremos el acceso._',
+  '',
+  '*{{empresa}}*'
+].join('\n');
+
+/** Extiende el enum Tip_Pla con el tipo dedicado a revendedores. */
+async function ensurePlantillaTipoRevendedor(connection) {
+  if (!(await tableExists(connection, 'plantillas_notificacion'))) {
+    return;
+  }
+
+  const [cols] = await connection.query("SHOW COLUMNS FROM plantillas_notificacion LIKE 'Tip_Pla'");
+  const tipo = cols[0]?.Type || '';
+  if (tipo.includes('vencimiento_revendedor')) return;
+
+  await connection.query(
+    `ALTER TABLE plantillas_notificacion MODIFY Tip_Pla
+       enum('bienvenida','venta','renovacion','vencimiento','vencimiento_revendedor','recordatorio','personalizado')
+       DEFAULT 'personalizado'`
+  );
+  logger.info('Schema actualizado: tipo de plantilla vencimiento_revendedor.');
+}
+
+async function ensureTelegramTemplate(connection) {
+  if (!(await tableExists(connection, 'plantillas_notificacion'))) {
+    return;
+  }
+
+  const semillas = [
+    {
+      tipo: 'vencimiento',
+      nombre: 'Recordatorio de vencimiento por WhatsApp',
+      cuerpo: PLANTILLA_VENCIMIENTO_CUERPO,
+      variables: PLANTILLA_VENCIMIENTO_VARIABLES
+    },
+    {
+      tipo: 'vencimiento_revendedor',
+      nombre: 'Recordatorio de vencimiento por WhatsApp (revendedores)',
+      cuerpo: PLANTILLA_VENCIMIENTO_REV_CUERPO,
+      variables: { ...PLANTILLA_VENCIMIENTO_VARIABLES, cuenta: 'jorgeordonez076@gmail.com' }
     }
+  ];
+
+  for (const semilla of semillas) {
+    const [rows] = await connection.query(
+      `
+        SELECT Id_Pla
+        FROM plantillas_notificacion
+        WHERE Tip_Pla = ? AND Can_Pla = 'whatsapp' AND Est_Pla = 'activo'
+        ORDER BY Id_Pla ASC
+        LIMIT 1
+      `,
+      [semilla.tipo]
+    );
+
+    if (rows.length > 0) continue;
+
+    await connection.query(
+      `
+        INSERT INTO plantillas_notificacion (
+          Nom_Pla, Tip_Pla, Can_Pla, Asu_Pla, Cue_Pla, Var_Pla, Est_Pla
+        ) VALUES (?, ?, 'whatsapp', ?, ?, ?, 'activo')
+      `,
+      [semilla.nombre, semilla.tipo, 'Recordatorio de pago', semilla.cuerpo, JSON.stringify(semilla.variables)]
+    );
+    logger.info(`Plantilla activa "${semilla.nombre}" creada. Editala desde el panel de plantillas.`);
+  }
+}
+
+/**
+ * Repara la plantilla de vencimiento que perdio el placeholder {{estado}}.
+ *
+ * Al editarla se dejo el verbo fijo en pasado ("venció el día {{fecha}}"), de
+ * modo que los recordatorios de 5 dias y 1 dia antes le decian al cliente que
+ * su suscripcion ya habia vencido cuando aun estaba vigente.
+ *
+ * Es deliberadamente quirurgica: solo actua si el cuerpo NO tiene {{estado}} Y
+ * conserva la frase rota, para no pisar ediciones legitimas. Una vez corregido
+ * el cuerpo ya contiene {{estado}} y no vuelve a entrar.
+ */
+async function ensurePlantillaVencimientoEstado(connection) {
+  if (!(await tableExists(connection, 'plantillas_notificacion'))) {
+    return;
+  }
+
+  const [rows] = await connection.query(
+    `
+      SELECT Id_Pla, Cue_Pla
+      FROM plantillas_notificacion
+      WHERE Tip_Pla = 'vencimiento' AND Can_Pla = 'whatsapp' AND Est_Pla = 'activo'
+      ORDER BY Id_Pla ASC
+      LIMIT 1
+    `
+  );
+
+  const plantilla = rows[0];
+  if (!plantilla) return;
+
+  const cuerpo = String(plantilla.Cue_Pla || '');
+  if (cuerpo.includes('{{estado}}') || !cuerpo.includes('venció el día')) return;
+
+  // Se respeta la redaccion existente: solo se sustituye el tramo con el verbo
+  // fijo por el placeholder que ahora resuelve tiempo verbal y fecha juntos.
+  const corregido = cuerpo.replace(/venció el día \*?\{\{\s*fecha\s*\}\}\*?/g, '{{estado}}');
+
+  await connection.query(
+    'UPDATE plantillas_notificacion SET Cue_Pla = ?, Var_Pla = ? WHERE Id_Pla = ?',
+    [corregido, JSON.stringify(PLANTILLA_VENCIMIENTO_VARIABLES), plantilla.Id_Pla]
+  );
+
+  logger.warn(
+    `Plantilla de vencimiento #${plantilla.Id_Pla} corregida: se restauro {{estado}}, que hacia que los recordatorios previos al vencimiento dijeran "vencio" en pasado.`
+  );
+}
+
+/**
+ * Asegura las columnas comerciales de clientes (direccion, tipo) e indice de correo.
+ *
+ * Idempotente: crea lo que falte y no repite nada en instalaciones existentes.
+ */
+async function ensureClienteComercialSchema(connection) {
+  if (await tableExists(connection, 'clientes')) {
     if (!(await columnExists(connection, 'clientes', 'Dir_Cli'))) {
-      await connection.query('ALTER TABLE `clientes` ADD COLUMN `Dir_Cli` TEXT DEFAULT NULL AFTER `Origen_Cli`');
+      await connection.query('ALTER TABLE `clientes` ADD COLUMN `Dir_Cli` TEXT DEFAULT NULL AFTER `Doc_Cli`');
     }
     if (!(await columnExists(connection, 'clientes', 'Tip_Cli'))) {
       await connection.query("ALTER TABLE `clientes` ADD COLUMN `Tip_Cli` VARCHAR(30) DEFAULT 'persona' AFTER `Dir_Cli`");
@@ -699,51 +557,215 @@ async function ensureClienteUserVentaRelationSchema(connection) {
     }
   }
 
-  // --- user.cliente_id -> clientes.Id_Cli ---
-  if ((await tableExists(connection, 'user')) && (await tableExists(connection, 'clientes'))) {
-    if (!(await columnExists(connection, 'user', 'cliente_id'))) {
-      await connection.query('ALTER TABLE `user` ADD COLUMN `cliente_id` INT(11) DEFAULT NULL AFTER `role`');
-    }
-    if (!(await indexExists(connection, 'user', 'idx_user_cliente_id'))) {
-      await connection.query('ALTER TABLE `user` ADD KEY `idx_user_cliente_id` (`cliente_id`)');
-    }
-    // Backfill desde el enlace inverso ya existente (clientes.Auth_User_Id).
-    if (await columnExists(connection, 'clientes', 'Auth_User_Id')) {
-      await connection.query(`
-        UPDATE \`user\` u
-        JOIN clientes c ON c.Auth_User_Id = u.id
-        SET u.cliente_id = c.Id_Cli
-        WHERE u.cliente_id IS NULL AND c.Id_Cli IS NOT NULL
-      `);
-    }
-    if (!(await foreignKeyExists(connection, 'fk_user_cliente'))) {
-      // ON DELETE SET NULL: borrar un cliente comercial no debe destruir la cuenta de acceso.
-      await connection.query(`
-        ALTER TABLE \`user\`
-        ADD CONSTRAINT \`fk_user_cliente\` FOREIGN KEY (\`cliente_id\`)
-        REFERENCES \`clientes\` (\`Id_Cli\`) ON DELETE SET NULL ON UPDATE CASCADE
-      `);
+  logger.info('Schema verificado: datos comerciales de clientes.');
+}
+
+/**
+ * Asegura el esquema del codigo de venta autogenerado (Cod_Ven, formato
+ * "VEN-<anio>-<correlativo>") y su tabla de contadores por anio.
+ *
+ * Idempotente: crea lo que falte y hace backfill de las ventas existentes
+ * que aun no tengan Cod_Ven, sembrando el contador de cada anio afectado.
+ */
+async function ensureVentaCodigoSchema(connection) {
+  if (!(await tableExists(connection, 'ventas'))) {
+    return;
+  }
+
+  if (!(await tableExists(connection, 'contadores_venta'))) {
+    await connection.query(`
+      CREATE TABLE contadores_venta (
+        Anio int(11) NOT NULL,
+        Ultimo_Num int(11) NOT NULL DEFAULT 0,
+        PRIMARY KEY (Anio)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+  }
+
+  if (!(await columnExists(connection, 'ventas', 'Cod_Ven'))) {
+    await connection.query('ALTER TABLE `ventas` ADD COLUMN `Cod_Ven` VARCHAR(20) DEFAULT NULL AFTER `Id_Ven`');
+  }
+
+  if (!(await indexExists(connection, 'ventas', 'uk_cod_ven'))) {
+    await connection.query('ALTER TABLE `ventas` ADD UNIQUE KEY `uk_cod_ven` (`Cod_Ven`)');
+  }
+
+  const [pendientes] = await connection.query('SELECT COUNT(*) AS total FROM ventas WHERE Cod_Ven IS NULL');
+  if (Number(pendientes[0]?.total || 0) > 0) {
+    await connection.query(`
+      UPDATE ventas v JOIN (
+        SELECT Id_Ven, CONCAT('VEN-', YEAR(COALESCE(Fec_Ven, Fec_Cre)), '-',
+          LPAD(ROW_NUMBER() OVER (PARTITION BY YEAR(COALESCE(Fec_Ven, Fec_Cre)) ORDER BY Id_Ven), 4, '0')) AS cod
+        FROM ventas
+        WHERE Cod_Ven IS NULL
+      ) x ON x.Id_Ven = v.Id_Ven
+      SET v.Cod_Ven = x.cod
+    `);
+
+    await connection.query(`
+      INSERT INTO contadores_venta (Anio, Ultimo_Num)
+      SELECT YEAR(COALESCE(Fec_Ven, Fec_Cre)), COUNT(*) FROM ventas GROUP BY YEAR(COALESCE(Fec_Ven, Fec_Cre))
+      ON DUPLICATE KEY UPDATE Ultimo_Num = GREATEST(Ultimo_Num, VALUES(Ultimo_Num))
+    `);
+
+    logger.info('Schema actualizado: Cod_Ven generado (backfill) para ventas existentes.');
+  }
+}
+
+/**
+ * Asegura que una suscripcion pueda pertenecer a un cliente final (Id_Cli) o a
+ * un revendedor (Id_Rev), con exactamente uno de los dos siempre presente.
+ *
+ * Antes solo existia Id_Cli NOT NULL, de modo que las ventas de suscripciones a
+ * revendedores no quedaban registradas como suscripcion en ninguna parte.
+ *
+ * Idempotente: crea lo que falte y no repite nada en instalaciones existentes.
+ * Equivale a Backend/src/database/migracion_suscripciones_revendedor.sql.
+ */
+async function ensureSuscripcionTitularSchema(connection) {
+  if (!(await tableExists(connection, 'suscripciones'))) {
+    return;
+  }
+
+  if (!(await columnExists(connection, 'suscripciones', 'Id_Rev'))) {
+    await connection.query('ALTER TABLE `suscripciones` ADD COLUMN `Id_Rev` int(11) DEFAULT NULL AFTER `Id_Cli`');
+  }
+
+  if (!(await indexExists(connection, 'suscripciones', 'idx_suscripciones_revendedor'))) {
+    await connection.query('ALTER TABLE `suscripciones` ADD KEY `idx_suscripciones_revendedor` (`Id_Rev`)');
+  }
+
+  if (await tableExists(connection, 'revendedores')) {
+    const [fks] = await connection.query(
+      `
+        SELECT CONSTRAINT_NAME
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+        WHERE TABLE_SCHEMA = ?
+          AND TABLE_NAME = 'suscripciones'
+          AND COLUMN_NAME = 'Id_Rev'
+          AND REFERENCED_TABLE_NAME = 'revendedores'
+        LIMIT 1
+      `,
+      [env.mysqlDatabase]
+    );
+
+    if (fks.length === 0) {
+      await connection.query(
+        'ALTER TABLE `suscripciones` ADD CONSTRAINT `fk_suscripciones_revendedor` FOREIGN KEY (`Id_Rev`) REFERENCES `revendedores` (`Id_Rev`)'
+      );
     }
   }
 
-  // --- ventas: relacion con cliente comercial + usuario + origen ---
-  if (await tableExists(connection, 'ventas')) {
-    if (!(await columnExists(connection, 'ventas', 'Auth_User_Id'))) {
-      await connection.query('ALTER TABLE `ventas` ADD COLUMN `Auth_User_Id` VARCHAR(36) DEFAULT NULL AFTER `Id_Rev`');
-    }
-    if (!(await columnExists(connection, 'ventas', 'Origen_Ven'))) {
-      await connection.query("ALTER TABLE `ventas` ADD COLUMN `Origen_Ven` ENUM('ecommerce','whatsapp') NOT NULL DEFAULT 'whatsapp' AFTER `Est_Ven`");
-    } else if (await columnTypeIncludes(connection, 'ventas', 'Origen_Ven', 'manual')) {
-      // Unificar 'manual' -> 'whatsapp' y reducir el enum (primero datos, luego DDL).
-      await connection.query("UPDATE `ventas` SET `Origen_Ven` = 'whatsapp' WHERE `Origen_Ven` = 'manual'");
-      await connection.query("ALTER TABLE `ventas` MODIFY COLUMN `Origen_Ven` ENUM('ecommerce','whatsapp') NOT NULL DEFAULT 'whatsapp'");
-    }
-    if (!(await indexExists(connection, 'ventas', 'idx_ventas_auth_user'))) {
-      await connection.query('ALTER TABLE `ventas` ADD KEY `idx_ventas_auth_user` (`Auth_User_Id`)');
+  const [idCliColumn] = await connection.query(
+    `
+      SELECT IS_NULLABLE
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'suscripciones' AND COLUMN_NAME = 'Id_Cli'
+      LIMIT 1
+    `,
+    [env.mysqlDatabase]
+  );
+
+  if (idCliColumn[0]?.IS_NULLABLE === 'NO') {
+    await connection.query('ALTER TABLE `suscripciones` MODIFY COLUMN `Id_Cli` int(11) DEFAULT NULL');
+  }
+
+  if (!(await indexExists(connection, 'suscripciones', 'idx_suscripciones_estado_fin'))) {
+    await connection.query('ALTER TABLE `suscripciones` ADD KEY `idx_suscripciones_estado_fin` (`Est_Sus`, `Fec_Fin_Sus`)');
+  }
+
+  const [checks] = await connection.query(
+    `
+      SELECT CONSTRAINT_NAME
+      FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS
+      WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = 'suscripciones' AND CONSTRAINT_NAME = 'chk_suscripciones_titular'
+      LIMIT 1
+    `,
+    [env.mysqlDatabase]
+  );
+
+  if (checks.length === 0) {
+    // La CHECK se valida contra las filas ya existentes al crearse. Si alguna
+    // incumple el XOR, anadirla abortaria el arranque del servidor: preferimos
+    // avisar y dejar el dato como esta.
+    const [invalidas] = await connection.query(
+      'SELECT COUNT(*) AS total FROM suscripciones WHERE (Id_Cli IS NULL) = (Id_Rev IS NULL)'
+    );
+
+    if (Number(invalidas[0]?.total || 0) > 0) {
+      logger.warn(
+        `Hay ${invalidas[0].total} suscripcion(es) sin titular unico (Id_Cli/Id_Rev). Corrigelas y reinicia para activar chk_suscripciones_titular.`
+      );
+    } else {
+      await connection.query(
+        'ALTER TABLE `suscripciones` ADD CONSTRAINT `chk_suscripciones_titular` CHECK ((`Id_Cli` IS NULL) <> (`Id_Rev` IS NULL))'
+      );
     }
   }
 
-  logger.info('Schema verificado: relacion clientes <-> user <-> ventas.');
+  logger.info('Schema verificado: titular (cliente|revendedor) de suscripciones.');
+}
+
+/**
+ * Asegura la columna con el correo de la cuenta donde se activo el servicio.
+ *
+ * Es la identidad real de la suscripcion cuando el titular es un revendedor:
+ * el revendedor es quien paga, pero cada suscripcion corresponde al cliente
+ * final de ese correo. Sin esta columna, un revendedor con 26 clientes produce
+ * 26 filas indistinguibles y no se puede saber cual renovar.
+ *
+ * El dato ya existia por periodo en detalle_ventas.Cor_Cue; aqui se guarda el
+ * vigente para poder listarlo, buscarlo y mostrarlo sin JOIN.
+ */
+async function ensureSuscripcionCuentaSchema(connection) {
+  if (!(await tableExists(connection, 'suscripciones'))) {
+    return;
+  }
+
+  if (!(await columnExists(connection, 'suscripciones', 'Cor_Cue_Sus'))) {
+    await connection.query(
+      'ALTER TABLE `suscripciones` ADD COLUMN `Cor_Cue_Sus` VARCHAR(150) DEFAULT NULL AFTER `Id_Var`'
+    );
+    logger.info('Schema actualizado: Cor_Cue_Sus (cuenta del cliente final) en suscripciones.');
+  }
+
+  if (!(await indexExists(connection, 'suscripciones', 'idx_suscripciones_cuenta'))) {
+    await connection.query(
+      'ALTER TABLE `suscripciones` ADD INDEX `idx_suscripciones_cuenta` (`Cor_Cue_Sus`)'
+    );
+  }
+}
+
+/**
+ * Asegura la columna de dias de gracia para renovacion de suscripciones.
+ *
+ * Al renovar, si la suscripcion vencio hace menos dias que esta gracia, el
+ * periodo nuevo arranca en la fecha de vencimiento anterior (y no hoy), para
+ * no dejar huecos de cobertura ni regalar los dias ya pagados. Pasada la
+ * gracia se arranca desde hoy: encadenar desde una fecha muy vieja venderia
+ * un periodo integramente consumido.
+ */
+async function ensureConfiguracionRenovacionSchema(connection) {
+  if (!(await tableExists(connection, 'configuracion'))) {
+    return;
+  }
+
+  if (!(await columnExists(connection, 'configuracion', 'Dia_Gra_Ren_Con'))) {
+    await connection.query(
+      'ALTER TABLE `configuracion` ADD COLUMN `Dia_Gra_Ren_Con` int(11) NOT NULL DEFAULT 30 AFTER `Hab_Imp_Con`'
+    );
+    logger.info('Schema actualizado: Dia_Gra_Ren_Con (gracia de renovacion) en configuracion.');
+  }
+
+  // Dias que una suscripcion vencida sigue apareciendo en el listado principal
+  // antes de pasar al archivo. Las muy antiguas solo hacen ruido: ya no se van
+  // a cobrar y tapan las que si hay que perseguir.
+  if (!(await columnExists(connection, 'configuracion', 'Dia_Arc_Ven_Con'))) {
+    await connection.query(
+      'ALTER TABLE `configuracion` ADD COLUMN `Dia_Arc_Ven_Con` int(11) NOT NULL DEFAULT 5 AFTER `Dia_Gra_Ren_Con`'
+    );
+    logger.info('Schema actualizado: Dia_Arc_Ven_Con (dias antes de archivar una vencida) en configuracion.');
+  }
 }
 
 async function ensureAuthAndDomainSchema(connection) {
@@ -751,8 +773,11 @@ async function ensureAuthAndDomainSchema(connection) {
   await ensureStaffTable(connection);
   await migrateLegacyUsuariosToStaff(connection);
   await ensureClientesAuthSchema(connection);
-  await ensureEcommerceSchema(connection);
-  await ensureClienteUserVentaRelationSchema(connection);
+  await ensureClienteComercialSchema(connection);
+  await ensureVentaCodigoSchema(connection);
+  await ensureSuscripcionTitularSchema(connection);
+  await ensureSuscripcionCuentaSchema(connection);
+  await ensureConfiguracionRenovacionSchema(connection);
 }
 
 async function connectDatabase() {
@@ -809,6 +834,10 @@ async function connectDatabase() {
   await ensureAuthAndDomainSchema(pool);
   await ensureVariantNotificationColumns(pool);
   await ensureReminderEmailLogTable(pool);
+  await ensureRecordatorioTelegramTable(pool);
+  await ensurePlantillaTipoRevendedor(pool);
+  await ensureTelegramTemplate(pool);
+  await ensurePlantillaVencimientoEstado(pool);
 
   logger.info(
     `MySQL connected: ${env.mysqlHost}:${env.mysqlPort}/${env.mysqlDatabase} (tz: ${getTimezoneOffset()})`

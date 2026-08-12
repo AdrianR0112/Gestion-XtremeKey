@@ -15,9 +15,6 @@ export const queryKeys = {
   revendedores: {
     list: () => ["revendedores", "list"],
   },
-  proveedores: {
-    list: () => ["proveedores", "list"],
-  },
   categorias: {
     list: () => ["categorias", "list"],
   },
@@ -26,9 +23,6 @@ export const queryKeys = {
   },
   variantes: {
     list: () => ["variantes", "list"],
-  },
-  proveedoresProductos: {
-    list: () => ["proveedores-productos", "list"],
   },
   cuentas: {
     list: () => ["cuentas", "list"],
@@ -42,23 +36,26 @@ export const queryKeys = {
   detalleVentas: {
     list: () => ["detalle-ventas", "list"],
   },
-  compras: {
-    list: () => ["compras", "list"],
-  },
-  detalleCompras: {
-    list: () => ["detalle-compras", "list"],
-  },
-  gastos: {
-    list: () => ["gastos", "list"],
-  },
   renovaciones: {
     list: () => ["renovaciones", "list"],
+  },
+  suscripciones: {
+    list: (params = {}) => [
+      "suscripciones",
+      "list",
+      params.estado || "",
+      params.titular || "",
+      params.vencimiento || "",
+      params.dias ?? "",
+    ],
+    resumen: (params = {}) => ["suscripciones", "resumen", params.dias ?? ""],
+    historial: (id) => ["suscripciones", "historial", id ?? ""],
   },
   tareas: {
     list: () => ["tareas", "list"],
   },
   dashboard: {
-    resumen: () => ["dashboard", "resumen"],
+    resumen: (params = {}) => ["dashboard", "resumen", params.periodo || "mes", params.ancla ?? 0],
   },
   calendario: {
     list: (params = {}) => ["calendario", "list", params.startDate || "", params.endDate || ""],

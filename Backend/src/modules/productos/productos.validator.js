@@ -1,5 +1,5 @@
-﻿const { tiposProducto, estados, estadosTienda, allowedFields } = require('./productos.schemas');
-const { z, validationResult, isNumericId, optionalTrimmedNullableString, optionalTinyIntBoolean } = require('../../utils/zod');
+﻿const { tiposProducto, estados, allowedFields } = require('./productos.schemas');
+const { z, validationResult, isNumericId, optionalTrimmedNullableString } = require('../../utils/zod');
 
 function pickAllowed(payload = {}) {
   const clean = {};
@@ -24,28 +24,15 @@ function normalizeImage(value) {
   return String(value).trim() || null;
 }
 
-function normalizeSlug(value) {
-  if (value === undefined) return undefined;
-  if (value === null || value === '') return null;
-  return String(value).trim().toLowerCase() || null;
-}
-
 function getProductosPayloadSchema(isUpdate) {
   return z.object({
     Nom_Prd: z.any().optional(),
     Cod_Prd: optionalTrimmedNullableString,
       Des_Prd: optionalTrimmedNullableString,
       Des_Cor_Prd: optionalTrimmedNullableString,
-      Slug_Prd: optionalTrimmedNullableString,
-      Precio_Venta: z.any().optional(),
-      Precio_Regular: z.any().optional(),
       Id_Cat: z.any().optional(),
       Tip_Prd: z.any().optional(),
       Est_Prd: z.any().optional(),
-      Estado_Tienda: z.any().optional(),
-      Es_Destacado: optionalTinyIntBoolean,
-      Meta_Titulo: optionalTrimmedNullableString,
-      Meta_Descripcion: optionalTrimmedNullableString,
       Ima_Prd: z.any().optional(),
     }).passthrough().superRefine((payload, ctx) => {
     if (!isUpdate && (!payload.Nom_Prd || String(payload.Nom_Prd).trim() === '')) {
@@ -75,34 +62,12 @@ function getProductosPayloadSchema(isUpdate) {
       }
     }
 
-    clean.Slug_Prd = normalizeSlug(clean.Slug_Prd);
-
-    for (const field of ['Precio_Venta', 'Precio_Regular']) {
-      if (clean[field] !== undefined) {
-        if (clean[field] === null || clean[field] === '') {
-          clean[field] = null;
-          continue;
-        }
-
-        const value = Number(clean[field]);
-        if (Number.isNaN(value) || value < 0) {
-          errors.push(`${field} must be a number greater or equal to 0`);
-        } else {
-          clean[field] = value;
-        }
-      }
-    }
-
     if (clean.Tip_Prd !== undefined && !tiposProducto.includes(clean.Tip_Prd)) {
       errors.push('Tip_Prd must be servicio, producto or suscripcion');
     }
 
     if (clean.Est_Prd !== undefined && !estados.includes(clean.Est_Prd)) {
       errors.push('Est_Prd must be activo, inactivo or agotado');
-    }
-
-    if (clean.Estado_Tienda !== undefined && !estadosTienda.includes(clean.Estado_Tienda)) {
-      errors.push('Estado_Tienda must be borrador, activo or archivado');
     }
 
     clean.Ima_Prd = normalizeImage(clean.Ima_Prd);

@@ -3,7 +3,6 @@
 		Id_Key: value.Id_Key ?? null,
 		Id_Prd: value.Id_Prd ?? null,
 		Id_Var: value.Id_Var ?? null,
-		Id_Pro: value.Id_Pro ?? null,
 		Cla_Key: value.Cla_Key ?? "",
 		Es_Per_Vid_Key: Number(value.Es_Per_Vid_Key ?? 0) === 1,
 		Des_Key: value.Des_Key ?? "",
@@ -27,12 +26,10 @@ function toNullableNumber(value) {
 export function mapKeyPayload(form = {}) {
 	const idProducto = toNullableNumber(form.Id_Prd);
 	const idVariante = toNullableNumber(form.Id_Var);
-	const idProveedor = toNullableNumber(form.Id_Pro);
 
 	return {
 		Id_Prd: idProducto,
 		Id_Var: idVariante,
-		Id_Pro: idProveedor,
 		Cla_Key: form.Cla_Key?.trim() || "",
 		Es_Per_Vid_Key: form.Es_Per_Vid_Key ? 1 : 0,
 		Des_Key: form.Des_Key?.trim() || null,

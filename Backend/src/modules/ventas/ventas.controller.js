@@ -36,9 +36,9 @@ const remove = asyncHandler(async (req, res) => {
   res.status(200).json(successResponse(null, 'Venta eliminada correctamente.'));
 });
 
-const createConRenovaciones = asyncHandler(async (req, res) => {
-  const data = await ventasService.createVentaConDetallesYRenovaciones(req.body);
-  res.status(201).json(successResponse(data, 'Venta creada con renovaciones correctamente.'));
+const createConDetalles = asyncHandler(async (req, res) => {
+  const data = await ventasService.createVentaConDetalles(req.body);
+  res.status(201).json(successResponse(data, 'Venta creada con detalles correctamente.'));
 });
 
-module.exports = { list, listMine, getById, create, update, remove, createConRenovaciones };
+module.exports = { list, listMine, getById, create, update, remove, createConDetalles };

@@ -2,7 +2,6 @@
   categorias,
   preferenciasContacto,
   estados,
-  origenes,
   allowedFields
 } = require('./clientes.schemas');
 const {
@@ -23,19 +22,6 @@ function pickAllowed(payload = {}) {
   return clean;
 }
 
-function normalizeDateTime(value, fieldName, errors) {
-  if (value === undefined) return undefined;
-  if (value === null || value === '') return null;
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    errors.push(`${fieldName} must be a valid datetime`);
-    return value;
-  }
-
-  return date.toISOString().slice(0, 19).replace('T', ' ');
-}
-
 function getClientePayloadSchema(isUpdate) {
   return z.object({
     Nom_Cli: optionalTrimmedNullableString,
@@ -48,29 +34,16 @@ function getClientePayloadSchema(isUpdate) {
     Doc_Cli: optionalTrimmedNullableString,
     Dir_Cli: optionalTrimmedNullableString,
     Tip_Cli: optionalTrimmedNullableString,
-    Origen_Cli: z.enum(origenes).optional().refine((value) => value === undefined || origenes.includes(value), { message: 'Origen_Cli must be whatsapp or ecommerce' }),
     Not_Cli: optionalTrimmedNullableString,
-    Password_Hash: optionalTrimmedNullableString,
-    Token_Verificacion: optionalTrimmedNullableString,
-    Fec_Ultimo_Acceso: z.any().optional(),
     Pai_Cli: optionalTrimmedNullableString.transform((value) => (value === undefined ? undefined : value || 'Ecuador')),
     Cat_Cli: z.enum(categorias).optional().refine((value) => value === undefined || categorias.includes(value), { message: 'Cat_Cli must be nuevo, ocasional, frecuente or vip' }),
     Pre_Con_Cli: z.enum(preferenciasContacto).optional().refine((value) => value === undefined || preferenciasContacto.includes(value), { message: 'Pre_Con_Cli must be whatsapp, email, instagram, messenger or telegram' }),
     Est_Cli: z.enum(estados).optional().refine((value) => value === undefined || estados.includes(value), { message: 'Est_Cli must be activo, inactivo or suspendido' }),
     Ace_Not_Tel_Cli: optionalTinyIntBoolean,
     Ace_Not_Cor_Cli: optionalTinyIntBoolean,
-    Email_Verificado: optionalTinyIntBoolean,
   }).passthrough().transform((payload) => {
     const clean = pickAllowed(payload);
-    const errors = [];
     if (clean.Ema_Cli) clean.Ema_Cli = String(clean.Ema_Cli).trim();
-
-    clean.Fec_Ultimo_Acceso = normalizeDateTime(clean.Fec_Ultimo_Acceso, 'Fec_Ultimo_Acceso', errors);
-
-    if (errors.length > 0) {
-      throw new z.ZodError(errors.map((message) => ({ code: 'custom', path: [], message })));
-    }
-
     return clean;
   });
 }

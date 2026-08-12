@@ -1,21 +1,45 @@
-﻿const { getPool } = require('../../config/database');
+const { getPool } = require('../../config/database');
 
 const BASE_SELECT = `
   SELECT
-    r.*,
-    dori.Id_Ven AS Id_Ven_Ori,
-    dori.Can_Dve AS Can_Dve_Ori,
-    dnue.Id_Ven AS Id_Ven_Nue,
-    dnue.Can_Dve AS Can_Dve_Nue,
+    nueva.Id_Dve AS Id_Dve,
+    anterior.Id_Dve AS Id_Dve_Ant,
+    nueva.Id_Ven AS Id_Ven_Nue,
+    anterior.Id_Ven AS Id_Ven_Ant,
+    ventaNueva.Cod_Ven AS Cod_Ven_Nue,
+    ventaAnterior.Cod_Ven AS Cod_Ven_Ant,
+    ventaNueva.Fec_Ven AS Fec_Ven_Nue,
+    ventaAnterior.Fec_Ven AS Fec_Ven_Ant,
+    ventaNueva.Id_Cli,
     c.Nom_Cli,
+    c.Ape_Cli,
+    nueva.Id_Prd,
+    nueva.Id_Var,
     p.Nom_Prd,
-    v.Nom_Var
-  FROM renovaciones r
-  INNER JOIN detalle_ventas dori ON dori.Id_Dve = r.Id_Dve_Ori
-  LEFT JOIN detalle_ventas dnue ON dnue.Id_Dve = r.Id_Dve_Nue
-  INNER JOIN clientes c ON c.Id_Cli = r.Id_Cli
-  LEFT JOIN productos p ON p.Id_Prd = r.Id_Prd
-  LEFT JOIN variantes_productos v ON v.Id_Var = r.Id_Var
+    vr.Nom_Var,
+    anterior.Can_Dve AS Can_Dve_Ant,
+    nueva.Can_Dve AS Can_Dve_Nue,
+    anterior.Pre_Uni_Dve AS Pre_Uni_Dve_Ant,
+    nueva.Pre_Uni_Dve AS Pre_Uni_Dve_Nue,
+    anterior.Des_Uni_Dve AS Des_Uni_Dve_Ant,
+    nueva.Des_Uni_Dve AS Des_Uni_Dve_Nue,
+    anterior.Fec_Ini_Dve AS Fec_Ini_Dve_Ant,
+    anterior.Fec_Fin_Dve AS Fec_Fin_Dve_Ant,
+    nueva.Fec_Ini_Dve AS Fec_Ini_Dve_Nue,
+    nueva.Fec_Fin_Dve AS Fec_Fin_Dve_Nue,
+    nueva.Not_Dve,
+    nueva.Id_Sus,
+    nueva.Est_Dve,
+    nueva.Fec_Cre,
+    nueva.Fec_Mod
+  FROM detalle_ventas nueva
+  INNER JOIN detalle_ventas anterior ON anterior.Id_Dve = nueva.Id_Dve_Ant
+  INNER JOIN ventas ventaNueva ON ventaNueva.Id_Ven = nueva.Id_Ven
+  INNER JOIN ventas ventaAnterior ON ventaAnterior.Id_Ven = anterior.Id_Ven
+  LEFT JOIN clientes c ON c.Id_Cli = ventaNueva.Id_Cli
+  LEFT JOIN productos p ON p.Id_Prd = nueva.Id_Prd
+  LEFT JOIN variantes_productos vr ON vr.Id_Var = nueva.Id_Var
+  WHERE ventaNueva.Est_Ven = 'completada'
 `;
 
 function resolvePool(connection) {
@@ -24,80 +48,8 @@ function resolvePool(connection) {
 
 async function findAll(connection) {
   const pool = resolvePool(connection);
-  const [rows] = await pool.query(`${BASE_SELECT} ORDER BY r.Id_Ren DESC`);
+  const [rows] = await pool.query(`${BASE_SELECT} ORDER BY nueva.Fec_Cre DESC, nueva.Id_Dve DESC`);
   return rows;
 }
 
-async function findById(id, connection) {
-  const pool = resolvePool(connection);
-  const [rows] = await pool.query(`${BASE_SELECT} WHERE r.Id_Ren = ? LIMIT 1`, [id]);
-  return rows[0] || null;
-}
-
-async function createOne(data, connection) {
-  const pool = resolvePool(connection);
-  const sql = `
-    INSERT INTO renovaciones (
-      Id_Dve_Ori,
-      Id_Dve_Nue,
-      Id_Cli,
-      Id_Prd,
-      Id_Var,
-      Fec_Ven_Ant_Ren,
-      Fec_Ini_Nue_Ren,
-      Fec_Fin_Nue_Ren,
-      Pre_Ori_Ren,
-      Pre_Ren,
-      Des_Ren,
-      Tip_Ren,
-      Est_Ren,
-      Not_Ren
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  const values = [
-    data.Id_Dve_Ori,
-    data.Id_Dve_Nue ?? null,
-    data.Id_Cli,
-    data.Id_Prd,
-    data.Id_Var ?? null,
-    data.Fec_Ven_Ant_Ren,
-    data.Fec_Ini_Nue_Ren ?? null,
-    data.Fec_Fin_Nue_Ren ?? null,
-    data.Pre_Ori_Ren ?? null,
-    data.Pre_Ren ?? null,
-    data.Des_Ren ?? 0,
-    data.Tip_Ren ?? 'manual',
-    data.Est_Ren ?? 'pendiente',
-    data.Not_Ren ?? null
-  ];
-
-  const [result] = await pool.query(sql, values);
-  return findById(result.insertId, connection);
-}
-
-async function updateById(id, data, connection) {
-  const fields = Object.keys(data);
-  if (fields.length === 0) return findById(id, connection);
-
-  const pool = resolvePool(connection);
-  const setClause = fields.map((field) => `${field} = ?`).join(', ');
-  const values = fields.map((field) => data[field]);
-
-  await pool.query(`UPDATE renovaciones SET ${setClause} WHERE Id_Ren = ?`, [...values, id]);
-  return findById(id, connection);
-}
-
-async function removeById(id, connection) {
-  const pool = resolvePool(connection);
-  const [result] = await pool.query('DELETE FROM renovaciones WHERE Id_Ren = ?', [id]);
-  return result.affectedRows > 0;
-}
-
-module.exports = {
-  findAll,
-  findById,
-  createOne,
-  updateById,
-  removeById
-};
+module.exports = { findAll };

@@ -1,5 +1,6 @@
 ﻿import { z } from "zod";
 import { fieldErrorsFromResult } from "@/lib/zod";
+import { DEFAULT_DIAS_GRACIA } from "../../../utils/duration";
 
 export const CONFIGURACION_INICIAL = {
 	Nom_Emp_Con: "",
@@ -11,6 +12,8 @@ export const CONFIGURACION_INICIAL = {
 	Zon_Hor_Con: "",
 	Imp_Con: "",
 	Hab_Imp_Con: true,
+	Dia_Gra_Ren_Con: DEFAULT_DIAS_GRACIA,
+	Dia_Arc_Ven_Con: 5,
 };
 
 const configuracionFormSchema = z.object({
@@ -28,6 +31,21 @@ const configuracionFormSchema = z.object({
 		return !Number.isNaN(parsed) && parsed >= 0 && parsed <= 100;
 	}, {
 		message: "El impuesto debe ser un porcentaje entre 0 y 100.",
+	}),
+	// Misma cota que aplica el backend (configuracion.validator.js).
+	Dia_Gra_Ren_Con: z.union([z.string(), z.number(), z.null(), z.undefined()]).refine((value) => {
+		if (value === "" || value === null || value === undefined) return true;
+		const parsed = Number(value);
+		return Number.isInteger(parsed) && parsed >= 0 && parsed <= 365;
+	}, {
+		message: "Los días de gracia deben ser un entero entre 0 y 365.",
+	}),
+	Dia_Arc_Ven_Con: z.union([z.string(), z.number(), z.null(), z.undefined()]).refine((value) => {
+		if (value === "" || value === null || value === undefined) return true;
+		const parsed = Number(value);
+		return Number.isInteger(parsed) && parsed >= 0 && parsed <= 365;
+	}, {
+		message: "Los días antes de archivar deben ser un entero entre 0 y 365.",
 	}),
 }).passthrough().superRefine((form, ctx) => {
 	if (form.Hab_Imp_Con && (form.Imp_Con === "" || form.Imp_Con === null || form.Imp_Con === undefined || Number(form.Imp_Con) < 0 || Number(form.Imp_Con) > 100)) {

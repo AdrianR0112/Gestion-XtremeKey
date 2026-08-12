@@ -1,4 +1,6 @@
-﻿function bufferObjectToBase64(value) {
+﻿import { DEFAULT_DIAS_GRACIA } from "../../../utils/duration";
+
+function bufferObjectToBase64(value) {
 	if (!value || typeof value !== "object") return "";
 	if (value.type !== "Buffer" || !Array.isArray(value.data)) return "";
 
@@ -47,6 +49,14 @@ export function mapConfiguracionFromApi(value = {}) {
 		Zon_Hor_Con: value.Zon_Hor_Con ?? "",
 		Imp_Con: normalizeOptionalNumber(value.Imp_Con),
 		Hab_Imp_Con: value.Hab_Imp_Con === undefined ? true : Boolean(Number(value.Hab_Imp_Con)),
+		Dia_Gra_Ren_Con:
+			value.Dia_Gra_Ren_Con === undefined || value.Dia_Gra_Ren_Con === null
+				? DEFAULT_DIAS_GRACIA
+				: normalizeOptionalNumber(value.Dia_Gra_Ren_Con),
+		Dia_Arc_Ven_Con:
+			value.Dia_Arc_Ven_Con === undefined || value.Dia_Arc_Ven_Con === null
+				? 5
+				: normalizeOptionalNumber(value.Dia_Arc_Ven_Con),
 	};
 }
 
@@ -61,6 +71,8 @@ export function mapConfiguracionPayload(form = {}) {
 		Zon_Hor_Con: form.Zon_Hor_Con?.trim() || null,
 		Imp_Con: parseOptionalNumber(form.Imp_Con),
 		Hab_Imp_Con: Boolean(form.Hab_Imp_Con),
+		Dia_Gra_Ren_Con: parseOptionalNumber(form.Dia_Gra_Ren_Con) ?? DEFAULT_DIAS_GRACIA,
+		Dia_Arc_Ven_Con: parseOptionalNumber(form.Dia_Arc_Ven_Con) ?? 5,
 	};
 }
 

@@ -3,7 +3,6 @@
 		Id_Cue: value.Id_Cue ?? null,
 		Id_Prd: value.Id_Prd ?? null,
 		Id_Var: value.Id_Var ?? null,
-		Id_Pro: value.Id_Pro ?? null,
 		Nom_Cue: value.Nom_Cue ?? "",
 		Usu_Cue: value.Usu_Cue ?? "",
 		Pas_Cue: value.Pas_Cue ?? "",
@@ -30,12 +29,10 @@ function toNullableNumber(value) {
 export function mapCuentaPayload(form = {}) {
 	const idProducto = toNullableNumber(form.Id_Prd);
 	const idVariante = toNullableNumber(form.Id_Var);
-	const idProveedor = toNullableNumber(form.Id_Pro);
 
 	return {
 		Id_Prd: idProducto,
 		Id_Var: idVariante,
-		Id_Pro: idProveedor,
 		Nom_Cue: form.Nom_Cue?.trim() || "",
 		Usu_Cue: form.Usu_Cue?.trim() || null,
 		Pas_Cue: form.Pas_Cue?.trim() || null,

@@ -22,8 +22,8 @@ function buildProductoPayload(body = {}, file = null) {
   return payload;
 }
 
-const list = asyncHandler(async (req, res) => {
-  const data = await productosService.listProductos({ sort: req.query.sort });
+const list = asyncHandler(async (_req, res) => {
+  const data = await productosService.listProductos();
   res.status(200).json(successResponse(data, 'Productos obtenidos correctamente.'));
 });
 

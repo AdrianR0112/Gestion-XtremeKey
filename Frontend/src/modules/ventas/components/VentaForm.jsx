@@ -9,8 +9,10 @@ import { Separator } from "../../../components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../../../components/ui/sheet";
 import { Textarea } from "../../../components/ui/textarea";
 import { formatCurrency } from "../../../utils/currency";
+import { opcionesMetodoPago } from "../../../utils/metodosPago";
 import { matchesPhoneSearch, matchesTextSearch, normalizeSearchText } from "../../../utils/search";
 import DetalleVentasManager from "../../detalle-ventas/components/DetalleVentasManager";
+import { buildVentaTitularMap, claveTitular, findLicenciasTitular } from "../helpers/licencias";
 
 export default function VentaForm({
 	open,
@@ -21,6 +23,9 @@ export default function VentaForm({
 	onVentaFormChange,
 	clientes,
 	revendedores = [],
+	ventas = [],
+	detalleVentas = [],
+	graciaDias,
 	detallesTemporales,
 	detalleFormOpen,
 	detalleForm,
@@ -57,6 +62,19 @@ export default function VentaForm({
 	const selectedRevendedor = useMemo(
 		() => revendedores.find((rev) => Number(rev.Id_Rev) === selectedRevendedorId) || null,
 		[revendedores, selectedRevendedorId]
+	);
+
+	// Antes se pasaba una lista vacia, asi que desde este formulario nunca se
+	// podia enlazar una renovacion con su licencia anterior.
+	const ventaTitularMap = useMemo(() => buildVentaTitularMap(ventas), [ventas]);
+	const licenciasCliente = useMemo(
+		() =>
+			findLicenciasTitular(
+				detalleVentas,
+				ventaTitularMap,
+				claveTitular({ clienteId: selectedClienteId, revendedorId: selectedRevendedorId })
+			),
+		[selectedClienteId, selectedRevendedorId, detalleVentas, ventaTitularMap]
 	);
 	const filteredClientes = useMemo(() => {
 		const query = normalizeSearchText(clienteQuery);
@@ -243,11 +261,11 @@ export default function VentaForm({
 							<Select value={ventaForm.Met_Pag_Ven || ""} onValueChange={(value) => onVentaFormChange((prev) => ({ ...prev, Met_Pag_Ven: value }))}>
 								<SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
 								<SelectContent>
-									<SelectItem value="Transferencia">Transferencia</SelectItem>
-									<SelectItem value="Efectivo">Efectivo</SelectItem>
-									<SelectItem value="Tarjeta">Tarjeta</SelectItem>
-									<SelectItem value="PayPal">PayPal</SelectItem>
-									<SelectItem value="Otro">Otro</SelectItem>
+									{opcionesMetodoPago(ventaForm.Met_Pag_Ven).map((metodo) => (
+										<SelectItem key={metodo} value={metodo}>
+											{metodo}
+										</SelectItem>
+									))}
 								</SelectContent>
 							</Select>
 						</div>
@@ -314,7 +332,8 @@ export default function VentaForm({
 					varianteMap={varianteMap}
 					clienteId={selectedClienteId}
 					revendedorId={selectedRevendedorId}
-					licenciasCliente={[]}
+					licenciasCliente={licenciasCliente}
+				graciaDias={graciaDias}
 					onDetallesChange={onDetallesChange}
 					onFormChange={onFormChange}
 					onFormClose={onFormClose}

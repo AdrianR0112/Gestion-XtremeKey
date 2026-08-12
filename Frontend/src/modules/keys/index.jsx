@@ -48,10 +48,8 @@ export default function KeysPage() {
 		formValido,
 		productos,
 		variantes,
-		proveedores,
 		productoMap,
 		varianteMap,
-		proveedorMap,
 	} = state;
 
 	const { abrirCrear, abrirEditar, guardarKey, confirmarEliminacion } = actions;
@@ -109,7 +107,6 @@ export default function KeysPage() {
 							onDelete={abrirConfirmacionEliminar}
 							productoMap={productoMap}
 							varianteMap={varianteMap}
-							proveedorMap={proveedorMap}
 						/>
 					)}
 				</div>
@@ -127,7 +124,6 @@ export default function KeysPage() {
 								keyItem={keySeleccionada}
 								productoNombre={keySeleccionada.Id_Prd ? productoMap.get(Number(keySeleccionada.Id_Prd)) : null}
 								varianteNombre={keySeleccionada.Id_Var ? varianteMap.get(Number(keySeleccionada.Id_Var)) : null}
-								proveedorNombre={keySeleccionada.Id_Pro ? proveedorMap.get(Number(keySeleccionada.Id_Pro)) : null}
 								onEdit={abrirEditar}
 								onDelete={abrirConfirmacionEliminar}
 							/>
@@ -170,7 +166,6 @@ export default function KeysPage() {
 						formValido={formValido}
 						productos={productos}
 						variantes={variantes}
-						proveedores={proveedores}
 						onSubmit={guardarKey}
 						onCancel={() => setSheetOpen(false)}
 					/>

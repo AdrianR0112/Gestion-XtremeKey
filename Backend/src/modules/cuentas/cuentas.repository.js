@@ -4,12 +4,10 @@ const BASE_SELECT = `
   SELECT
     c.*,
     p.Nom_Prd,
-    v.Nom_Var,
-    pr.Nom_Pro
+    v.Nom_Var
   FROM cuentas c
   LEFT JOIN productos p ON p.Id_Prd = c.Id_Prd
   LEFT JOIN variantes_productos v ON v.Id_Var = c.Id_Var
-  LEFT JOIN proveedores pr ON pr.Id_Pro = c.Id_Pro
 `;
 
 async function findAll() {
@@ -30,7 +28,6 @@ async function createOne(data) {
     INSERT INTO cuentas (
       Id_Prd,
       Id_Var,
-      Id_Pro,
       Nom_Cue,
       Usu_Cue,
       Pas_Cue,
@@ -43,13 +40,12 @@ async function createOne(data) {
       Cos_Cue,
       Not_Cue,
       Est_Cue
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
     data.Id_Prd,
     data.Id_Var ?? null,
-    data.Id_Pro ?? null,
     data.Nom_Cue ?? null,
     data.Usu_Cue ?? null,
     data.Pas_Cue ?? null,

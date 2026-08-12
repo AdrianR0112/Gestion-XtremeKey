@@ -30,6 +30,21 @@ async function findById(id) {
   return normalizeRow(rows[0] || null);
 }
 
+async function findActivaByTipoCanal(tipo, canal) {
+  const pool = getPool();
+  const [rows] = await pool.query(
+    `
+      SELECT *
+      FROM plantillas_notificacion
+      WHERE Tip_Pla = ? AND Can_Pla = ? AND Est_Pla = 'activo'
+      ORDER BY Id_Pla ASC
+      LIMIT 1
+    `,
+    [tipo, canal]
+  );
+  return normalizeRow(rows[0] || null);
+}
+
 async function createOne(data) {
   const pool = getPool();
   const sql = `
@@ -84,6 +99,7 @@ async function removeById(id) {
 module.exports = {
   findAll,
   findById,
+  findActivaByTipoCanal,
   createOne,
   updateById,
   removeById
