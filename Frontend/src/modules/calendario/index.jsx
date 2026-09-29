@@ -27,6 +27,7 @@ import {
 	TableRow,
 } from "../../components/ui/table";
 import FeedbackAlert from "../../components/feedback-alert";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../components/tables";
 import calendarioService from "./services/calendario.service";
 import { getTimezone } from "../../utils/timezone";
 
@@ -360,7 +361,7 @@ export default function CalendarioPage() {
 			</section>
 
 			<section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-				<div className="flex items-start justify-between gap-3 border-b border-zinc-200 px-4 py-4 sm:px-5 dark:border-zinc-800">
+				<div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5 dark:border-zinc-800">
 					<div>
 						<h2 className="text-lg font-semibold">Eventos normalizados</h2>
 						<p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -372,7 +373,11 @@ export default function CalendarioPage() {
 							<Badge variant="outline" className="rounded-full">{range.endDate}</Badge>
 						</div>
 					</div>
+<<<<<<< Updated upstream
 					<FeedbackAlert message={error} variant="error" className="max-w-md" />
+=======
+					<FeedbackAlert message={error?.data?.message || error?.message || ""} variant="error" className="w-full sm:max-w-md" />
+>>>>>>> Stashed changes
 				</div>
 
 				<div className="p-4 sm:p-5">
@@ -384,6 +389,15 @@ export default function CalendarioPage() {
 							</p>
 						</div>
 					) : (
+						<>
+							<MobileExpandableList
+								items={events}
+								getItemId={(event, index) => `${event.type || "event"}-${event.saleId || event.client || index}`}
+								resetKey={`${range.startDate}-${range.endDate}-${events.map((event, index) => `${event.type || "event"}-${event.saleId || event.client || index}`).join(",")}`}
+								renderSummary={(event) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="line-clamp-2 font-semibold">{event.title || "Sin título"}</p><p className="mt-1 text-xs text-muted-foreground">{formatCalendarDate(event.start)} · {event.client || "Sin cliente"}</p></div>{event.status ? <Badge variant={getStatusVariant(event.status)}>{event.status}</Badge> : null}</div>}
+								renderDetails={(event) => <MobileDetailGrid><MobileDetail label="Tipo"><Badge variant={getTypeVariant(event.type)}>{getTypeLabel(event.type)}</Badge></MobileDetail><MobileDetail label="Días restantes">{getDaysRemaining(event.start)}</MobileDetail><MobileDetail label="Producto">{event.product || "-"}</MobileDetail><MobileDetail label="Variante">{event.variant || "-"}</MobileDetail></MobileDetailGrid>}
+							/>
+							<div className="hidden md:block">
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -416,6 +430,8 @@ export default function CalendarioPage() {
 								))}
 							</TableBody>
 						</Table>
+							</div>
+						</>
 					)}
 				</div>
 			</section>

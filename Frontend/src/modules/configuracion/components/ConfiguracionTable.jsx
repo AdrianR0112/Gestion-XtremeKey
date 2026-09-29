@@ -16,6 +16,7 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { Input } from "../../../components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import ConfiguracionEstadoBadge from "./ConfiguracionEstadoBadge";
 
 export default function ConfiguracionTable({
@@ -120,6 +121,7 @@ export default function ConfiguracionTable({
 			columnVisibility,
 		},
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
 
 	if (!configuraciones.length) {
 		return <p className="text-sm text-zinc-500">No hay configuraciones registradas.</p>;
@@ -165,7 +167,18 @@ export default function ConfiguracionTable({
 				</DropdownMenu>
 			</div>
 
-			<div className="overflow-x-auto rounded-md border">
+			<MobileExpandableList
+				items={mobileRows}
+				getItemId={(item) => item.Id_Con}
+				resetKey={`${searchTerm}-${sorting.map((item) => `${item.id}:${item.desc}`).join(",")}`}
+				emptyMessage="No hay configuraciones registradas."
+				onItemOpen={(item) => onSelect(item.Id_Con)}
+				renderSummary={(item) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{item.Nom_Emp_Con || "Sin nombre"}</p><p className="mt-1 truncate text-xs text-muted-foreground">{item.Ema_Con || "Sin correo"}</p></div><ConfiguracionEstadoBadge isCurrent={currentConfiguracionId === item.Id_Con} /></div>}
+				renderDetails={(item) => <MobileDetailGrid><MobileDetail label="Correo"><span className="break-all">{item.Ema_Con || "-"}</span></MobileDetail><MobileDetail label="Zona horaria">{item.Zon_Hor_Con || "-"}</MobileDetail><MobileDetail label="Impuesto" className="min-[380px]:col-span-2">{!item.Hab_Imp_Con ? "Desactivado" : item.Imp_Con === "" || item.Imp_Con === null ? "-" : `${item.Imp_Con}%`}</MobileDetail></MobileDetailGrid>}
+				renderActions={(item) => <><Button variant="outline" onClick={() => onViewDetail(item)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onEdit(item)}><Pencil className="size-4" />Editar</Button></>}
+			/>
+
+			<div className="hidden overflow-x-auto rounded-md border md:block">
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map((headerGroup) => (
@@ -210,11 +223,11 @@ export default function ConfiguracionTable({
 				</Table>
 			</div>
 
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="text-sm text-zinc-500">
 					{table.getRowModel().rows.length} fila(s) visibles de {configuraciones.length}
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 					<Button
 						variant="outline"
 						size="sm"

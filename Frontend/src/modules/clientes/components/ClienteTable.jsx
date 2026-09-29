@@ -17,6 +17,7 @@ import {
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import ClienteEstadoBadge from "./ClienteEstadoBadge";
 
 export default function ClienteTable({
@@ -96,6 +97,7 @@ export default function ClienteTable({
 		getPaginationRowModel: getPaginationRowModel(),
 		state: { sorting, columnVisibility },
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
 
 	return (
 		<div className="space-y-3">
@@ -168,7 +170,39 @@ export default function ClienteTable({
 				</DropdownMenu>
 			</div>
 
-			<div className="overflow-x-auto rounded-md border">
+			<MobileExpandableList
+				items={mobileRows}
+				getItemId={(cliente) => cliente.Id_Cli}
+				resetKey={`${searchTerm}-${estadoFilter}-${categoriaFilter}-${sorting.map((item) => `${item.id}:${item.desc}`).join(",")}`}
+				emptyMessage="No hay clientes que coincidan con los filtros."
+				onItemOpen={(cliente) => onSelect(cliente.Id_Cli)}
+				renderSummary={(cliente) => (
+					<div className="flex items-start justify-between gap-3">
+						<div className="min-w-0">
+							<p className="truncate font-semibold">{`${cliente.Nom_Cli} ${cliente.Ape_Cli}`.trim() || `Cliente #${cliente.Id_Cli}`}</p>
+							<p className="mt-1 truncate text-xs text-muted-foreground">{cliente.Tel_Cli || cliente.Ema_Cli || "Sin contacto"}</p>
+						</div>
+						<ClienteEstadoBadge estado={cliente.Est_Cli} />
+					</div>
+				)}
+				renderDetails={(cliente) => (
+					<MobileDetailGrid>
+						<MobileDetail label="Teléfono">{cliente.Tel_Cli || "-"}</MobileDetail>
+						<MobileDetail label="Correo"><span className="break-all">{cliente.Ema_Cli || "-"}</span></MobileDetail>
+						<MobileDetail label="Categoría">{cliente.Cat_Cli || "-"}</MobileDetail>
+						<MobileDetail label="Documento">{cliente.Doc_Cli || "-"}</MobileDetail>
+					</MobileDetailGrid>
+				)}
+				renderActions={(cliente) => (
+					<>
+						<Button variant="outline" onClick={() => onViewDetail(cliente)}><Eye className="size-4" />Ver detalle</Button>
+						<Button variant="outline" onClick={() => onEdit(cliente)}><Pencil className="size-4" />Editar</Button>
+						<Button variant="destructive" className="col-span-2" onClick={() => onDelete(cliente)}><Trash2 className="size-4" />Eliminar</Button>
+					</>
+				)}
+			/>
+
+			<div className="hidden overflow-x-auto rounded-md border md:block">
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map((headerGroup) => (
@@ -209,11 +243,11 @@ export default function ClienteTable({
 				</Table>
 			</div>
 
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="text-sm text-zinc-500">
 					{table.getRowModel().rows.length} fila(s) visibles de {clientes.length}
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 					<Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
 						Anterior
 					</Button>

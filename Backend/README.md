@@ -1,4 +1,4 @@
-﻿# Backend API
+# Backend API
 
 API REST modular construida con Node.js, Express y MySQL. El prefijo base de todas las rutas es:
 
@@ -204,8 +204,8 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 	- `Pai_Cli` opcional, string, default `Ecuador`
 	- `Doc_Cli` opcional, string
 	- `Cat_Cli` opcional, enum `nuevo`, `ocasional`, `frecuente`, `vip`
-	- `Pre_Con_Cli` opcional, enum `whatsapp`, `email`, `instagram`, `messenger`, `telegram`
-	- `Ace_Not_Tel_Cli` opcional, boolean/tinyint
+	- `Pre_Con_Cli` opcional, enum `whatsapp`, `email`, `instagram`, `messenger`
+	- `Ace_Not_What_Cli` opcional, boolean/tinyint
 	- `Ace_Not_Cor_Cli` opcional, boolean/tinyint
 	- `Not_Cli` opcional, text
 	- `Est_Cli` opcional, enum `activo`, `inactivo`, `suspendido`
@@ -541,6 +541,20 @@ No hay paginación, filtros ni búsqueda implementados actualmente en los listad
 
 - `npm run dev`
 - `npm start`
+
+## PWA, Web Push y cron en hosting compartido
+
+- Node sirve `Frontend/dist` en producción y mantiene `/api`, `/uploads` y `/health` fuera del fallback de la SPA.
+- Genera una sola vez las claves con `npx web-push generate-vapid-keys --json` y configura `PUSH_ENABLED=true`, `PUSH_VAPID_PUBLIC_KEY`, `PUSH_VAPID_PRIVATE_KEY` y `PUSH_VAPID_SUBJECT`.
+- Usa HTTPS y comprueba desde el hosting que `curl -sI https://fcm.googleapis.com` recibe respuesta.
+- En Passenger/cPanel deja `PUSH_CRON_ENABLED=false`; el proceso puede dormir y el disparo fiable debe venir del Cron Jobs de cPanel.
+- Configura un `CRON_TOKEN` aleatorio de al menos 48 caracteres y envíalo solo en la cabecera `X-Cron-Token`.
+- Cron horario para el resumen push:
+  `0 * * * * /usr/bin/curl -fsS -X POST -H "X-Cron-Token: TOKEN" https://app.dominio.com/api/v1/cron/recordatorios-push > /dev/null`
+- Cron de expiración:
+  `10 0 * * * /usr/bin/curl -fsS -X POST -H "X-Cron-Token: TOKEN" https://app.dominio.com/api/v1/cron/suscripciones-expiracion > /dev/null`
+- La hora y la ventana del resumen se editan desde Configuración; el cron horario solo despierta la app y el job decide si corresponde enviar.
+- Ejecuta `npm run build` en `Frontend` antes de desplegar y conserva `Backend/uploads` entre despliegues.
 
 ## Nota de implementación
 

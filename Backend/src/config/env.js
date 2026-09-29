@@ -20,9 +20,28 @@ const env = {
   remindersEnabled: String(process.env.REMINDERS_ENABLED || 'false').toLowerCase() === 'true',
   remindersCron: process.env.REMINDERS_CRON || '0 9 * * *',
   remindersDryRun: String(process.env.REMINDERS_DRY_RUN || 'true').toLowerCase() === 'true',
+<<<<<<< Updated upstream
   remindersTestMode: String(process.env.REMINDERS_TEST_MODE || 'false').toLowerCase() === 'true',
   remindersTestClientId: process.env.REMINDERS_TEST_CLIENT_ID ? Number(process.env.REMINDERS_TEST_CLIENT_ID) : null,
   remindersTestOverrideEmail: process.env.REMINDERS_TEST_OVERRIDE_EMAIL || ''
+=======
+  cronTimezone: process.env.CRON_TIMEZONE || 'America/Guayaquil',
+  cronToken: process.env.CRON_TOKEN || '',
+  pushEnabled: String(process.env.PUSH_ENABLED || 'false').toLowerCase() === 'true',
+  pushVapidPublicKey: process.env.PUSH_VAPID_PUBLIC_KEY || '',
+  pushVapidPrivateKey: process.env.PUSH_VAPID_PRIVATE_KEY || '',
+  pushVapidSubject: process.env.PUSH_VAPID_SUBJECT || 'mailto:admin@example.com',
+  pushCronEnabled: String(process.env.PUSH_CRON_ENABLED || 'false').toLowerCase() === 'true',
+  pushCron: process.env.PUSH_CRON || '0 * * * *',
+  pushDryRun: String(process.env.PUSH_DRY_RUN || 'true').toLowerCase() === 'true',
+  // A diferencia de los recordatorios, este job viene habilitado por defecto:
+  // no envia mensajes ni consume APIs de pago, solo corrige un estado que ya es
+  // incorrecto. Corre a las 00:10 (America/Guayaquil), recien cambiado el dia y
+  // mucho antes del envio configurable de recordatorios.
+  expiracionEnabled: String(process.env.EXPIRACION_ENABLED || 'true').toLowerCase() === 'true',
+  expiracionCron: process.env.EXPIRACION_CRON || '10 0 * * *',
+  expiracionDryRun: String(process.env.EXPIRACION_DRY_RUN || 'false').toLowerCase() === 'true'
+>>>>>>> Stashed changes
 };
 
 module.exports = { env };

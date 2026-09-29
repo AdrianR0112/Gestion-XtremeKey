@@ -1,4 +1,4 @@
-﻿import { Mail, MapPin, Phone, FileText, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { Mail, MapPin, Phone, FileText, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Separator } from "../../../components/ui/separator";
 import ClienteEstadoBadge from "./ClienteEstadoBadge";
@@ -62,9 +62,9 @@ export default function ClienteCard({ cliente, onEdit, onDelete }) {
 				<div className="rounded-md border p-3">
 					<p className="text-xs text-zinc-500 flex items-center gap-1">
 						<CheckCircle2 className="size-3.5" />
-						Acepta notificaciones por telegram
+						Acepta notificaciones por WhatsApp
 					</p>
-					<p className="font-medium mt-1">{cliente.Ace_Not_Tel_Cli ? "Si" : "No"}</p>
+					<p className="font-medium mt-1">{cliente.Ace_Not_What_Cli ? "Si" : "No"}</p>
 				</div>
 				<div className="rounded-md border p-3">
 					<p className="text-xs text-zinc-500 flex items-center gap-1">

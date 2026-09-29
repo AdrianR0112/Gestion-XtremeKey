@@ -131,15 +131,15 @@ export default function VariantTable({
 			)}
 
 			{totalPages > 1 && (
-				<div className="flex items-center justify-between text-sm">
+				<div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
 					<span className="text-muted-foreground">
 						Mostrando {paginatedVariants.length > 0 ? pagination.pageIndex * pagination.pageSize + 1 : 0} de {variantes.length}
 					</span>
-					<div className="flex gap-2">
+					<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 						<Button variant="outline" size="sm" disabled={pagination.pageIndex === 0} onClick={() => setPagination({ ...pagination, pageIndex: pagination.pageIndex - 1 })}>
 							Anterior
 						</Button>
-						<span className="text-xs text-muted-foreground flex items-center px-2">
+						<span className="col-span-2 flex items-center justify-center px-2 text-xs text-muted-foreground sm:col-auto">
 							Página {pagination.pageIndex + 1} de {totalPages}
 						</span>
 						<Button variant="outline" size="sm" disabled={pagination.pageIndex === totalPages - 1} onClick={() => setPagination({ ...pagination, pageIndex: pagination.pageIndex + 1 })}>

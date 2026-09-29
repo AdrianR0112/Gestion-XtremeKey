@@ -2,6 +2,7 @@
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import {
 	getCoreRowModel,
 	getPaginationRowModel,
@@ -75,6 +76,8 @@ export default function VentaTable({
 		getPaginationRowModel: getPaginationRowModel(),
 		manualPagination: false,
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
+	const getTitular = (venta) => columns.find((column) => column.id === "cliente").cell(venta);
 
 	if (loading) {
 		return <p className="text-sm text-zinc-500">Cargando ventas...</p>;
@@ -82,7 +85,17 @@ export default function VentaTable({
 
 	return (
 		<div className="space-y-4">
-			<div className="overflow-x-auto rounded-md border">
+			<MobileExpandableList
+				items={mobileRows}
+				getItemId={(venta) => venta.Id_Ven}
+				resetKey={`${pagination.pageIndex}-${ventasFiltradas.map((venta) => venta.Id_Ven).join(",")}`}
+				emptyMessage="No hay ventas."
+				renderSummary={(venta) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{venta.Cod_Ven || `Venta #${venta.Id_Ven}`}</p><p className="mt-1 truncate text-xs text-muted-foreground">{getTitular(venta)}</p></div><VentaEstadoBadge estado={venta.Est_Ven} /></div>}
+				renderDetails={(venta) => <MobileDetailGrid><MobileDetail label="Fecha">{venta.Fec_Ven ? formatDate(venta.Fec_Ven) : "-"}</MobileDetail><MobileDetail label="Total">{formatCurrency(venta.Tot_Ven || 0)}</MobileDetail><MobileDetail label="Cliente / Revendedor" className="min-[380px]:col-span-2">{getTitular(venta)}</MobileDetail></MobileDetailGrid>}
+				renderActions={(venta) => <><Button variant="outline" onClick={() => onView(venta)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onEdit(venta)}><Pencil className="size-4" />Editar</Button><Button variant="destructive" className="col-span-2" onClick={() => onDelete(venta)}><Trash2 className="size-4" />Eliminar</Button></>}
+			/>
+
+			<div className="hidden overflow-x-auto rounded-md border md:block">
 			<Table>
 				<TableHeader>
 					<TableRow>
@@ -123,7 +136,7 @@ export default function VentaTable({
 				<div className="text-sm text-zinc-500">
 					Mostrando {table.getRowModel().rows.length} de {ventasFiltradas.length} ventas
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 					<Button
 						variant="outline"
 						size="sm"

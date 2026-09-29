@@ -1,5 +1,5 @@
-﻿const categorias = ['nuevo', 'ocasional', 'frecuente', 'vip'];
-const preferenciasContacto = ['whatsapp', 'email', 'instagram', 'messenger', 'telegram'];
+const categorias = ['nuevo', 'ocasional', 'frecuente', 'vip'];
+const preferenciasContacto = ['whatsapp', 'email', 'instagram', 'messenger'];
 const estados = ['activo', 'inactivo', 'suspendido'];
 
 const allowedFields = [
@@ -11,7 +11,7 @@ const allowedFields = [
   'Doc_Cli',
   'Cat_Cli',
   'Pre_Con_Cli',
-  'Ace_Not_Tel_Cli',
+  'Ace_Not_What_Cli',
   'Ace_Not_Cor_Cli',
   'Not_Cli',
   'Est_Cli'

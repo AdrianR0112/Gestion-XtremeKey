@@ -9,6 +9,7 @@ router.use(authMiddleware);
 router.use(roleMiddleware(['admin', 'vendedor']));
 
 router.get('/', productosController.list);
+router.get('/vendibles', productosController.vendibles);
 router.get('/:id', productosController.getById);
 router.post('/', productosController.create);
 router.put('/:id', productosController.update);

@@ -3,7 +3,9 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import { Eye, Pencil, Trash } from "lucide-react";
+import { formatCurrency } from "../../../utils/currency";
 import VariantEstadoBadge from "../../variantes/components/VariantEstadoBadge";
 import { ESTADOS_VARIANTE } from "../../variantes/schemas/variant.schema";
 
@@ -71,14 +73,14 @@ export default function ProductoVariantesPanel({
 						</Select>
 					</div>
 
-					<div className="flex flex-wrap gap-2">
+					<div className="grid w-full gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:flex-wrap">
 						<Button type="button" variant="outline" onClick={() => onToggleSelectAll(filteredVariants)} disabled={filteredVariants.length === 0}>
 							{allVisibleSelected ? "Quitar selección" : "Seleccionar visibles"}
 						</Button>
 						<Button type="button" variant="outline" onClick={onDuplicateSelected} disabled={selectedCount === 0}>
 							Duplicar seleccionadas ({selectedCount})
 						</Button>
-						<Button type="button" variant="destructive" onClick={onDeleteSelected} disabled={selectedCount === 0}>
+						<Button className="sm:col-span-2 lg:col-auto" type="button" variant="destructive" onClick={onDeleteSelected} disabled={selectedCount === 0}>
 							Eliminar seleccionadas ({selectedCount})
 						</Button>
 					</div>
@@ -93,6 +95,17 @@ export default function ProductoVariantesPanel({
 			) : filteredVariants.length === 0 ? (
 				<p className="text-sm text-muted-foreground">No hay variantes que coincidan con los filtros actuales.</p>
 			) : (
+				<>
+					<MobileExpandableList
+						items={filteredVariants}
+						getItemId={(variante) => variante.Id_Var}
+						resetKey={`${searchTerm}-${estadoFilter}-${filteredVariants.map((variante) => variante.Id_Var).join(",")}`}
+						renderLeading={(variante) => <input type="checkbox" checked={selectedVariantIds.includes(variante.Id_Var)} onChange={() => onToggleVariantSelection(variante.Id_Var)} aria-label={`Seleccionar variante ${variante.Nom_Var || variante.Id_Var}`} />}
+						renderSummary={(variante) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{variante.Nom_Var || `Variante #${variante.Id_Var}`}</p><p className="mt-1 text-xs font-medium text-muted-foreground">{variante.Pre_Ven_Var === "" || variante.Pre_Ven_Var == null ? "Sin precio" : formatCurrency(variante.Pre_Ven_Var)}</p></div><VariantEstadoBadge estado={variante.Est_Var} /></div>}
+						renderDetails={(variante) => <MobileDetailGrid><MobileDetail label="Costo">{variante.Pre_Cos_Var === "" || variante.Pre_Cos_Var == null ? "-" : formatCurrency(variante.Pre_Cos_Var)}</MobileDetail><MobileDetail label="Revendedor">{variante.Pre_Rev_Var === "" || variante.Pre_Rev_Var == null ? "-" : formatCurrency(variante.Pre_Rev_Var)}</MobileDetail><MobileDetail label="Correo">{variante.Not_Ven_Cor_Var ? "Activo" : "Inactivo"}</MobileDetail><MobileDetail label="WhatsApp">{variante.Not_Ven_Wsp_Var ? "Activo" : "Inactivo"}</MobileDetail>{variante.Des_Var ? <MobileDetail label="Descripción" className="min-[380px]:col-span-2">{variante.Des_Var}</MobileDetail> : null}</MobileDetailGrid>}
+						renderActions={(variante) => <><Button variant="outline" onClick={() => onVariantView(variante)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onVariantEdit(variante)}><Pencil className="size-4" />Editar</Button><Button variant="destructive" className="col-span-2" onClick={() => onVariantDelete(variante)}><Trash className="size-4" />Eliminar</Button></>}
+					/>
+					<div className="hidden md:block">
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -166,6 +179,8 @@ export default function ProductoVariantesPanel({
 						))}
 					</TableBody>
 				</Table>
+					</div>
+				</>
 			)}
 		</div>
 	);

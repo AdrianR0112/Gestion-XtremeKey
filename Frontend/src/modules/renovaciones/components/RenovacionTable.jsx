@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 ﻿import { useMemo, useState } from "react";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
@@ -7,6 +8,13 @@ import {
 	getPaginationRowModel,
 	useReactTable,
 } from "@tanstack/react-table";
+=======
+import { useState } from "react";
+import { Eye } from "lucide-react";
+import { Button } from "../../../components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
+>>>>>>> Stashed changes
 import { formatCurrency } from "../../../utils/currency";
 import formatDate from "../../../utils/formatDate";
 import RenovacionEstadoBadge from "./RenovacionEstadoBadge";
@@ -101,7 +109,17 @@ export default function RenovacionTable({
 
 	return (
 		<div className="space-y-4">
-			<div className="overflow-x-auto rounded-md border">
+			<MobileExpandableList
+				items={rows}
+				getItemId={(item) => item.Id_Dve}
+				resetKey={`${pageIndex}-${renovacionesFiltradas.map((item) => item.Id_Dve).join(",")}`}
+				emptyMessage="No hay renovaciones."
+				renderSummary={(item) => <div className="min-w-0"><p className="truncate font-semibold">{item.Nom_Prd || `Renovación #${item.Id_Dve}`}</p><p className="mt-1 truncate text-xs text-muted-foreground">{`${item.Nom_Cli || ""} ${item.Ape_Cli || ""}`.trim() || "Sin cliente"}</p></div>}
+				renderDetails={(item) => <MobileDetailGrid><MobileDetail label="Detalle anterior">#{item.Id_Dve_Ant}</MobileDetail><MobileDetail label="Detalle nuevo">#{item.Id_Dve}</MobileDetail><MobileDetail label="Venta anterior">{item.Cod_Ven_Ant || `#${item.Id_Ven_Ant}`}</MobileDetail><MobileDetail label="Venta nueva">{item.Cod_Ven_Nue || `#${item.Id_Ven_Nue}`}</MobileDetail><MobileDetail label="Vigencia">{formatDate(item.Fec_Ini_Dve_Nue)} – {formatDate(item.Fec_Fin_Dve_Nue)}</MobileDetail><MobileDetail label="Precio">{formatCurrency(Number(item.Pre_Uni_Dve_Nue || 0) - Number(item.Des_Uni_Dve_Nue || 0))}</MobileDetail></MobileDetailGrid>}
+				renderActions={(item) => <Button className="col-span-2" variant="outline" onClick={() => onView(item)}><Eye className="size-4" />Ver detalle</Button>}
+			/>
+
+			<div className="hidden overflow-x-auto rounded-md border md:block">
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -141,6 +159,7 @@ export default function RenovacionTable({
 			</div>
 
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<<<<<<< Updated upstream
 				<div className="text-sm text-zinc-500">
 					Mostrando {table.getRowModel().rows.length} de {renovacionesFiltradas.length} renovaciones
 				</div>
@@ -161,6 +180,12 @@ export default function RenovacionTable({
 					>
 						Siguiente
 					</Button>
+=======
+				<div className="text-sm text-zinc-500">Mostrando {rows.length} de {renovacionesFiltradas.length} renovaciones</div>
+				<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+					<Button variant="outline" size="sm" onClick={() => setPageIndex((value) => Math.max(0, value - 1))} disabled={pageIndex === 0}>Anterior</Button>
+					<Button variant="outline" size="sm" onClick={() => setPageIndex((value) => Math.min(pageCount - 1, value + 1))} disabled={pageIndex >= pageCount - 1}>Siguiente</Button>
+>>>>>>> Stashed changes
 				</div>
 			</div>
 		</div>

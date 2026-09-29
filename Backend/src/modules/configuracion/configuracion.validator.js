@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 ﻿const { allowedFields, requiredCreateFields } = require('./configuracion.schemas');
 
 function isEmail(value) {
@@ -23,6 +24,79 @@ function normalizeBooleanFlag(value, fieldName) {
   if (value === 0 || value === '0') return { value: false, error: null };
   return { value, error: `${fieldName} must be a boolean value` };
 }
+=======
+﻿const {
+  allowedFields,
+  requiredCreateFields,
+  MAX_DIAS_GRACIA_RENOVACION,
+  MAX_DIAS_ARCHIVO_VENCIDA,
+  MAX_DIAS_ANTICIPACION_NOTIFICACION
+} = require('./configuracion.schemas');
+const { z, validationResult, isNumericId } = require('../../utils/zod');
+
+const configuracionPayloadSchema = z.object({
+  Nom_Emp_Con: z.any().optional(),
+  Ema_Con: z.string().email('Ema_Con must be a valid email').optional().or(z.literal('')).or(z.null()),
+  Imp_Con: z.preprocess((value) => {
+    if (value === undefined) return undefined;
+    return Number(value);
+  }, z.number().min(0, 'Imp_Con must be a number between 0 and 100').max(100, 'Imp_Con must be a number between 0 and 100').optional()),
+  Hab_Imp_Con: z.preprocess((value) => {
+    if (value === undefined) return undefined;
+    if (typeof value === 'boolean') return value;
+    if (value === 1 || value === '1') return true;
+    if (value === 0 || value === '0') return false;
+    return value;
+  }, z.boolean('Hab_Imp_Con must be a boolean value').optional()),
+  Log_Con: z.preprocess((value) => {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    return String(value).trim() || null;
+  }, z.string().nullable().optional()),
+  // Gracia al renovar suscripciones. 0 es valido: significa "nunca encadenar
+  // desde un vencimiento ya pasado".
+  Dia_Gra_Ren_Con: z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  }, z
+    .number(`Dia_Gra_Ren_Con must be an integer between 0 and ${MAX_DIAS_GRACIA_RENOVACION}`)
+    .int(`Dia_Gra_Ren_Con must be an integer between 0 and ${MAX_DIAS_GRACIA_RENOVACION}`)
+    .min(0, `Dia_Gra_Ren_Con must be an integer between 0 and ${MAX_DIAS_GRACIA_RENOVACION}`)
+    .max(MAX_DIAS_GRACIA_RENOVACION, `Dia_Gra_Ren_Con must be an integer between 0 and ${MAX_DIAS_GRACIA_RENOVACION}`)
+    .optional()),
+  // Dias que una vencida sigue visible antes de archivarse. 0 = archivarla en
+  // cuanto vence.
+  Dia_Arc_Ven_Con: z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  }, z
+    .number(`Dia_Arc_Ven_Con must be an integer between 0 and ${MAX_DIAS_ARCHIVO_VENCIDA}`)
+    .int(`Dia_Arc_Ven_Con must be an integer between 0 and ${MAX_DIAS_ARCHIVO_VENCIDA}`)
+    .min(0, `Dia_Arc_Ven_Con must be an integer between 0 and ${MAX_DIAS_ARCHIVO_VENCIDA}`)
+    .max(MAX_DIAS_ARCHIVO_VENCIDA, `Dia_Arc_Ven_Con must be an integer between 0 and ${MAX_DIAS_ARCHIVO_VENCIDA}`)
+    .optional()),
+  Hor_Not_Con: z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  }, z.number().int('Hor_Not_Con must be an integer between 0 and 23')
+    .min(0, 'Hor_Not_Con must be an integer between 0 and 23')
+    .max(23, 'Hor_Not_Con must be an integer between 0 and 23').optional()),
+  Dia_Ant_Not_Con: z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  }, z.number().int(`Dia_Ant_Not_Con must be an integer between 0 and ${MAX_DIAS_ANTICIPACION_NOTIFICACION}`)
+    .min(0, `Dia_Ant_Not_Con must be an integer between 0 and ${MAX_DIAS_ANTICIPACION_NOTIFICACION}`)
+    .max(MAX_DIAS_ANTICIPACION_NOTIFICACION, `Dia_Ant_Not_Con must be an integer between 0 and ${MAX_DIAS_ANTICIPACION_NOTIFICACION}`).optional()),
+}).passthrough().transform((payload) => {
+  const clean = {};
+  for (const key of allowedFields) {
+    if (payload[key] !== undefined) {
+      clean[key] = payload[key];
+    }
+  }
+  return clean;
+});
+>>>>>>> Stashed changes
 
 function validatePayload(payload = {}, { isUpdate = false } = {}) {
   const errors = [];

@@ -11,6 +11,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import { Progress } from "../../../components/ui/progress";
 import { PrioridadBadge, EstadoBadge } from "./TareaBadges";
 import { ESTADOS_TAREA, PRIORIDADES_TAREA } from "../schemas/tarea.schema";
@@ -117,12 +118,13 @@ export default function TareaTable({
 			columnVisibility,
 		},
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
 
 	return (
 		<div className="space-y-4">
 			{/* Filtros */}
 			<div className="flex gap-3 items-end flex-wrap">
-				<div className="flex-1 min-w-64 space-y-2">
+				<div className="min-w-0 flex-1 space-y-2">
 					<label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Buscar</label>
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
@@ -172,7 +174,7 @@ export default function TareaTable({
 			</div>
 
 			{/* Tabla */}
-			<div className="border rounded-lg overflow-hidden">
+			<div>
 				{loading ? (
 					<div className="text-center py-8">
 						<p className="text-sm text-zinc-500">Cargando tareas...</p>
@@ -182,6 +184,17 @@ export default function TareaTable({
 						<p className="text-sm text-zinc-600 dark:text-zinc-400">No se encontraron tareas</p>
 					</div>
 				) : (
+					<>
+						<MobileExpandableList
+							items={mobileRows}
+							getItemId={(tarea) => tarea.Id_Tar}
+							resetKey={`${searchTerm}-${estadoFilter}-${prioridadFilter}-${sorting.map((item) => `${item.id}:${item.desc}`).join(",")}`}
+							onItemOpen={(tarea) => onSelect(tarea.Id_Tar)}
+							renderSummary={(tarea) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="line-clamp-2 font-semibold">{tarea.Tit_Tar || `Tarea #${tarea.Id_Tar}`}</p><div className="mt-1"><PrioridadBadge prioridad={tarea.Pri_Tar} /></div></div><EstadoBadge estado={tarea.Est_Tar} /></div>}
+							renderDetails={(tarea) => <div className="space-y-3"><MobileDetailGrid><MobileDetail label="Fecha límite">{tarea.Fec_Lim_Tar ? new Date(tarea.Fec_Lim_Tar).toLocaleDateString() : "-"}</MobileDetail><MobileDetail label="Progreso">{tarea.Pro_Tar ?? 0}%</MobileDetail>{tarea.Des_Tar ? <MobileDetail label="Descripción" className="min-[380px]:col-span-2">{tarea.Des_Tar}</MobileDetail> : null}</MobileDetailGrid><Progress value={tarea.Pro_Tar} /></div>}
+							renderActions={(tarea) => <><Button variant="outline" onClick={() => onViewDetail(tarea)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onEdit(tarea)}><Pencil className="size-4" />Editar</Button><Button variant="destructive" className="col-span-2" onClick={() => onDelete(tarea)}><Trash2 className="size-4" />Eliminar</Button></>}
+						/>
+						<div className="hidden overflow-hidden rounded-lg border md:block">
 					<Table>
 						<TableHeader>
 							<TableRow className="bg-zinc-50 dark:bg-zinc-900">
@@ -213,12 +226,14 @@ export default function TareaTable({
 							))}
 						</TableBody>
 					</Table>
+						</div>
+					</>
 				)}
 			</div>
 
 			{/* Paginación */}
 			{!loading && tareas.length > 0 && (
-				<div className="flex items-center justify-between">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div className="text-sm text-zinc-600 dark:text-zinc-400">
 						Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
 					</div>

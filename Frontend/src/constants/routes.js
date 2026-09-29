@@ -19,6 +19,7 @@
   CALENDARIO: "/calendario",
   PLANTILLAS: "/plantillas",
   REPORTES: "/reportes",
+  RECORDATORIOS: "/recordatorios",
 };
 
 export default ROUTES;

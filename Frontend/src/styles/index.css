@@ -15,6 +15,34 @@
 }
 
 @layer base {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	html,
+	body,
+	#root {
+		max-width: 100%;
+		min-height: 100%;
+		overflow-x: hidden;
+	}
+
+	img,
+	video,
+	canvas,
+	svg {
+		max-width: 100%;
+	}
+
+	h1,
+	h2,
+	h3,
+	p {
+		overflow-wrap: anywhere;
+	}
+
     button {
         cursor: pointer;
     }
@@ -68,6 +96,42 @@
     input[type="checkbox"]:checked {
         background-color: #3b82f6;
     }
+
+	[data-slot="table-container"] {
+		-webkit-overflow-scrolling: touch;
+	}
+
+	[data-slot="table-container"] > table:has(tbody > tr > td:last-child button) thead th:last-child,
+	[data-slot="table-container"] > table tbody > tr > td:last-child:has(button) {
+		position: sticky;
+		right: 0;
+		z-index: 1;
+		box-shadow: -10px 0 14px -14px rgb(0 0 0 / 0.55);
+	}
+
+	[data-slot="table-container"] > table:has(tbody > tr > td:last-child button) thead th:last-child {
+		z-index: 2;
+		background-color: var(--card);
+	}
+
+	[data-slot="table-container"] > table tbody > tr > td:last-child:has(button) {
+		background-color: inherit;
+	}
+
+	[data-slot="table-container"] > table tbody > tr:hover > td:last-child:has(button) {
+		background-color: inherit;
+	}
+
+	@media (max-width: 639px) {
+		[data-slot="table-container"] {
+			margin-inline: -0.25rem;
+			width: calc(100% + 0.5rem);
+		}
+
+		[data-slot="table-container"] > table tbody > tr > td:last-child:has(button) [data-slot="button"] {
+			min-width: 2.5rem;
+		}
+	}
   * {
     @apply border-border outline-ring/50;
     }

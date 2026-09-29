@@ -12,6 +12,26 @@ async function findById(id) {
   return rows[0] || null;
 }
 
+async function findByPhoneCandidates(candidates = []) {
+  const pool = getPool();
+  const values = [...new Set(candidates.map((value) => String(value || '').trim()).filter(Boolean))];
+  if (values.length === 0) return [];
+
+  const [exactRows] = await pool.query(
+    'SELECT * FROM revendedores WHERE Tel_Rev IN (?) ORDER BY Id_Rev ASC LIMIT 5',
+    [values]
+  );
+  if (exactRows.length > 0) return exactRows;
+
+  const digits = [...new Set(values.map((value) => value.replace(/\D/g, '')).filter(Boolean))];
+  const normalizedColumn = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(Tel_Rev, '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''), '.', '')";
+  const [normalizedRows] = await pool.query(
+    `SELECT * FROM revendedores WHERE ${normalizedColumn} IN (?) ORDER BY Id_Rev ASC LIMIT 5`,
+    [digits]
+  );
+  return normalizedRows;
+}
+
 async function createOne(data) {
   const pool = getPool();
   const sql = `
@@ -61,6 +81,7 @@ async function removeById(id) {
 module.exports = {
   findAll,
   findById,
+  findByPhoneCandidates,
   createOne,
   updateById,
   removeById

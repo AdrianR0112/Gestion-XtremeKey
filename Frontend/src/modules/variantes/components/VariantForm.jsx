@@ -176,7 +176,7 @@ export default function VariantForm({ form = {}, productos = [], onFormChange = 
 			</div>
 			</FormSection>
 
-			<div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 sm:flex-row sm:justify-end">
+			<div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 [&>button]:w-full sm:flex-row sm:justify-end sm:[&>button]:w-auto">
 				<Button type="button" variant="outline" onClick={onCancel}>
 					Cancelar
 				</Button>

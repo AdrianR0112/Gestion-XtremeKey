@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import formatDate from "../../../utils/formatDate";
 import CuentaEstadoBadge from "./CuentaEstadoBadge";
 
@@ -105,6 +106,7 @@ export default function CuentaTable({
 		getPaginationRowModel: getPaginationRowModel(),
 		state: { sorting, columnVisibility },
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
 
 	return (
 		<div className="space-y-3">
@@ -155,7 +157,18 @@ export default function CuentaTable({
 				</DropdownMenu>
 			</div>
 
-			<div className="overflow-x-auto rounded-md border">
+			<MobileExpandableList
+				items={mobileRows}
+				getItemId={(cuenta) => cuenta.Id_Cue}
+				resetKey={`${searchTerm}-${estadoFilter}-${sorting.map((item) => `${item.id}:${item.desc}`).join(",")}`}
+				emptyMessage="No hay cuentas que coincidan con los filtros."
+				onItemOpen={(cuenta) => onSelect(cuenta.Id_Cue)}
+				renderSummary={(cuenta) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{cuenta.Nom_Cue || `Cuenta #${cuenta.Id_Cue}`}</p><p className="mt-1 truncate text-xs text-muted-foreground">{cuenta.Usu_Cue || "Sin usuario"}</p></div><CuentaEstadoBadge estado={cuenta.Est_Cue} /></div>}
+				renderDetails={(cuenta) => <MobileDetailGrid><MobileDetail label="Producto">{cuenta.Id_Prd ? productoMap.get(Number(cuenta.Id_Prd)) || `#${cuenta.Id_Prd}` : "-"}</MobileDetail><MobileDetail label="Variante">{cuenta.Id_Var ? varianteMap.get(Number(cuenta.Id_Var)) || `#${cuenta.Id_Var}` : "-"}</MobileDetail><MobileDetail label="Usuario"><span className="break-all">{cuenta.Usu_Cue || "-"}</span></MobileDetail><MobileDetail label="Vencimiento">{cuenta.Fec_Ven_Cue ? formatDate(cuenta.Fec_Ven_Cue) : "-"}</MobileDetail></MobileDetailGrid>}
+				renderActions={(cuenta) => <><Button variant="outline" onClick={() => onViewDetail(cuenta)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onEdit(cuenta)}><Pencil className="size-4" />Editar</Button><Button variant="destructive" className="col-span-2" onClick={() => onDelete(cuenta)}><Trash2 className="size-4" />Eliminar</Button></>}
+			/>
+
+			<div className="hidden overflow-x-auto rounded-md border md:block">
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map((headerGroup) => (
@@ -196,11 +209,11 @@ export default function CuentaTable({
 				</Table>
 			</div>
 
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="text-sm text-zinc-500">
 					{table.getRowModel().rows.length} fila(s) visibles de {cuentas.length}
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 					<Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
 						Anterior
 					</Button>

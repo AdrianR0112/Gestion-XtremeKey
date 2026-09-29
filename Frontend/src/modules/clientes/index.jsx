@@ -132,12 +132,12 @@ export default function ClientesPage() {
 	return (
 		<div className="max-w-7xl mx-auto space-y-5">
 			<section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white/85 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/85">
-				<div className="flex items-start justify-between gap-3 border-b border-zinc-200/80 px-4 py-4 sm:px-5 dark:border-zinc-800/80">
+				<div className="flex flex-col gap-3 border-b border-zinc-200/80 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5 dark:border-zinc-800/80">
 					<div>
 						<h1 className="text-2xl font-semibold">Clientes</h1>
 						<p className="text-sm text-zinc-600 dark:text-zinc-400">Gestion de cartera comercial</p>
 					</div>
-					<div className="flex gap-2">
+					<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 						<Button variant="outline" onClick={abrirImportacion}>
 							<Upload className="size-4 mr-1" />
 							Importar clientes
@@ -195,7 +195,7 @@ export default function ClientesPage() {
 								className="block w-full rounded-md border border-zinc-300 bg-background px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-white dark:border-zinc-700 dark:file:bg-zinc-100 dark:file:text-zinc-900"
 							/>
 							<p className="text-xs text-zinc-500 dark:text-zinc-400">
-								Campos esperados: Nom_Cli, Ape_Cli, Tel_Cli, Usu_Tel_Cli, Ema_Cli, Pai_Cli, Doc_Cli, Cat_Cli, Pre_Con_Cli, Ace_Not_Tel_Cli, Ace_Not_Cor_Cli, Not_Cli, Est_Cli.
+								Campos esperados: Nom_Cli, Ape_Cli, Tel_Cli, Ema_Cli, Pai_Cli, Doc_Cli, Cat_Cli, Pre_Con_Cli, Ace_Not_What_Cli, Ace_Not_Cor_Cli, Not_Cli, Est_Cli.
 							</p>
 						</div>
 

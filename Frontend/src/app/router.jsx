@@ -28,6 +28,7 @@ import RenovacionesPage from "../modules/renovaciones";
 import RevendedoresPage from "../modules/revendedores";
 import TareasPage from "../modules/tareas";
 import PlantillasPage from "../modules/plantillas";
+import RecordatoriosPage from "../modules/recordatorios";
 
 function PrivateRoute({ children }) {
   const location = useLocation();
@@ -82,6 +83,7 @@ export default function Router() {
         <Route path="revendedores" element={<RevendedoresPage />} />
         <Route path="tareas" element={<TareasPage />} />
         <Route path="plantillas" element={<PlantillasPage />} />
+        <Route path="recordatorios" element={<RecordatoriosPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

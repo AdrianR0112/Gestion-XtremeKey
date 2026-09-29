@@ -6,6 +6,7 @@ import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import { formatCurrency } from "../../../utils/currency";
 import { getTimezone } from "../../../utils/timezone";
 import {
@@ -397,7 +398,49 @@ export default function DetalleVentasManager({
 					{/* quick selections removed from empty state */}
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-xl border">
+				<>
+					<MobileExpandableList
+						items={filteredDetalles}
+						getItemId={(detalle, index) => detalle.Id_Dve || `tmp-${detallesTemporales.indexOf(detalle)}-${index}`}
+						resetKey={`${normalizedSearch}:${filteredDetalles.map((detalle) => detalle.Id_Dve || detallesTemporales.indexOf(detalle)).join(",")}`}
+						emptyMessage="No se encontraron productos con ese criterio."
+						renderSummary={(detalle) => (
+							<>
+								<div className="min-w-0">
+									<p className="truncate font-medium">{productoMap.get(Number(detalle.Id_Prd)) || detalle.Nom_Prd || "Sin producto"}</p>
+									<p className="truncate text-xs text-zinc-500">{varianteMap.get(Number(detalle.Id_Var)) || detalle.Nom_Var || "Sin variante"}</p>
+								</div>
+								<div className="shrink-0 text-right">
+									<p className="whitespace-nowrap font-semibold">{formatCurrency(detalle.Sub_Tot_Dve || 0)}</p>
+									<p className="text-xs capitalize text-zinc-500">{detalle.Est_Dve || "activo"}</p>
+								</div>
+							</>
+						)}
+						renderDetails={(detalle) => {
+							const previousLicense = detalle.Id_Dve_Ant
+								? licenciasCliente.find((item) => Number(item.Id_Dve) === Number(detalle.Id_Dve_Ant))
+								: null;
+							return (
+								<MobileDetailGrid>
+									<MobileDetail label="Tipo" value={detalle.Id_Dve_Ant ? `Renovación${previousLicense ? ` #${previousLicense.Id_Dve}` : ""}` : "Nueva"} />
+									<MobileDetail label="Cantidad" value={detalle.Can_Dve ?? 1} />
+									<MobileDetail label="Precio" value={formatCurrency(detalle.Pre_Uni_Dve || 0)} />
+									<MobileDetail label="Descuento" value={formatCurrency(detalle.Des_Uni_Dve || 0)} />
+									<MobileDetail label="Fechas" value={formatDateRange(detalle.Fec_Ini_Dve, detalle.Fec_Fin_Dve)} className="col-span-2" />
+								</MobileDetailGrid>
+							);
+						}}
+						renderActions={(detalle) => {
+							const realIndex = detallesTemporales.indexOf(detalle);
+							return (
+								<>
+									<Button type="button" variant="outline" className="min-h-11 w-full" onClick={() => onEditClick(realIndex)}>Editar</Button>
+									<Button type="button" variant="ghost" className="min-h-11 w-full" onClick={() => onDeleteClick(realIndex)}>Quitar</Button>
+								</>
+							);
+						}}
+					/>
+					<div data-slot="table-container" className="hidden overflow-x-auto rounded-xl border overscroll-x-contain md:block">
 					<table className="w-full min-w-[1060px] text-sm">
 						<thead className="bg-zinc-50 text-left">
 							<tr>
@@ -410,7 +453,7 @@ export default function DetalleVentasManager({
 								<th className="px-4 py-3 font-medium">Fechas</th>
 								<th className="px-4 py-3 font-medium">Subtotal</th>
 								<th className="px-4 py-3 font-medium">Estado</th>
-								<th className="px-4 py-3 font-medium">Accion</th>
+								<th className="sticky right-0 z-20 bg-zinc-50 px-3 py-3 font-medium shadow-[-10px_0_14px_-14px_rgb(0_0_0/0.55)] sm:px-4">Acción</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -420,7 +463,7 @@ export default function DetalleVentasManager({
 									? licenciasCliente.find((d) => Number(d.Id_Dve) === Number(detalle.renovacion.Id_Dve_Ori))
 									: null;
 								return (
-									<tr key={`${detalle.Id_Dve || "tmp"}-${index}`} className="border-t align-top">
+									<tr key={`${detalle.Id_Dve || "tmp"}-${index}`} className="border-t bg-card align-top">
 										<td className="px-4 py-3">
 											<p className="font-medium">{productoMap.get(Number(detalle.Id_Prd)) || detalle.Nom_Prd || "Sin producto"}</p>
 											<p className="text-xs text-zinc-500">{detalle.Es_Suscripcion_Dve ? "Suscripcion" : "Producto"}</p>
@@ -446,13 +489,13 @@ export default function DetalleVentasManager({
 										</td>
 										<td className="px-4 py-3 font-medium">{formatCurrency(detalle.Sub_Tot_Dve || 0)}</td>
 										<td className="px-4 py-3">{detalle.Est_Dve || "activo"}</td>
-										<td className="px-4 py-3">
-											<div className="flex gap-2">
-												<Button type="button" variant="outline" size="sm" onClick={() => onEditClick(realIndex)}>
-													Editar
+										<td className="sticky right-0 z-10 bg-inherit px-3 py-3 shadow-[-10px_0_14px_-14px_rgb(0_0_0/0.55)] sm:px-4">
+											<div className="flex gap-1 sm:gap-2">
+											<Button type="button" variant="outline" size="sm" aria-label="Editar producto" onClick={() => onEditClick(realIndex)}>
+												<span className="hidden sm:inline">Editar</span><span aria-hidden="true" className="sm:hidden">Edit.</span>
 												</Button>
-												<Button type="button" variant="ghost" size="sm" onClick={() => onDeleteClick(realIndex)}>
-													Quitar
+											<Button type="button" variant="ghost" size="sm" aria-label="Quitar producto" onClick={() => onDeleteClick(realIndex)}>
+												<span className="hidden sm:inline">Quitar</span><span aria-hidden="true" className="sm:hidden">Quit.</span>
 												</Button>
 											</div>
 										</td>
@@ -461,7 +504,8 @@ export default function DetalleVentasManager({
 							})}
 						</tbody>
 					</table>
-				</div>
+					</div>
+				</>
 			)}
 
 			<FeedbackAlert message={error} variant="error" />

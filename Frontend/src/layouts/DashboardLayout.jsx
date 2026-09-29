@@ -8,10 +8,10 @@ export default function DashboardLayout() {
 	return (
 		<SidebarProvider>
 			<Sidebar />
-			<SidebarInset className="min-h-screen">
-				<div className="flex min-h-screen flex-col bg-background text-gray-900 dark:bg-zinc-950 dark:text-slate-100">
+			<SidebarInset className="min-h-screen min-w-0">
+				<div className="flex min-h-screen min-w-0 flex-col bg-background text-gray-900 dark:bg-zinc-950 dark:text-slate-100">
 					<Navbar />
-					<main className="h-full flex-1 overflow-y-auto px-4 py-5 sm:px-6 xl:px-10">
+					<main className="h-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 sm:px-6 sm:py-5 xl:px-10">
 						<Outlet />
 					</main>
 					<Footer />

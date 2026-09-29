@@ -12,6 +12,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../components/tables";
 import FeedbackAlert from "../../components/feedback-alert";
 import { formatCurrency } from "../../utils/currency";
 import formatDate from "../../utils/formatDate";
@@ -133,7 +134,29 @@ export default function RenovacionesPage() {
 								/>
 							</div>
 
-							<div className="rounded-md border">
+							<MobileExpandableList
+								items={[
+									{
+										id: "vigencia",
+										campo: "Vigencia",
+										anterior: `${formatDate(renovaciones.renovacionSeleccionada.Fec_Ini_Dve_Ant)} - ${formatDate(renovaciones.renovacionSeleccionada.Fec_Fin_Dve_Ant)}`,
+										nueva: `${formatDate(renovaciones.renovacionSeleccionada.Fec_Ini_Dve_Nue)} - ${formatDate(renovaciones.renovacionSeleccionada.Fec_Fin_Dve_Nue)}`,
+									},
+									{ id: "precio", campo: "Precio unitario", anterior: renovaciones.renovacionSeleccionada.Pre_Uni_Dve_Ant, nueva: renovaciones.renovacionSeleccionada.Pre_Uni_Dve_Nue },
+									{ id: "descuento", campo: "Descuento unitario", anterior: renovaciones.renovacionSeleccionada.Des_Uni_Dve_Ant, nueva: renovaciones.renovacionSeleccionada.Des_Uni_Dve_Nue },
+								]}
+								getItemId={(item) => item.id}
+								resetKey={renovaciones.renovacionSeleccionada.Id_Dve}
+								renderSummary={(item) => <p className="font-medium">{item.campo}</p>}
+								renderDetails={(item) => (
+									<MobileDetailGrid>
+										<MobileDetail label="Anterior" value={item.anterior ?? "—"} />
+										<MobileDetail label="Nueva" value={item.nueva ?? "—"} />
+									</MobileDetailGrid>
+								)}
+							/>
+
+							<div className="hidden rounded-md border md:block">
 								<Table>
 									<TableHeader>
 										<TableRow>

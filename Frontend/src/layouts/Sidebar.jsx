@@ -19,6 +19,7 @@ import {
 	SidebarMenuSubItem,
 	SidebarRail,
 	SidebarSeparator,
+	useSidebar,
 } from "../components/ui/sidebar";
 import { Button } from "../components/ui/button";
 import authService from "../modules/auth/services/auth.service";
@@ -47,6 +48,7 @@ import {
 	ChevronDown,
 	ChevronRight,
 	LogOut,
+	BellRing,
 } from "lucide-react";
 
 const navigationGroups = [
@@ -54,6 +56,7 @@ const navigationGroups = [
 		label: "GENERAL",
 		items: [
 			{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+			{ name: "Recordatorios", href: "/recordatorios", icon: BellRing },
 			{ name: "Calendario", href: "/calendario", icon: CalendarRange },
 			{ name: "Tareas", href: "/tareas", icon: CheckSquare },
 			{ name: "Reportes", href: "/reportes", icon: BarChart3 },
@@ -101,7 +104,11 @@ export default function Sidebar() {
 	const location = useLocation();
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
+<<<<<<< Updated upstream
 	const [companyName, setCompanyName] = useState("Sistema de Ventas");
+=======
+	const { isMobile, setOpenMobile } = useSidebar();
+>>>>>>> Stashed changes
 	const [expanded, setExpanded] = useState({
 		Productos: false,
 		Operaciones: false,
@@ -128,6 +135,10 @@ export default function Sidebar() {
 		};
 	}, []);
 
+	useEffect(() => {
+		if (isMobile) setOpenMobile(false);
+	}, [isMobile, location.pathname, setOpenMobile]);
+
 	const onLogout = async () => {
 		try {
 			await authService.logout();
@@ -138,6 +149,9 @@ export default function Sidebar() {
 	};
 
 	const isRouteActive = (href) => location.pathname === href || location.pathname.startsWith(`${href}/`);
+	const closeMobileNavigation = () => {
+		if (isMobile) setOpenMobile(false);
+	};
 
 	const renderMenuItem = (item) => {
 		const hasChildren = Boolean(item.children?.length);
@@ -149,7 +163,7 @@ export default function Sidebar() {
 			return (
 				<SidebarMenuItem key={item.name}>
 					<SidebarMenuButton asChild isActive={active} tooltip={item.name}>
-						<NavLink to={item.href}>
+						<NavLink to={item.href} onClick={closeMobileNavigation}>
 							{item.icon ? <item.icon className="size-4" /> : null}
 							<span>{item.name}</span>
 						</NavLink>
@@ -161,7 +175,7 @@ export default function Sidebar() {
 		return (
 			<SidebarMenuItem key={item.name}>
 				<SidebarMenuButton asChild isActive={active} tooltip={item.name}>
-					<NavLink to={item.href}>
+					<NavLink to={item.href} onClick={closeMobileNavigation}>
 						{item.icon ? <item.icon className="size-4" /> : null}
 						<span>{item.name}</span>
 					</NavLink>
@@ -183,7 +197,7 @@ export default function Sidebar() {
 							return (
 								<SidebarMenuSubItem key={child.name}>
 									<SidebarMenuSubButton asChild isActive={subActive}>
-										<NavLink to={child.href}>
+										<NavLink to={child.href} onClick={closeMobileNavigation}>
 											<child.icon className="size-4" />
 											<span>{child.name}</span>
 										</NavLink>

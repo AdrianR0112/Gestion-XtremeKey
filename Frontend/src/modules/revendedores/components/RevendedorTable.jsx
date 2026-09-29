@@ -17,6 +17,7 @@ import {
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import RevendedorEstadoBadge from "./RevendedorEstadoBadge";
 
 export default function RevendedorTable({
@@ -106,6 +107,7 @@ export default function RevendedorTable({
 		getPaginationRowModel: getPaginationRowModel(),
 		state: { sorting, columnVisibility },
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
 
 	if (loading) {
 		return <p className="text-sm text-zinc-500">Cargando revendedores...</p>;
@@ -171,7 +173,23 @@ export default function RevendedorTable({
 				</DropdownMenu>
 			</div>
 
-			<div className="overflow-x-auto rounded-md border">
+			<MobileExpandableList
+				items={mobileRows}
+				getItemId={(revendedor) => revendedor.Id_Rev}
+				resetKey={`${searchTerm}-${estadoFilter}-${sorting.map((item) => `${item.id}:${item.desc}`).join(",")}`}
+				emptyMessage="No hay revendedores que coincidan con los filtros."
+				onItemOpen={(revendedor) => onSelect(revendedor.Id_Rev)}
+				renderSummary={(revendedor) => (
+					<div className="flex items-start justify-between gap-3">
+						<div className="min-w-0"><p className="truncate font-semibold">{`${revendedor.Nom_Rev} ${revendedor.Ape_Rev}`.trim() || `Revendedor #${revendedor.Id_Rev}`}</p><p className="mt-1 truncate text-xs text-muted-foreground">{revendedor.Tel_Rev || revendedor.Ema_Rev || "Sin contacto"}</p></div>
+						<RevendedorEstadoBadge estado={revendedor.Est_Rev} />
+					</div>
+				)}
+				renderDetails={(revendedor) => <MobileDetailGrid><MobileDetail label="Teléfono">{revendedor.Tel_Rev || "-"}</MobileDetail><MobileDetail label="Correo"><span className="break-all">{revendedor.Ema_Rev || "-"}</span></MobileDetail><MobileDetail label="Comisión">{revendedor.Por_Com_Rev ?? "-"}</MobileDetail><MobileDetail label="Documento">{revendedor.Doc_Rev || "-"}</MobileDetail></MobileDetailGrid>}
+				renderActions={(revendedor) => <><Button variant="outline" onClick={() => onViewDetail(revendedor)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onEdit(revendedor)}><Pencil className="size-4" />Editar</Button><Button variant="destructive" className="col-span-2" onClick={() => onDelete(revendedor)}><Trash2 className="size-4" />Eliminar</Button></>}
+			/>
+
+			<div className="hidden overflow-x-auto rounded-md border md:block">
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map((headerGroup) => (
@@ -212,11 +230,11 @@ export default function RevendedorTable({
 				</Table>
 			</div>
 
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="text-sm text-zinc-500">
 					{table.getRowModel().rows.length} fila(s) visibles de {revendedores.length}
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 					<Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
 						Anterior
 					</Button>

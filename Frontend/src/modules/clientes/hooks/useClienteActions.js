@@ -1,4 +1,4 @@
-﻿import { mapClientePayload } from "../helpers/cliente.mapper";
+import { mapClientePayload } from "../helpers/cliente.mapper";
 import clientesService from "../services/clientes.service";
 
 export default function useClienteActions(state) {
@@ -32,13 +32,12 @@ export default function useClienteActions(state) {
 			Nom_Cli: cliente.Nom_Cli ?? "",
 			Ape_Cli: cliente.Ape_Cli ?? "",
 			Tel_Cli: cliente.Tel_Cli ?? "",
-			Usu_Tel_Cli: cliente.Usu_Tel_Cli ?? "",
 			Ema_Cli: cliente.Ema_Cli ?? "",
 			Pai_Cli: cliente.Pai_Cli ?? "Ecuador",
 			Doc_Cli: cliente.Doc_Cli ?? "",
 			Cat_Cli: cliente.Cat_Cli ?? "nuevo",
 			Pre_Con_Cli: cliente.Pre_Con_Cli ?? "",
-			Ace_Not_Tel_Cli: Boolean(cliente.Ace_Not_Tel_Cli),
+			Ace_Not_What_Cli: Boolean(cliente.Ace_Not_What_Cli),
 			Ace_Not_Cor_Cli: Boolean(cliente.Ace_Not_Cor_Cli),
 			Not_Cli: cliente.Not_Cli ?? "",
 			Est_Cli: cliente.Est_Cli ?? "activo",

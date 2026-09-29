@@ -27,6 +27,8 @@ export const endpoints = {
     calendario: "/calendario",
     dashboard: "/dashboard",
     plantillas: "/plantillas",
+    push: "/push",
+    recordatorios: "/recordatorios",
 };
 
 export default endpoints;

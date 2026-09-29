@@ -42,17 +42,17 @@ export default function ProductoTable({
 	return (
 		<div className="space-y-4">
 			{/* Filtros */}
-			<div className="flex gap-3 items-end flex-wrap">
+			<div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
 				<Input
 					type="text"
 					placeholder="Buscar por nombre, código..."
 					value={searchTerm}
 					onChange={(e) => setSearchTerm(e.target.value)}
-					className="max-w-xs"
+					className="w-full sm:max-w-xs"
 				/>
 
 				<Select value={estadoFilter || "all"} onValueChange={(value) => setEstadoFilter(value === "all" ? "" : value)}>
-					<SelectTrigger className="w-40">
+					<SelectTrigger className="w-full sm:w-40">
 						<SelectValue placeholder="Filtrar por estado" />
 					</SelectTrigger>
 					<SelectContent>
@@ -134,15 +134,15 @@ export default function ProductoTable({
 						})}
 					</div>
 
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<p className="text-sm text-muted-foreground">
 							Mostrando {productos.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + pageSize, productos.length)} de {productos.length}
 						</p>
-						<div className="flex items-center gap-2">
+						<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
 							<Button variant="outline" size="sm" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={currentPage === 1}>
 								Anterior
 							</Button>
-							<span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
+							<span className="col-span-2 text-center text-sm text-muted-foreground sm:order-none sm:col-auto">Página {currentPage} de {totalPages}</span>
 							<Button variant="outline" size="sm" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>
 								Siguiente
 							</Button>

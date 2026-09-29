@@ -1,4 +1,13 @@
 ﻿const { getPool } = require('../../config/database');
+<<<<<<< Updated upstream
+=======
+const {
+  DEFAULT_DIAS_GRACIA_RENOVACION,
+  DEFAULT_DIAS_ARCHIVO_VENCIDA,
+  DEFAULT_HORA_NOTIFICACION,
+  DEFAULT_DIAS_ANTICIPACION_NOTIFICACION
+} = require('./configuracion.schemas');
+>>>>>>> Stashed changes
 
 async function findAll() {
   const pool = getPool();
@@ -30,8 +39,17 @@ async function createOne(data) {
       Mon_Con,
       Zon_Hor_Con,
       Imp_Con,
+<<<<<<< Updated upstream
       Hab_Imp_Con
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+=======
+      Hab_Imp_Con,
+      Dia_Gra_Ren_Con,
+      Dia_Arc_Ven_Con,
+      Hor_Not_Con,
+      Dia_Ant_Not_Con
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+>>>>>>> Stashed changes
   `;
 
   const values = [
@@ -43,13 +61,55 @@ async function createOne(data) {
     data.Mon_Con ?? 'USD',
     data.Zon_Hor_Con ?? 'America/Guayaquil',
     data.Imp_Con ?? 0,
+<<<<<<< Updated upstream
     data.Hab_Imp_Con ?? true
+=======
+    data.Hab_Imp_Con ?? true,
+    data.Dia_Gra_Ren_Con ?? DEFAULT_DIAS_GRACIA_RENOVACION,
+    data.Dia_Arc_Ven_Con ?? DEFAULT_DIAS_ARCHIVO_VENCIDA,
+    data.Hor_Not_Con ?? DEFAULT_HORA_NOTIFICACION,
+    data.Dia_Ant_Not_Con ?? DEFAULT_DIAS_ANTICIPACION_NOTIFICACION
+>>>>>>> Stashed changes
   ];
 
   const [result] = await pool.query(sql, values);
   return findById(result.insertId);
 }
 
+<<<<<<< Updated upstream
+=======
+/**
+ * Dias de gracia para renovar. Se lee suelto (y no la configuracion entera)
+ * porque la renovacion lo consulta una vez por peticion, tambien en lote.
+ * Si no hay fila de configuracion todavia, se cae al default.
+ */
+async function getDiasGraciaRenovacion() {
+  const configuracion = await findCurrent();
+  const valor = Number(configuracion?.Dia_Gra_Ren_Con);
+  return Number.isInteger(valor) && valor >= 0 ? valor : DEFAULT_DIAS_GRACIA_RENOVACION;
+}
+
+/** Dias que una vencida sigue en el listado principal antes del archivo. */
+async function getDiasArchivoVencida() {
+  const configuracion = await findCurrent();
+  const valor = Number(configuracion?.Dia_Arc_Ven_Con);
+  return Number.isInteger(valor) && valor >= 0 ? valor : DEFAULT_DIAS_ARCHIVO_VENCIDA;
+}
+
+async function getConfiguracionNotificaciones() {
+  const configuracion = await findCurrent();
+  const hora = Number(configuracion?.Hor_Not_Con);
+  const dias = Number(configuracion?.Dia_Ant_Not_Con);
+  return {
+    hora: Number.isInteger(hora) && hora >= 0 && hora <= 23 ? hora : DEFAULT_HORA_NOTIFICACION,
+    diasAnticipacion: Number.isInteger(dias) && dias >= 0 && dias <= 60
+      ? dias
+      : DEFAULT_DIAS_ANTICIPACION_NOTIFICACION,
+    timezone: String(configuracion?.Zon_Hor_Con || '').trim() || 'America/Guayaquil'
+  };
+}
+
+>>>>>>> Stashed changes
 async function updateById(id, data) {
   const fields = Object.keys(data);
   if (fields.length === 0) return findById(id);
@@ -72,6 +132,12 @@ module.exports = {
   findAll,
   findById,
   findCurrent,
+<<<<<<< Updated upstream
+=======
+  getDiasGraciaRenovacion,
+  getDiasArchivoVencida,
+  getConfiguracionNotificaciones,
+>>>>>>> Stashed changes
   createOne,
   updateById,
   removeById

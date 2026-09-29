@@ -18,6 +18,27 @@ async function findByCode(code) {
   return rows[0] || null;
 }
 
+async function findVendibles() {
+  const pool = getPool();
+  const [rows] = await pool.query(`
+    SELECT
+      p.Id_Prd,
+      p.Nom_Prd,
+      p.Tip_Prd,
+      v.Id_Var,
+      v.Nom_Var,
+      v.Pre_Ven_Var,
+      v.Pre_Rev_Var,
+      v.Dur_Tip_Var,
+      v.Dur_Val_Var
+    FROM productos p
+    INNER JOIN variantes_productos v ON v.Id_Prd = p.Id_Prd
+    WHERE p.Est_Prd = 'activo'
+    ORDER BY p.Tip_Prd ASC, p.Nom_Prd ASC, v.Pre_Ven_Var ASC, v.Id_Var ASC
+  `);
+  return rows;
+}
+
 async function createOne(data) {
   const pool = getPool();
   const sql = `
@@ -70,6 +91,7 @@ module.exports = {
   findAll,
   findById,
   findByCode,
+  findVendibles,
   createOne,
   updateById,
   removeById

@@ -13,6 +13,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../components/tables";
 import FeedbackAlert from "../../components/feedback-alert";
 import { VentaCard, VentaFilters, VentaForm, VentaTable } from "./components";
 import { useVentas } from "./hooks";
@@ -25,12 +26,12 @@ export default function VentasPage() {
 	return (
 		<div className="max-w-7xl mx-auto space-y-5">
 			<section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white/85 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/85">
-				<div className="flex items-start justify-between gap-3 border-b border-zinc-200/80 px-4 py-4 sm:px-5 dark:border-zinc-800/80">
+				<div className="flex flex-col gap-3 border-b border-zinc-200/80 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5 dark:border-zinc-800/80">
 					<div>
 						<h1 className="text-2xl font-semibold">Ventas</h1>
 						<p className="text-sm text-zinc-600 dark:text-zinc-400">Gestión completa de ventas con detalles integrados</p>
 					</div>
-					<Button onClick={() => navigate("/ventas/nueva")}>
+					<Button className="w-full sm:w-auto" onClick={() => navigate("/ventas/nueva")}>
 						<Plus className="size-4 mr-1" />
 						Nueva venta
 					</Button>
@@ -118,7 +119,30 @@ export default function VentasPage() {
 								<VentaCard label="Total" value={formatCurrency(ventas.ventaSeleccionada.Tot_Ven || 0)} />
 							</div>
 
-							<div className="overflow-x-auto rounded-md border">
+							<MobileExpandableList
+								items={ventas.detallesDeVenta}
+								getItemId={(detalle, index) => detalle.Id_Dve || index}
+								resetKey={`${ventas.ventaSeleccionada.Id_Ven}:${ventas.detallesDeVenta.map((detalle) => detalle.Id_Dve).join(",")}`}
+								emptyMessage="Esta venta no tiene detalles."
+								renderSummary={(detalle) => (
+									<>
+										<div className="min-w-0">
+											<p className="truncate font-medium">{detalle.Nom_Prd || ventas.productoMap.get(Number(detalle.Id_Prd)) || "Sin producto"}</p>
+											<p className="truncate text-xs text-zinc-500">{detalle.Nom_Var || ventas.varianteMap.get(Number(detalle.Id_Var)) || "Sin variante"}</p>
+										</div>
+										<p className="shrink-0 whitespace-nowrap font-semibold">{formatCurrency(detalle.Sub_Tot_Dve || 0)}</p>
+									</>
+								)}
+								renderDetails={(detalle) => (
+									<MobileDetailGrid>
+										<MobileDetail label="ID" value={`#${detalle.Id_Dve}`} />
+										<MobileDetail label="Cantidad" value={detalle.Can_Dve ?? 1} />
+										<MobileDetail label="Estado" value={detalle.Est_Dve || "—"} className="capitalize" />
+									</MobileDetailGrid>
+								)}
+							/>
+
+							<div className="hidden overflow-x-auto rounded-md border md:block">
 								<Table>
 									<TableHeader>
 										<TableRow>

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import FormSection from "../../../components/form-section";
 import { Input } from "../../../components/ui/input";
@@ -63,7 +63,7 @@ export default function ClienteForm({
 			{formularioAvanzado && (
 				<>
 					<FormSection title="Identidad y contacto" description="Datos personales y canales principales de comunicación.">
-					<div className="grid sm:grid-cols-2 gap-3">
+					<div className="grid gap-3">
 						<div className="space-y-2">
 							<Label>Nombre</Label>
 							<Input
@@ -91,14 +91,6 @@ export default function ClienteForm({
 								value={form.Tel_Cli}
 								onChange={(event) => setForm((prev) => ({ ...prev, Tel_Cli: event.target.value }))}
 								placeholder="+57 300 000 0000"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Usuario Telegram</Label>
-							<Input
-								value={form.Usu_Tel_Cli}
-								onChange={(event) => setForm((prev) => ({ ...prev, Usu_Tel_Cli: event.target.value }))}
-								placeholder="@usuario_telegram"
 							/>
 						</div>
 					</div>
@@ -162,7 +154,6 @@ export default function ClienteForm({
 									<SelectItem value="email">Email</SelectItem>
 									<SelectItem value="instagram">Instagram</SelectItem>
 									<SelectItem value="messenger">Messenger</SelectItem>
-									<SelectItem value="telegram">Telegram</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -183,10 +174,10 @@ export default function ClienteForm({
 
 					<div className="grid sm:grid-cols-2 gap-3">
 						<div className="space-y-2">
-							<Label>Notificaciones por Telegram</Label>
+							<Label>Notificaciones por WhatsApp</Label>
 							<Select
-								value={String(form.Ace_Not_Tel_Cli)}
-								onValueChange={(value) => setForm((prev) => ({ ...prev, Ace_Not_Tel_Cli: value === "true" }))}
+								value={String(form.Ace_Not_What_Cli)}
+								onValueChange={(value) => setForm((prev) => ({ ...prev, Ace_Not_What_Cli: value === "true" }))}
 							>
 								<SelectTrigger>
 									<SelectValue />
@@ -226,7 +217,7 @@ export default function ClienteForm({
 				</>
 			)}
 
-			<div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-4 flex items-center justify-end gap-2 border-t bg-background px-6 py-4">
+			<div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2 border-t bg-background px-6 py-4 [&>button]:w-full sm:flex-row sm:items-center sm:justify-end sm:[&>button]:w-auto">
 				<Button type="button" variant="outline" onClick={onCancel}>
 					Cancelar
 				</Button>

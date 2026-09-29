@@ -17,6 +17,7 @@ import {
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import UsuarioEstadoBadge from "./UsuarioEstadoBadge";
 
 export default function UsuarioTable({
@@ -150,6 +151,7 @@ export default function UsuarioTable({
 			columnVisibility,
 		},
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
 
 	return (
 		<div className="space-y-3">
@@ -204,7 +206,18 @@ export default function UsuarioTable({
 				</DropdownMenu>
 			</div>
 
-			<div className="overflow-x-auto rounded-md border">
+			<MobileExpandableList
+				items={mobileRows}
+				getItemId={(usuario) => usuario.Id_Usu}
+				resetKey={`${searchTerm}-${estadoFilter}-${sorting.map((item) => `${item.id}:${item.desc}`).join(",")}`}
+				emptyMessage="No hay miembros de staff que coincidan con los filtros."
+				onItemOpen={(usuario) => onSelect(usuario.Id_Usu)}
+				renderSummary={(usuario) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{`${usuario.Nom_Usu} ${usuario.Ape_Usu}`.trim() || `Staff #${usuario.Id_Usu}`}</p><p className="mt-1 truncate text-xs uppercase text-muted-foreground">{usuario.Rol_Usu || "Sin rol"}</p></div><UsuarioEstadoBadge estado={usuario.Est_Usu} /></div>}
+				renderDetails={(usuario) => <div className="space-y-3"><MobileDetailGrid><MobileDetail label="Correo" className="min-[380px]:col-span-2"><span className="break-all">{usuario.Ema_Usu || "-"}</span></MobileDetail></MobileDetailGrid><div className="rounded-lg border bg-background p-3"><p className="mb-2 text-xs text-muted-foreground">Cambiar estado</p><Select value={usuario.Est_Usu} onValueChange={(value) => onChangeEstado(usuario, value)} disabled={saving}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="activo">activo</SelectItem><SelectItem value="inactivo">inactivo</SelectItem><SelectItem value="bloqueado">bloqueado</SelectItem></SelectContent></Select></div></div>}
+				renderActions={(usuario) => <><Button variant="outline" onClick={() => onViewDetail(usuario)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onEdit(usuario)}><Pencil className="size-4" />Editar</Button><Button variant="destructive" className="col-span-2" onClick={() => onDelete(usuario)}><Trash2 className="size-4" />Eliminar</Button></>}
+			/>
+
+			<div className="hidden overflow-x-auto rounded-md border md:block">
 			<Table>
 				<TableHeader>
 					{table.getHeaderGroups().map((headerGroup) => (
@@ -249,11 +262,11 @@ export default function UsuarioTable({
 			</Table>
 			</div>
 
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="text-sm text-zinc-500">
 					{table.getRowModel().rows.length} fila(s) visibles de {usuarios.length}
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 					<Button
 						variant="outline"
 						size="sm"

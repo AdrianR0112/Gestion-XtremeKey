@@ -1,21 +1,27 @@
+<<<<<<< Updated upstream
 ﻿export const CLIENTE_INICIAL = {
+=======
+import { z } from "zod";
+import { fieldErrorsFromResult, optionalEmailString } from "@/lib/zod";
+
+export const CLIENTE_INICIAL = {
+>>>>>>> Stashed changes
 	Nom_Cli: "",
 	Ape_Cli: "",
 	Tel_Cli: "",
-	Usu_Tel_Cli: "",
 	Ema_Cli: "",
 	Pai_Cli: "Ecuador",
 	Doc_Cli: "",
 	Cat_Cli: "nuevo",
 	Pre_Con_Cli: "whatsapp",
-	Ace_Not_Tel_Cli: true,
+	Ace_Not_What_Cli: true,
 	Ace_Not_Cor_Cli: true,
 	Not_Cli: "",
 	Est_Cli: "activo",
 };
 
 const categorias = ["nuevo", "ocasional", "frecuente", "vip"];
-const preferencias = ["whatsapp", "email", "instagram", "messenger", "telegram"];
+const preferencias = ["whatsapp", "email", "instagram", "messenger"];
 const estados = ["activo", "inactivo", "suspendido"];
 
 function isValidEmail(value) {

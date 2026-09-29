@@ -53,12 +53,12 @@ export default function VariantesPage() {
     return (
         <div className="max-w-7xl mx-auto space-y-5">
             <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white/85 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/85">
-                <div className="flex items-center justify-between gap-3 border-b border-zinc-200/80 px-4 py-4 sm:px-5 dark:border-zinc-800/80">
+                <div className="flex flex-col gap-3 border-b border-zinc-200/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-zinc-800/80">
                     <div>
                         <h1 className="text-2xl font-semibold">Variantes</h1>
                         <p className="text-sm text-zinc-600 dark:text-zinc-400">Gestiona las variantes de productos</p>
                     </div>
-                    <Button onClick={handleOpenCreate}>
+                    <Button className="w-full sm:w-auto" onClick={handleOpenCreate}>
                         <Plus className="size-4 mr-1" />
                         Nueva variante
                     </Button>

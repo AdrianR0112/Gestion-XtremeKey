@@ -17,7 +17,7 @@ export function buildClienteSearchMap(clientes = []) {
 			Number(item.Id_Cli),
 			{
 				text: [item.Nom_Cli, item.Ape_Cli, item.Ema_Cli, item.Doc_Cli],
-				phones: [item.Tel_Cli, item.Tel_Alt_Cli, item.Usu_Tel_Cli],
+				phones: [item.Tel_Cli, item.Tel_Alt_Cli],
 			},
 		])
 	);

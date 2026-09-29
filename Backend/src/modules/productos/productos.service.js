@@ -29,6 +29,31 @@ async function listProductos() {
   return productosRepository.findAll();
 }
 
+async function listProductosVendibles() {
+  const rows = await productosRepository.findVendibles();
+  const productos = new Map();
+  for (const row of rows) {
+    const id = Number(row.Id_Prd);
+    if (!productos.has(id)) {
+      productos.set(id, {
+        Id_Prd: row.Id_Prd,
+        Nom_Prd: row.Nom_Prd,
+        Tip_Prd: row.Tip_Prd,
+        variantes: [],
+      });
+    }
+    productos.get(id).variantes.push({
+      Id_Var: row.Id_Var,
+      Nom_Var: row.Nom_Var,
+      Pre_Ven_Var: row.Pre_Ven_Var,
+      Pre_Rev_Var: row.Pre_Rev_Var,
+      Dur_Tip_Var: row.Dur_Tip_Var,
+      Dur_Val_Var: row.Dur_Val_Var,
+    });
+  }
+  return [...productos.values()];
+}
+
 async function getProductoById(id) {
   if (!isNumericId(id)) {
     throw createHttpError(400, 'Id_Prd invalido.');
@@ -88,6 +113,7 @@ async function deleteProducto(id) {
 
 module.exports = {
   listProductos,
+  listProductosVendibles,
   getProductoById,
   createProducto,
   updateProducto,

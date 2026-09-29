@@ -1,4 +1,4 @@
-﻿const { getPool } = require('../../config/database');
+const { getPool } = require('../../config/database');
 
 async function findAll() {
   const pool = getPool();
@@ -12,6 +12,53 @@ async function findById(id) {
   return rows[0] || null;
 }
 
+<<<<<<< Updated upstream
+=======
+async function findByEmail(email) {
+  const pool = getPool();
+  const normalized = String(email ?? '').trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+  // Comparacion case-insensitive: los correos historicos pueden tener mayusculas.
+  const [rows] = await pool.query(
+    'SELECT * FROM clientes WHERE LOWER(TRIM(Ema_Cli)) = ? ORDER BY Id_Cli ASC LIMIT 1',
+    [normalized]
+  );
+  return rows[0] || null;
+}
+
+async function findByPhone(phone) {
+  const pool = getPool();
+  const normalized = String(phone ?? '').trim();
+  if (!normalized) {
+    return null;
+  }
+  const [rows] = await pool.query('SELECT * FROM clientes WHERE Tel_Cli = ? ORDER BY Id_Cli ASC LIMIT 1', [normalized]);
+  return rows[0] || null;
+}
+
+async function findByPhoneCandidates(candidates = []) {
+  const pool = getPool();
+  const values = [...new Set(candidates.map((value) => String(value || '').trim()).filter(Boolean))];
+  if (values.length === 0) return [];
+
+  const [exactRows] = await pool.query(
+    'SELECT * FROM clientes WHERE Tel_Cli IN (?) ORDER BY Id_Cli ASC LIMIT 5',
+    [values]
+  );
+  if (exactRows.length > 0) return exactRows;
+
+  const digits = [...new Set(values.map((value) => value.replace(/\D/g, '')).filter(Boolean))];
+  const normalizedColumn = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(Tel_Cli, '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''), '.', '')";
+  const [normalizedRows] = await pool.query(
+    `SELECT * FROM clientes WHERE ${normalizedColumn} IN (?) ORDER BY Id_Cli ASC LIMIT 5`,
+    [digits]
+  );
+  return normalizedRows;
+}
+
+>>>>>>> Stashed changes
 async function createOne(data) {
   const pool = getPool();
   const sql = `
@@ -24,11 +71,15 @@ async function createOne(data) {
       Doc_Cli,
       Cat_Cli,
       Pre_Con_Cli,
-      Ace_Not_Tel_Cli,
+      Ace_Not_What_Cli,
       Ace_Not_Cor_Cli,
       Not_Cli,
       Est_Cli
+<<<<<<< Updated upstream
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+=======
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+>>>>>>> Stashed changes
   `;
 
   const values = [
@@ -40,8 +91,8 @@ async function createOne(data) {
     data.Doc_Cli ?? null,
     data.Cat_Cli ?? 'nuevo',
     data.Pre_Con_Cli ?? 'whatsapp',
-    data.Ace_Not_Tel_Cli ?? 0,
-    data.Ace_Not_Cor_Cli ?? 0,
+    data.Ace_Not_What_Cli ?? 1,
+    data.Ace_Not_Cor_Cli ?? 1,
     data.Not_Cli ?? null,
     data.Est_Cli ?? 'activo'
   ];
@@ -71,6 +122,12 @@ async function removeById(id) {
 module.exports = {
   findAll,
   findById,
+<<<<<<< Updated upstream
+=======
+  findByEmail,
+  findByPhone,
+  findByPhoneCandidates,
+>>>>>>> Stashed changes
   createOne,
   updateById,
   removeById

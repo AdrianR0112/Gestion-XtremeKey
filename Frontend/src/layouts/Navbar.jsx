@@ -7,13 +7,14 @@ import {
 	Search,
 	Settings,
 	Share2,
+	ShoppingCart,
 	SlidersHorizontal,
 	Sun,
 	User,
 } from "lucide-react";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import {
 	DropdownMenu,
@@ -48,7 +49,7 @@ export default function Navbar() {
 	};
 
 	return (
-		<header className="sticky top-0 z-40 px-4 pt-3 sm:px-6 xl:px-10">
+		<header className="sticky top-0 z-40 px-3 pt-3 sm:px-6 xl:px-10">
 			<div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white/85 px-3 py-2 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/85">
 				<div className="flex items-center gap-2 sm:gap-3">
 					<SidebarTrigger className="border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground" />
@@ -66,13 +67,23 @@ export default function Navbar() {
 				</div>
 
 				<div className="flex items-center gap-1.5">
-					<Button size="icon" variant="ghost" aria-label="Compartir">
+					<Button
+						asChild
+						className="h-11 w-11 px-0 sm:h-8 sm:w-auto sm:px-2.5"
+						title="Nueva venta"
+					>
+						<Link to="/ventas/nueva" aria-label="Nueva venta">
+							<ShoppingCart className="size-4" />
+							<span className="hidden lg:inline">Nueva venta</span>
+						</Link>
+					</Button>
+					<Button size="icon" variant="ghost" className="hidden lg:inline-flex" aria-label="Compartir">
 						<Share2 className="size-4" />
 					</Button>
-					<Button size="icon" variant="ghost" aria-label="Idioma">
+					<Button size="icon" variant="ghost" className="hidden lg:inline-flex" aria-label="Idioma">
 						<Languages className="size-4" />
 					</Button>
-					<Button size="icon" variant="ghost" aria-label="Actividad">
+					<Button size="icon" variant="ghost" className="hidden md:inline-flex" aria-label="Actividad">
 						<Activity className="size-4" />
 					</Button>
 					<Button size="icon" variant="ghost" aria-label="Notificaciones" className="relative">

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import ConfiguracionForm from "./components/ConfiguracionForm";
 import useConfiguracion from "./hooks/useConfiguracion";
 import useConfiguracionActions from "./hooks/useConfiguracionActions";
+import PushPermisoCard from "../notificaciones/components/PushPermisoCard";
 
 export default function ConfiguracionPage() {
 	const state = useConfiguracion();
@@ -36,6 +37,10 @@ export default function ConfiguracionPage() {
 			Zon_Hor_Con: configuracionSeleccionada.Zon_Hor_Con || "",
 			Imp_Con: configuracionSeleccionada.Imp_Con ?? "",
 			Hab_Imp_Con: configuracionSeleccionada.Hab_Imp_Con ?? true,
+			Dia_Gra_Ren_Con: configuracionSeleccionada.Dia_Gra_Ren_Con ?? 30,
+			Dia_Arc_Ven_Con: configuracionSeleccionada.Dia_Arc_Ven_Con ?? 5,
+			Hor_Not_Con: configuracionSeleccionada.Hor_Not_Con ?? 8,
+			Dia_Ant_Not_Con: configuracionSeleccionada.Dia_Ant_Not_Con ?? 7,
 		});
 	}, [configuracionSeleccionada, setForm]);
 
@@ -51,6 +56,10 @@ export default function ConfiguracionPage() {
 			Zon_Hor_Con: configuracionSeleccionada.Zon_Hor_Con || "",
 			Imp_Con: configuracionSeleccionada.Imp_Con ?? "",
 			Hab_Imp_Con: configuracionSeleccionada.Hab_Imp_Con ?? true,
+			Dia_Gra_Ren_Con: configuracionSeleccionada.Dia_Gra_Ren_Con ?? 30,
+			Dia_Arc_Ven_Con: configuracionSeleccionada.Dia_Arc_Ven_Con ?? 5,
+			Hor_Not_Con: configuracionSeleccionada.Hor_Not_Con ?? 8,
+			Dia_Ant_Not_Con: configuracionSeleccionada.Dia_Ant_Not_Con ?? 7,
 		});
 	};
 
@@ -63,6 +72,7 @@ export default function ConfiguracionPage() {
 
 			<FeedbackAlert message={error} variant="error" />
 			<FeedbackAlert message={success} variant="success" />
+			<PushPermisoCard />
 
 			{loading ? (
 				<p className="text-sm text-zinc-500">Cargando configuracion...</p>

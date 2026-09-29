@@ -55,8 +55,7 @@ export default function useClientes() {
 			const matchesSearch =
 				!query ||
 				matchesTextSearch([cliente.Nom_Cli, cliente.Ape_Cli, cliente.Ema_Cli], query) ||
-				matchesPhoneSearch(cliente.Tel_Cli, query) ||
-				matchesPhoneSearch(cliente.Usu_Tel_Cli, query);
+				matchesPhoneSearch(cliente.Tel_Cli, query);
 			const matchesEstado = estadoFilter === "todos" || cliente.Est_Cli === estadoFilter;
 			const matchesCategoria = categoriaFilter === "todas" || cliente.Cat_Cli === categoriaFilter;
 			return matchesSearch && matchesEstado && matchesCategoria;

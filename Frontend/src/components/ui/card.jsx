@@ -4,7 +4,7 @@ function Card({ className, ...props }) {
     return (
         <div
             className={cn(
-                "rounded-xl border border-zinc-200 bg-white text-zinc-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
+                "min-w-0 rounded-xl border border-zinc-200 bg-white text-zinc-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
                 className
             )}
             {...props}
@@ -13,7 +13,7 @@ function Card({ className, ...props }) {
 }
 
 function CardHeader({ className, ...props }) {
-    return <div className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />;
+    return <div className={cn("flex flex-col space-y-1.5 p-4 sm:p-6", className)} {...props} />;
 }
 
 function CardTitle({ className, ...props }) {
@@ -25,11 +25,11 @@ function CardDescription({ className, ...props }) {
 }
 
 function CardContent({ className, ...props }) {
-    return <div className={cn("p-6 pt-0", className)} {...props} />;
+    return <div className={cn("p-4 pt-0 sm:p-6 sm:pt-0", className)} {...props} />;
 }
 
 function CardFooter({ className, ...props }) {
-    return <div className={cn("flex items-center p-6 pt-0", className)} {...props} />;
+    return <div className={cn("flex items-center p-4 pt-0 sm:p-6 sm:pt-0", className)} {...props} />;
 }
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

@@ -7,6 +7,11 @@ const list = asyncHandler(async (_req, res) => {
   res.status(200).json(successResponse(data, 'Productos obtenidos correctamente.'));
 });
 
+const vendibles = asyncHandler(async (_req, res) => {
+  const data = await productosService.listProductosVendibles();
+  res.status(200).json(successResponse(data, 'Productos vendibles obtenidos correctamente.'));
+});
+
 const getById = asyncHandler(async (req, res) => {
   const data = await productosService.getProductoById(req.params.id);
   res.status(200).json(successResponse(data, 'Producto obtenido correctamente.'));
@@ -27,4 +32,8 @@ const remove = asyncHandler(async (req, res) => {
   res.status(200).json(successResponse(null, 'Producto eliminado correctamente.'));
 });
 
+<<<<<<< Updated upstream
 module.exports = { list, getById, create, update, remove };
+=======
+module.exports = { list, vendibles, getById, create, update, removeImage, remove };
+>>>>>>> Stashed changes

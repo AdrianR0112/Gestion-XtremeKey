@@ -23,6 +23,13 @@ const { router: calendarioRoutes } = require('./calendario.routes');
 const { router: dashboardRoutes } = require('./dashboard.routes');
 const { router: plantillasRoutes } = require('./plantillas.routes');
 const { router: jobsRoutes } = require('./jobs.routes');
+<<<<<<< Updated upstream
+=======
+const { router: recordatoriosRoutes } = require('./recordatorios.routes');
+const { router: pushRoutes } = require('./push.routes');
+const { router: cronRoutes } = require('./cron.routes');
+const { router: whatsappRoutes } = require('./whatsapp.routes');
+>>>>>>> Stashed changes
 
 const apiRouter = Router();
 
@@ -53,5 +60,12 @@ apiRouter.use('/calendario', calendarioRoutes);
 apiRouter.use('/dashboard', dashboardRoutes);
 apiRouter.use('/plantillas', plantillasRoutes);
 apiRouter.use('/jobs', jobsRoutes);
+<<<<<<< Updated upstream
+=======
+apiRouter.use('/recordatorios', recordatoriosRoutes);
+apiRouter.use('/push', pushRoutes);
+apiRouter.use('/cron', cronRoutes);
+apiRouter.use('/whatsapp', whatsappRoutes);
+>>>>>>> Stashed changes
 
 module.exports = { apiRouter };

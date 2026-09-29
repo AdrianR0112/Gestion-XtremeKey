@@ -25,7 +25,7 @@ Las cabeceras deben coincidir exactamente con los nombres de campo. El orden no 
 | `Doc_Cli` | string | No | Documento de identidad |
 | `Cat_Cli` | enum | No | Categoría: `nuevo`, `ocasional`, `frecuente`, `vip` |
 | `Pre_Con_Cli` | enum | No | Preferencia contacto: `whatsapp`, `email`, `instagram`, `messenger`, `telegram` |
-| `Ace_Not_Tel_Cli` | boolean/tinyint | No | Aceptar notificaciones por teléfono (1/0 o true/false) |
+| `Ace_Not_What_Cli` | boolean/tinyint | No | Aceptar notificaciones por WhatsApp (1/0 o true/false) |
 | `Ace_Not_Cor_Cli` | boolean/tinyint | No | Aceptar notificaciones por correo (1/0 o true/false) |
 | `Not_Cli` | text | No | Notas |
 | `Est_Cli` | enum | No | Estado: `activo`, `inactivo`, `suspendido` (default: `activo`) |
@@ -33,7 +33,7 @@ Las cabeceras deben coincidir exactamente con los nombres de campo. El orden no 
 ## Ejemplo CSV
 
 ```csv
-Nom_Cli,Ape_Cli,Tel_Cli,Ema_Cli,Pai_Cli,Doc_Cli,Cat_Cli,Pre_Con_Cli,Ace_Not_Tel_Cli,Ace_Not_Cor_Cli,Not_Cli,Est_Cli
+Nom_Cli,Ape_Cli,Tel_Cli,Ema_Cli,Pai_Cli,Doc_Cli,Cat_Cli,Pre_Con_Cli,Ace_Not_What_Cli,Ace_Not_Cor_Cli,Not_Cli,Est_Cli
 Juan,Pérez,0998765432,juan@correo.com,Ecuador,1234567890,nuevo,whatsapp,1,0,Cliente preferente,activo
 María,González,0997654321,maria@correo.com,Ecuador,0987654321,ocasional,email,1,1,Cliente corporativo,activo
 Carlos,Rodríguez,0996543210,carlos@correo.com,Ecuador,1122334455,frecuente,telegram,0,1,,activo

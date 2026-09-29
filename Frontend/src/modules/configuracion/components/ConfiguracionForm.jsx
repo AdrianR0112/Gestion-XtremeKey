@@ -154,6 +154,37 @@ export default function ConfiguracionForm({
 				/>
 			</div>
 
+			<div className="grid gap-3 sm:grid-cols-2">
+				<div className="space-y-1.5">
+					<Label htmlFor="Hor_Not_Con">Hora del resumen diario</Label>
+					<Input
+						id="Hor_Not_Con"
+						type="number"
+						min="0"
+						max="23"
+						step="1"
+						value={form.Hor_Not_Con}
+						onChange={(event) => setForm((prev) => ({ ...prev, Hor_Not_Con: event.target.value }))}
+					/>
+					<p className="text-xs text-zinc-500">Hora local en formato 24 horas.</p>
+					{formErrors.Hor_Not_Con ? <p className="text-xs text-red-600">{formErrors.Hor_Not_Con}</p> : null}
+				</div>
+				<div className="space-y-1.5">
+					<Label htmlFor="Dia_Ant_Not_Con">Ventana de próximas a vencer</Label>
+					<Input
+						id="Dia_Ant_Not_Con"
+						type="number"
+						min="0"
+						max="60"
+						step="1"
+						value={form.Dia_Ant_Not_Con}
+						onChange={(event) => setForm((prev) => ({ ...prev, Dia_Ant_Not_Con: event.target.value }))}
+					/>
+					<p className="text-xs text-zinc-500">Días incluidos en el conteo de próximas.</p>
+					{formErrors.Dia_Ant_Not_Con ? <p className="text-xs text-red-600">{formErrors.Dia_Ant_Not_Con}</p> : null}
+				</div>
+			</div>
+
 			<div className="flex items-center justify-end gap-2">
 				<Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
 					Restablecer

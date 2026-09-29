@@ -256,14 +256,14 @@ export default function ProductosPage() {
 	return (
 		<div className="max-w-7xl mx-auto space-y-5">
 			<section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white/85 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/85">
-				<div className="flex items-center justify-between gap-3 border-b border-zinc-200/80 px-4 py-4 sm:px-5 dark:border-zinc-800/80">
+				<div className="flex flex-col gap-3 border-b border-zinc-200/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-zinc-800/80">
 					<div>
 						<h1 className="text-2xl font-semibold">Productos</h1>
 						<p className="text-sm text-zinc-600 dark:text-zinc-400">Gestiona el catálogo de productos y servicios</p>
 					</div>
-					<div className="flex items-center gap-2">
-						<Button variant="outline" onClick={handleOpenCreateVariante}>+ Nueva Variante</Button>
-						<Button onClick={handleOpenCreate}>+ Nuevo Producto</Button>
+					<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+						<Button variant="outline" className="whitespace-normal" onClick={handleOpenCreateVariante}>+ Nueva Variante</Button>
+						<Button className="whitespace-normal" onClick={handleOpenCreate}>+ Nuevo Producto</Button>
 					</div>
 				</div>
 

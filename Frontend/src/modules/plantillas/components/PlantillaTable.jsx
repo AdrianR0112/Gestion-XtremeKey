@@ -11,6 +11,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import { TipoBadge, CanalBadge, EstadoBadge } from "./PlantillaBadges";
 import { TIPOS_PLANTILLA, CANALES_PLANTILLA, ESTADOS_PLANTILLA } from "../schemas/plantilla.schema";
 
@@ -103,12 +104,13 @@ export default function PlantillaTable({
 			columnVisibility,
 		},
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
 
 	return (
 		<div className="space-y-4">
 			{/* Filtros */}
 			<div className="flex gap-3 items-end flex-wrap">
-				<div className="flex-1 min-w-64 space-y-2">
+				<div className="min-w-0 flex-1 space-y-2">
 					<label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Buscar</label>
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
@@ -175,7 +177,7 @@ export default function PlantillaTable({
 			</div>
 
 			{/* Tabla */}
-			<div className="border rounded-lg overflow-hidden">
+			<div>
 				{loading ? (
 					<div className="text-center py-8">
 						<p className="text-sm text-zinc-500">Cargando plantillas...</p>
@@ -185,6 +187,17 @@ export default function PlantillaTable({
 						<p className="text-sm text-zinc-600 dark:text-zinc-400">No se encontraron plantillas</p>
 					</div>
 				) : (
+					<>
+						<MobileExpandableList
+							items={mobileRows}
+							getItemId={(plantilla) => plantilla.Id_Pla}
+							resetKey={`${searchTerm}-${tipoFilter}-${canalFilter}-${estadoFilter}-${sorting.map((item) => `${item.id}:${item.desc}`).join(",")}`}
+							onItemOpen={(plantilla) => onSelect(plantilla.Id_Pla)}
+							renderSummary={(plantilla) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="line-clamp-2 font-semibold">{plantilla.Nom_Pla || `Plantilla #${plantilla.Id_Pla}`}</p><div className="mt-1 flex flex-wrap gap-1"><TipoBadge tipo={plantilla.Tip_Pla} /><CanalBadge canal={plantilla.Can_Pla} /></div></div><EstadoBadge estado={plantilla.Est_Pla} /></div>}
+							renderDetails={(plantilla) => <MobileDetailGrid><MobileDetail label="Tipo"><TipoBadge tipo={plantilla.Tip_Pla} /></MobileDetail><MobileDetail label="Canal"><CanalBadge canal={plantilla.Can_Pla} /></MobileDetail>{plantilla.Asu_Pla ? <MobileDetail label="Asunto" className="min-[380px]:col-span-2">{plantilla.Asu_Pla}</MobileDetail> : null}</MobileDetailGrid>}
+							renderActions={(plantilla) => <><Button variant="outline" onClick={() => onViewDetail(plantilla)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onEdit(plantilla)}><Pencil className="size-4" />Editar</Button><Button variant="destructive" className="col-span-2" onClick={() => onDelete(plantilla)}><Trash2 className="size-4" />Eliminar</Button></>}
+						/>
+						<div className="hidden overflow-hidden rounded-lg border md:block">
 					<Table>
 						<TableHeader>
 							<TableRow className="bg-zinc-50 dark:bg-zinc-900">
@@ -216,12 +229,14 @@ export default function PlantillaTable({
 							))}
 						</TableBody>
 					</Table>
+						</div>
+					</>
 				)}
 			</div>
 
 			{/* Paginación */}
 			{!loading && plantillas.length > 0 && (
-				<div className="flex items-center justify-between">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div className="text-sm text-zinc-600 dark:text-zinc-400">
 						Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
 					</div>

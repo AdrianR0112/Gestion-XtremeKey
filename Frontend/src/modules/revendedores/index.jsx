@@ -84,12 +84,12 @@ export default function RevendedoresPage() {
 	return (
 		<div className="max-w-7xl mx-auto space-y-5">
 			<section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white/85 shadow-sm backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/85">
-				<div className="flex items-start justify-between gap-3 border-b border-zinc-200/80 px-4 py-4 sm:px-5 dark:border-zinc-800/80">
+				<div className="flex flex-col gap-3 border-b border-zinc-200/80 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5 dark:border-zinc-800/80">
 					<div>
 						<h1 className="text-2xl font-semibold">Revendedores</h1>
 						<p className="text-sm text-zinc-600 dark:text-zinc-400">Gestion de red de revendedores</p>
 					</div>
-					<div className="flex gap-2">
+					<div className="grid w-full gap-2 sm:flex sm:w-auto">
 						<Button onClick={abrirCrear}>
 							<Plus className="size-4 mr-1" />
 							Nuevo revendedor

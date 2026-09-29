@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { MobileDetail, MobileDetailGrid, MobileExpandableList } from "../../../components/tables";
 import formatCurrency from "../../../utils/formatCurrency";
 import formatDate from "../../../utils/formatDate";
 import KeyEstadoBadge from "./KeyEstadoBadge";
@@ -110,6 +111,7 @@ export default function KeyTable({
 		getPaginationRowModel: getPaginationRowModel(),
 		state: { sorting, columnVisibility },
 	});
+	const mobileRows = table.getRowModel().rows.map((row) => row.original);
 
 	return (
 		<div className="space-y-3">
@@ -160,7 +162,18 @@ export default function KeyTable({
 				</DropdownMenu>
 			</div>
 
-			<div className="overflow-x-auto rounded-md border">
+			<MobileExpandableList
+				items={mobileRows}
+				getItemId={(keyItem) => keyItem.Id_Key}
+				resetKey={`${searchTerm}-${estadoFilter}-${sorting.map((item) => `${item.id}:${item.desc}`).join(",")}`}
+				emptyMessage="No hay keys que coincidan con los filtros."
+				onItemOpen={(keyItem) => onSelect(keyItem.Id_Key)}
+				renderSummary={(keyItem) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-mono text-sm font-semibold">{keyItem.Cla_Key || `Key #${keyItem.Id_Key}`}</p><p className="mt-1 truncate text-xs text-muted-foreground">{keyItem.Id_Prd ? productoMap.get(Number(keyItem.Id_Prd)) || `Producto #${keyItem.Id_Prd}` : "Sin producto"}</p></div><KeyEstadoBadge estado={keyItem.Est_Key} /></div>}
+				renderDetails={(keyItem) => <MobileDetailGrid><MobileDetail label="Variante">{keyItem.Id_Var ? varianteMap.get(Number(keyItem.Id_Var)) || `#${keyItem.Id_Var}` : "-"}</MobileDetail><MobileDetail label="Precio">{keyItem.Pre_Ven_Key === null || keyItem.Pre_Ven_Key === "" ? "-" : formatCurrency(keyItem.Pre_Ven_Key)}</MobileDetail><MobileDetail label="Por vida">{keyItem.Es_Per_Vid_Key ? "Sí" : "No"}</MobileDetail><MobileDetail label="Vencimiento">{keyItem.Fec_Ven_Key ? formatDate(keyItem.Fec_Ven_Key) : "-"}</MobileDetail></MobileDetailGrid>}
+				renderActions={(keyItem) => <><Button variant="outline" onClick={() => onViewDetail(keyItem)}><Eye className="size-4" />Ver detalle</Button><Button variant="outline" onClick={() => onEdit(keyItem)}><Pencil className="size-4" />Editar</Button><Button variant="destructive" className="col-span-2" onClick={() => onDelete(keyItem)}><Trash2 className="size-4" />Eliminar</Button></>}
+			/>
+
+			<div className="hidden overflow-x-auto rounded-md border md:block">
 				<Table>
 					<TableHeader>
 						{table.getHeaderGroups().map((headerGroup) => (
@@ -201,11 +214,11 @@ export default function KeyTable({
 				</Table>
 			</div>
 
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="text-sm text-zinc-500">
 					{table.getRowModel().rows.length} fila(s) visibles de {keysData.length}
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
 					<Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
 						Anterior
 					</Button>
