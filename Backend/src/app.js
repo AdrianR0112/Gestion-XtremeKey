@@ -1,6 +1,5 @@
 ﻿const express = require('express');
 const path = require('node:path');
-const crypto = require('node:crypto');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
@@ -11,10 +10,12 @@ const { betterAuthHandler } = require('./auth/bridge');
 const { apiRouter } = require('./routes/index.routes');
 const { notFoundMiddleware } = require('./middlewares/notFound.middleware');
 const { errorMiddleware } = require('./middlewares/error.middleware');
-const { env } = require('./config/env');
-const { importInitialDatabase } = require('./config/database');
 
 const app = express();
+
+// Railway terminates TLS and forwards requests through one trusted proxy.
+// This keeps express-rate-limit's client IP detection accurate in production.
+app.set('trust proxy', 1);
 
 const loginRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -37,36 +38,6 @@ app.use(helmet({
 }));
 app.use(cors(corsOptions));
 app.use(morgan('dev'));
-app.post(
-  '/_internal/database/bootstrap',
-  express.raw({ type: 'application/sql', limit: '2mb' }),
-  async (req, res, next) => {
-    try {
-      if (!env.databaseBootstrapToken) {
-        return res.status(404).json({ ok: false, message: 'Not found' });
-      }
-
-      const receivedToken = String(req.get('x-database-bootstrap-token') || '');
-      const expectedToken = env.databaseBootstrapToken;
-      const tokenIsValid = receivedToken.length === expectedToken.length
-        && crypto.timingSafeEqual(Buffer.from(receivedToken), Buffer.from(expectedToken));
-
-      if (!tokenIsValid) {
-        return res.status(401).json({ ok: false, message: 'Unauthorized' });
-      }
-
-      const sql = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
-      if (!sql.trim()) {
-        return res.status(400).json({ ok: false, message: 'SQL dump is required' });
-      }
-
-      await importInitialDatabase(sql);
-      return res.status(201).json({ ok: true, message: 'Database initialized' });
-    } catch (error) {
-      return next(error);
-    }
-  }
-);
 app.use('/api/v1/staff-auth/login', loginRateLimit);
 app.use('/api/v1/auth', authRateLimit);
 app.all('/api/v1/auth', betterAuthHandler);

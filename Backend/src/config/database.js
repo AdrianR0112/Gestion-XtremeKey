@@ -935,21 +935,6 @@ async function connectDatabase() {
 
   await pool.query('SELECT 1');
 
-  const [domainTables] = await pool.query(
-    `
-      SELECT TABLE_NAME
-      FROM INFORMATION_SCHEMA.TABLES
-      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'configuracion'
-      LIMIT 1
-    `,
-    [env.mysqlDatabase]
-  );
-
-  if (domainTables.length === 0 && env.databaseBootstrapToken) {
-    logger.warn('Base de datos vacia: esperando la importacion inicial protegida.');
-    return;
-  }
-
   await ensureAuthAndDomainSchema(pool);
   await ensureVariantNotificationColumns(pool);
   await ensureReminderEmailLogTable(pool);
@@ -972,39 +957,4 @@ function getPool() {
   return pool;
 }
 
-async function importInitialDatabase(sql) {
-  if (!env.databaseBootstrapToken) {
-    throw new Error('La importacion inicial no esta habilitada.');
-  }
-
-  const connection = await mysql.createConnection({
-    host: env.mysqlHost,
-    port: env.mysqlPort,
-    user: env.mysqlUser,
-    password: env.mysqlPassword,
-    database: env.mysqlDatabase,
-    multipleStatements: true,
-  });
-
-  try {
-    const [domainTables] = await connection.query(
-      `
-        SELECT TABLE_NAME
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'configuracion'
-        LIMIT 1
-      `,
-      [env.mysqlDatabase]
-    );
-
-    if (domainTables.length > 0) {
-      throw new Error('La base de datos ya fue inicializada.');
-    }
-
-    await connection.query(sql);
-  } finally {
-    await connection.end();
-  }
-}
-
-module.exports = { connectDatabase, getPool, importInitialDatabase };
+module.exports = { connectDatabase, getPool };

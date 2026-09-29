@@ -16,7 +16,6 @@ const env = {
   mysqlUser: process.env.MYSQL_USER || 'root',
   mysqlPassword: process.env.MYSQL_PASSWORD || '',
   mysqlDatabase: process.env.MYSQL_DATABASE || '',
-  databaseBootstrapToken: process.env.DATABASE_BOOTSTRAP_TOKEN || '',
   betterAuthUrl: process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 4000}`,
   betterAuthSecret: process.env.BETTER_AUTH_SECRET || 'change_me_with_a_long_random_secret',
   resendApiKey: process.env.RESEND_API_KEY || '',
