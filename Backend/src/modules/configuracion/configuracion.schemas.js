@@ -9,12 +9,6 @@ const allowedFields = [
   'Mon_Con',
   'Zon_Hor_Con',
   'Imp_Con',
-<<<<<<< Updated upstream
-  'Hab_Imp_Con'
-];
-
-module.exports = { requiredCreateFields, allowedFields };
-=======
   'Hab_Imp_Con',
   'Dia_Gra_Ren_Con',
   'Dia_Arc_Ven_Con',
@@ -46,4 +40,3 @@ module.exports = {
   DEFAULT_DIAS_ANTICIPACION_NOTIFICACION,
   MAX_DIAS_ANTICIPACION_NOTIFICACION,
 };
->>>>>>> Stashed changes

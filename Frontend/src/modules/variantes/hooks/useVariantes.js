@@ -1,4 +1,7 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { mapProductoFromApi } from "../../productos/helpers/producto.mapper";
 import { productosService } from "../../productos/services/productos.service";
 import { mapVariantFromApi } from "../helpers/variant.mapper";
@@ -6,53 +9,77 @@ import { VARIANTE_INICIAL, isVariantFormValid } from "../schemas/variant.schema"
 import { variantesService } from "../services/variantes.service";
 
 export default function useVariantes() {
-	const [variantes, setVariantes] = useState([]);
-	const [productos, setProductos] = useState([]);
+	const queryClient = useQueryClient();
 	const [selectedId, setSelectedId] = useState(null);
 	const [form, setForm] = useState(VARIANTE_INICIAL);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [estadoFilter, setEstadoFilter] = useState("");
-	const [loading, setLoading] = useState(false);
+	const [actionLoading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState(null);
 	const [success, setSuccess] = useState(null);
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [sheetMode, setSheetMode] = useState("create");
+	const variantesQueryKey = queryKeys.variantes.list();
+	const productosQueryKey = queryKeys.productos.list();
+
+	const variantesQuery = useQuery({
+		queryKey: variantesQueryKey,
+		queryFn: async () => toArray(await variantesService.list()).map(mapVariantFromApi),
+	});
+
+	const productosQuery = useQuery({
+		queryKey: productosQueryKey,
+		queryFn: async () => toArray(await productosService.list()).map(mapProductoFromApi),
+	});
+
+	const variantes = variantesQuery.data ?? [];
+	const productos = productosQuery.data ?? [];
+	const setVariantes = createQueryDataSetter(queryClient, variantesQueryKey, []);
+	const setProductos = createQueryDataSetter(queryClient, productosQueryKey, []);
+	const loading =
+		actionLoading ||
+		variantesQuery.isLoading ||
+		variantesQuery.isFetching ||
+		productosQuery.isLoading ||
+		productosQuery.isFetching;
 
 	const cargarVariantes = async () => {
 		try {
-			setLoading(true);
-			const response = await variantesService.list();
-			const data = Array.isArray(response) ? response : [];
-			setVariantes(data.map(mapVariantFromApi));
+			const data = await queryClient.fetchQuery({
+				queryKey: variantesQueryKey,
+				queryFn: async () => toArray(await variantesService.list()).map(mapVariantFromApi),
+			});
 			setError(null);
+			return data;
 		} catch (err) {
-			setError(err?.message || "Error al cargar variantes");
+			setError(getErrorMessage(err, "Error al cargar variantes"));
 			console.error("Error cargando variantes:", err);
-		} finally {
-			setLoading(false);
+			return [];
 		}
 	};
 
 	const cargarProductos = async () => {
 		try {
-			const response = await productosService.list();
-			const data = Array.isArray(response) ? response : [];
-			setProductos(data.map(mapProductoFromApi));
+			return await queryClient.fetchQuery({
+				queryKey: productosQueryKey,
+				queryFn: async () => toArray(await productosService.list()).map(mapProductoFromApi),
+			});
 		} catch (err) {
 			console.error("Error cargando productos:", err);
 			setProductos([]);
+			return [];
 		}
 	};
 
 	useEffect(() => {
-		cargarVariantes();
-		cargarProductos();
-	}, []);
+		setSelectedId((prev) => {
+			if (prev && variantes.some((item) => item.Id_Var === prev)) return prev;
+			return variantes[0]?.Id_Var ?? null;
+		});
+	}, [variantes]);
 
-	const productoPorId = useMemo(() => {
-		return new Map(productos.map((producto) => [Number(producto.Id_Prd), producto]));
-	}, [productos]);
+	const productoPorId = useMemo(() => new Map(productos.map((producto) => [Number(producto.Id_Prd), producto])), [productos]);
 
 	const getProductoNombre = (idProducto) => {
 		if (!idProducto) return "Sin producto";
@@ -77,16 +104,16 @@ export default function useVariantes() {
 		});
 	}, [variantes, searchTerm, estadoFilter, productoPorId]);
 
-	const varianteSeleccionada = useMemo(() => {
-		return variantes.find((item) => item.Id_Var === selectedId) || null;
-	}, [variantes, selectedId]);
+	const varianteSeleccionada = useMemo(() => variantes.find((item) => item.Id_Var === selectedId) || null, [variantes, selectedId]);
 
 	const formValido = isVariantFormValid(form);
 
 	return {
 		variantes,
+		setVariantes,
 		variantesFiltradas,
 		productos,
+		setProductos,
 		productoPorId,
 		getProductoNombre,
 		varianteSeleccionada,
@@ -107,6 +134,7 @@ export default function useVariantes() {
 		success,
 		setSuccess,
 		cargarVariantes,
+		cargarProductos,
 		formValido,
 		sheetOpen,
 		setSheetOpen,

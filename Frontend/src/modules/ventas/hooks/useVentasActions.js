@@ -10,11 +10,8 @@ export default function useVentasActions({
 	detalleForm,
 	detallesTemporales,
 	ventaTotals,
-	detalleSubtotal,
 	ventaAEliminar,
 	detalleVentas,
-	detalleEditandoIdx,
-	setLoading,
 	setSaving,
 	setError,
 	setSuccess,
@@ -29,13 +26,6 @@ export default function useVentasActions({
 	setDetalleFormOpen,
 	setDetalleForm,
 	setDetalleEditandoIdx,
-	setVentas,
-	setDetalleVentas,
-	setClientes,
-	setProductos,
-	setVariantes,
-	setCuentas,
-	setKeysData,
 	cargarTodo,
 }) {
 	const abrirCrearVenta = () => {
@@ -92,12 +82,15 @@ export default function useVentasActions({
 			return false;
 		}
 
+		if (detallesTemporales.some((detalle) => detalle.Id_Dve_Ant) && ventaForm.Est_Ven !== "completada") {
+			setError("Una venta con renovaciones debe estar completada.");
+			return false;
+		}
+
 		if (requiereMetodoPago && !String(ventaForm.Met_Pag_Ven || "").trim()) {
 			setError("El metodo de pago es obligatorio cuando la venta esta pagada.");
 			return false;
 		}
-
-		const tieneRenovaciones = detallesTemporales.some((d) => d.tipoOperacion === "renovacion" && d.renovacion?.Id_Dve_Ori);
 
 		setSaving(true);
 		setError("");
@@ -105,40 +98,12 @@ export default function useVentasActions({
 		try {
 			if (ventaSheetMode === "create") {
 				const ventaPayload = buildVentaPayload(ventaForm, ventaTotals);
+				const result = await ventasService.createConDetalles({
+					venta: ventaPayload,
+					detalles: detallesTemporales.map((detalle) => buildDetallePayload(detalle, ventaForm.Fec_Ven)),
+				});
 
-				if (tieneRenovaciones) {
-					const detallesPayload = detallesTemporales.map((detalle) => ({
-						...buildDetallePayload(detalle, ventaForm.Fec_Ven),
-						tipoOperacion: detalle.tipoOperacion || "nueva",
-						renovacion: detalle.tipoOperacion === "renovacion" && detalle.renovacion ? {
-							Id_Dve_Ori: Number(detalle.renovacion.Id_Dve_Ori),
-							Tip_Ren: detalle.renovacion.Tip_Ren || "manual",
-							Not_Ren: detalle.renovacion.Not_Ren || null,
-							Des_Ren: Number(detalle.renovacion.Des_Ren || 0),
-						} : undefined,
-					}));
-
-					const result = await ventasService.createConRenovaciones({
-						venta: ventaPayload,
-						detalles: detallesPayload,
-					});
-
-					setSelectedVentaId(Number(result?.venta?.Id_Ven) || null);
-				} else {
-					const ventaCreada = await ventasService.create(ventaPayload);
-					let ventaId = Number(ventaCreada?.Id_Ven ?? ventaCreada?.id ?? ventaCreada?.Id_Venta);
-					if (!Number.isFinite(ventaId) || ventaId <= 0) {
-						throw new Error("No se pudo obtener el identificador de la venta creada.");
-					}
-					setSelectedVentaId(ventaId);
-
-					for (const detalle of detallesTemporales) {
-						await detalleVentasService.create({
-							...buildDetallePayload(detalle, ventaForm.Fec_Ven),
-							Id_Ven: ventaId,
-						});
-					}
-				}
+				setSelectedVentaId(Number(result?.venta?.Id_Ven) || null);
 			} else {
 				await ventasService.update(selectedVentaId, buildVentaPayload(ventaForm, ventaTotals));
 				const ventaId = Number(selectedVentaId);

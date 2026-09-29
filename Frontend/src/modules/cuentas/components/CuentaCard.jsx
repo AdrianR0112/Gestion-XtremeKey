@@ -9,7 +9,6 @@ export default function CuentaCard({
 	cuenta,
 	productoNombre,
 	varianteNombre,
-	proveedorNombre,
 	onEdit,
 	onDelete,
 }) {
@@ -47,10 +46,6 @@ export default function CuentaCard({
 				<div className="rounded-md border p-3">
 					<p className="text-xs text-zinc-500">Variante</p>
 					<p className="font-medium mt-1">{varianteNombre || "-"}</p>
-				</div>
-				<div className="rounded-md border p-3">
-					<p className="text-xs text-zinc-500">Proveedor</p>
-					<p className="font-medium mt-1">{proveedorNombre || "-"}</p>
 				</div>
 				<div className="rounded-md border p-3">
 					<p className="text-xs text-zinc-500">Perfil</p>

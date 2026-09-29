@@ -48,10 +48,8 @@ export default function CuentasPage() {
         formValido,
         productos,
         variantes,
-        proveedores,
         productoMap,
         varianteMap,
-        proveedorMap,
     } = state;
 
     const { abrirCrear, abrirEditar, guardarCuenta, confirmarEliminacion } = actions;
@@ -109,7 +107,6 @@ export default function CuentasPage() {
                             onDelete={abrirConfirmacionEliminar}
                             productoMap={productoMap}
                             varianteMap={varianteMap}
-                            proveedorMap={proveedorMap}
                         />
                     )}
                 </div>
@@ -127,7 +124,6 @@ export default function CuentasPage() {
                                 cuenta={cuentaSeleccionada}
                                 productoNombre={cuentaSeleccionada.Id_Prd ? productoMap.get(Number(cuentaSeleccionada.Id_Prd)) : null}
                                 varianteNombre={cuentaSeleccionada.Id_Var ? varianteMap.get(Number(cuentaSeleccionada.Id_Var)) : null}
-                                proveedorNombre={cuentaSeleccionada.Id_Pro ? proveedorMap.get(Number(cuentaSeleccionada.Id_Pro)) : null}
                                 onEdit={abrirEditar}
                                 onDelete={abrirConfirmacionEliminar}
                             />
@@ -170,7 +166,6 @@ export default function CuentasPage() {
                         formValido={formValido}
                         productos={productos}
                         variantes={variantes}
-                        proveedores={proveedores}
                         onSubmit={guardarCuenta}
                         onCancel={() => setSheetOpen(false)}
                     />

@@ -1,4 +1,7 @@
-﻿export const ESTADOS_VARIANTE = ["activo", "inactivo"];
+﻿import { z } from "zod";
+import { fieldErrorsFromResult } from "@/lib/zod";
+
+export const ESTADOS_VARIANTE = ["activo", "inactivo"];
 export const TIPOS_DURACION_VARIANTE = ["dias", "meses", "anios"];
 
 export const VARIANTE_INICIAL = {
@@ -17,13 +20,13 @@ export const VARIANTE_INICIAL = {
 	Est_Var: "activo",
 };
 
-function isValidNumber(value) {
+const isValidNumber = (value) => {
 	if (value === "" || value === null || value === undefined) return true;
 	const num = Number(value);
 	return !Number.isNaN(num) && Number.isFinite(num);
-}
+};
 
-function isValidJson(value) {
+const isValidJson = (value) => {
 	if (value === "" || value === null || value === undefined) return true;
 	if (typeof value === "object") return true;
 	try {
@@ -32,76 +35,61 @@ function isValidJson(value) {
 	} catch {
 		return false;
 	}
-}
+};
 
-export function validateVariantForm(form = {}) {
-	const errors = {};
-
-	if (!form.Id_Prd) {
-		errors.Id_Prd = "El producto es obligatorio.";
-	}
-
-	if (!form.Nom_Var?.trim()) {
-		errors.Nom_Var = "El nombre de la variante es obligatorio.";
-	}
-
+const variantFormSchema = z.object({
+	Id_Prd: z.any().refine((value) => Boolean(value), { message: "El producto es obligatorio." }),
+	Nom_Var: z.string().trim().min(1, "El nombre de la variante es obligatorio."),
+	Pre_Cos_Var: z.union([z.string(), z.number()]),
+	Pre_Ven_Var: z.union([z.string(), z.number()]),
+	Pre_Rev_Var: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional(),
+	Dur_Tip_Var: z.enum(TIPOS_DURACION_VARIANTE, { message: "El tipo de duración es invalido." }).optional().or(z.literal("")),
+	Dur_Val_Var: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional(),
+	Max_Usu_Var: z.union([z.string(), z.number(), z.null(), z.undefined()]).optional(),
+	Est_Var: z.enum(ESTADOS_VARIANTE, { message: "Estado invalido." }).optional(),
+	Atr_Var: z.any().optional(),
+}).passthrough().superRefine((form, ctx) => {
 	if (form.Pre_Cos_Var === "" || form.Pre_Cos_Var === null || form.Pre_Cos_Var === undefined) {
-		errors.Pre_Cos_Var = "El precio de costo es obligatorio.";
+		ctx.addIssue({ code: "custom", path: ["Pre_Cos_Var"], message: "El precio de costo es obligatorio." });
 	} else if (!isValidNumber(form.Pre_Cos_Var)) {
-		errors.Pre_Cos_Var = "El precio de costo debe ser numerico.";
+		ctx.addIssue({ code: "custom", path: ["Pre_Cos_Var"], message: "El precio de costo debe ser numerico." });
 	} else if (Number(form.Pre_Cos_Var) < 0) {
-		errors.Pre_Cos_Var = "El precio de costo debe ser mayor o igual a 0.";
+		ctx.addIssue({ code: "custom", path: ["Pre_Cos_Var"], message: "El precio de costo debe ser mayor o igual a 0." });
 	}
 
 	if (form.Pre_Ven_Var === "" || form.Pre_Ven_Var === null || form.Pre_Ven_Var === undefined) {
-		errors.Pre_Ven_Var = "El precio de venta es obligatorio.";
+		ctx.addIssue({ code: "custom", path: ["Pre_Ven_Var"], message: "El precio de venta es obligatorio." });
 	} else if (!isValidNumber(form.Pre_Ven_Var)) {
-		errors.Pre_Ven_Var = "El precio de venta debe ser numerico.";
+		ctx.addIssue({ code: "custom", path: ["Pre_Ven_Var"], message: "El precio de venta debe ser numerico." });
 	} else if (Number(form.Pre_Ven_Var) < 0) {
-		errors.Pre_Ven_Var = "El precio de venta debe ser mayor o igual a 0.";
+		ctx.addIssue({ code: "custom", path: ["Pre_Ven_Var"], message: "El precio de venta debe ser mayor o igual a 0." });
 	}
 
-	if (form.Pre_Rev_Var !== "" && form.Pre_Rev_Var !== null && !isValidNumber(form.Pre_Rev_Var)) {
-		errors.Pre_Rev_Var = "El precio para revendedor debe ser numerico.";
-	} else if (form.Pre_Rev_Var !== "" && form.Pre_Rev_Var !== null && Number(form.Pre_Rev_Var) < 0) {
-		errors.Pre_Rev_Var = "El precio para revendedor debe ser mayor o igual a 0.";
+	if (form.Pre_Rev_Var !== "" && form.Pre_Rev_Var !== null && form.Pre_Rev_Var !== undefined && !isValidNumber(form.Pre_Rev_Var)) {
+		ctx.addIssue({ code: "custom", path: ["Pre_Rev_Var"], message: "El precio para revendedor debe ser numerico." });
+	} else if (form.Pre_Rev_Var !== "" && form.Pre_Rev_Var !== null && form.Pre_Rev_Var !== undefined && Number(form.Pre_Rev_Var) < 0) {
+		ctx.addIssue({ code: "custom", path: ["Pre_Rev_Var"], message: "El precio para revendedor debe ser mayor o igual a 0." });
 	}
 
-	if (form.Dur_Tip_Var && !TIPOS_DURACION_VARIANTE.includes(form.Dur_Tip_Var)) {
-		errors.Dur_Tip_Var = "El tipo de duración es invalido.";
+	if (isValidNumber(form.Pre_Cos_Var) && isValidNumber(form.Pre_Ven_Var) && form.Pre_Cos_Var !== "" && form.Pre_Ven_Var !== "" && Number(form.Pre_Cos_Var) > Number(form.Pre_Ven_Var)) {
+		ctx.addIssue({ code: "custom", path: ["Pre_Cos_Var"], message: "El precio de costo no puede ser mayor que el precio de venta." });
 	}
 
-	if (form.Dur_Val_Var !== "" && form.Dur_Val_Var !== null && (!Number.isInteger(Number(form.Dur_Val_Var)) || Number(form.Dur_Val_Var) < 1)) {
-		errors.Dur_Val_Var = "La duración debe ser un entero mayor o igual a 1.";
+	if (form.Dur_Val_Var !== "" && form.Dur_Val_Var !== null && form.Dur_Val_Var !== undefined && (!Number.isInteger(Number(form.Dur_Val_Var)) || Number(form.Dur_Val_Var) < 1)) {
+		ctx.addIssue({ code: "custom", path: ["Dur_Val_Var"], message: "La duración debe ser un entero mayor o igual a 1." });
 	}
 
-	if (
-		isValidNumber(form.Pre_Cos_Var) &&
-		isValidNumber(form.Pre_Ven_Var) &&
-		form.Pre_Cos_Var !== "" &&
-		form.Pre_Ven_Var !== "" &&
-		Number(form.Pre_Cos_Var) > Number(form.Pre_Ven_Var)
-	) {
-		errors.Pre_Cos_Var = "El precio de costo no puede ser mayor que el precio de venta.";
-	}
-
-	if (form.Dur_Val_Var !== "" && form.Dur_Val_Var !== null && (!Number.isInteger(Number(form.Dur_Val_Var)) || Number(form.Dur_Val_Var) < 1)) {
-		errors.Dur_Val_Var = "La duración debe ser un entero mayor o igual a 1.";
-	}
-
-	if (form.Max_Usu_Var !== "" && (!Number.isInteger(Number(form.Max_Usu_Var)) || Number(form.Max_Usu_Var) < 1)) {
-		errors.Max_Usu_Var = "El maximo de usuarios debe ser un entero mayor o igual a 1.";
-	}
-
-	if (form.Est_Var && !ESTADOS_VARIANTE.includes(form.Est_Var)) {
-		errors.Est_Var = "Estado invalido.";
+	if (form.Max_Usu_Var !== "" && form.Max_Usu_Var !== null && form.Max_Usu_Var !== undefined && (!Number.isInteger(Number(form.Max_Usu_Var)) || Number(form.Max_Usu_Var) < 1)) {
+		ctx.addIssue({ code: "custom", path: ["Max_Usu_Var"], message: "El maximo de usuarios debe ser un entero mayor o igual a 1." });
 	}
 
 	if (!isValidJson(form.Atr_Var)) {
-		errors.Atr_Var = "Los atributos deben ser un JSON valido.";
+		ctx.addIssue({ code: "custom", path: ["Atr_Var"], message: "Los atributos deben ser un JSON valido." });
 	}
+	});
 
-	return errors;
+export function validateVariantForm(form = {}) {
+	return fieldErrorsFromResult(variantFormSchema.safeParse(form));
 }
 
 export function isVariantFormValid(form = {}) {
@@ -109,6 +97,7 @@ export function isVariantFormValid(form = {}) {
 }
 
 export const variantSchema = {
+	schema: variantFormSchema,
 	validate: validateVariantForm,
 };
 

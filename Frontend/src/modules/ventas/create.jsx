@@ -58,6 +58,7 @@ export default function VentasCreatePage() {
 				onDeleteClick={ventas.eliminarDetalle}
 				ventaTotals={ventas.ventaTotals}
 				impuestoHabilitado={ventas.impuestoHabilitado}
+				graciaDias={ventas.graciaDias}
 				totalesDetalles={ventas.totalesDetalles}
 				saving={ventas.saving}
 				error={ventas.error}

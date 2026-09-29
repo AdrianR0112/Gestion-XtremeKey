@@ -23,7 +23,6 @@ export default function KeyForm({
 	formValido,
 	productos,
 	variantes,
-	proveedores,
 	onSubmit,
 	onCancel,
 }) {
@@ -83,8 +82,8 @@ export default function KeyForm({
 			</div>
 			</FormSection>
 
-			<FormSection title="Relaciones" description="Asocia la key con producto, variante y proveedor si aplica.">
-			<div className="grid sm:grid-cols-3 gap-3">
+			<FormSection title="Relaciones" description="Asocia la key con producto y variante si aplica.">
+			<div className="grid sm:grid-cols-2 gap-3">
 				<div className="space-y-2">
 					<Label>Producto</Label>
 					<Select value={toSelectValue(form.Id_Prd)} onValueChange={(value) => setForm((prev) => ({ ...prev, Id_Prd: fromSelectValue(value) }))}>
@@ -112,22 +111,6 @@ export default function KeyForm({
 							{variantes.map((variante) => (
 								<SelectItem key={variante.Id_Var} value={String(variante.Id_Var)}>
 									{variante.Nom_Var || `Variante #${variante.Id_Var}`}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-				<div className="space-y-2">
-					<Label>Proveedor</Label>
-					<Select value={toSelectValue(form.Id_Pro)} onValueChange={(value) => setForm((prev) => ({ ...prev, Id_Pro: fromSelectValue(value) }))}>
-						<SelectTrigger>
-							<SelectValue placeholder="Opcional" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value={NONE_VALUE}>Sin proveedor</SelectItem>
-							{proveedores.map((proveedor) => (
-								<SelectItem key={proveedor.Id_Pro} value={String(proveedor.Id_Pro)}>
-									{proveedor.Nom_Pro || `Proveedor #${proveedor.Id_Pro}`}
 								</SelectItem>
 							))}
 						</SelectContent>

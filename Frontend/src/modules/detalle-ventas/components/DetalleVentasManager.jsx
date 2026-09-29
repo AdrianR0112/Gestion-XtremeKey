@@ -13,9 +13,11 @@ import {
 	addDaysToDateInput,
 	addMonthsToDateInput,
 	addDurationToDateInput,
+	calcularInicioPeriodo,
 	createDetalleInitialValues,
 	getTodayDateInputValue,
 	getTomorrowDateInputValue,
+	toDateInputValue,
 	toNullableInteger,
 	toNullableString,
 } from "../utils/constants";
@@ -65,10 +67,16 @@ function formatDateRange(start, end) {
 	return `— - ${formatter.format(e)}`;
 }
 
-function inferSubscriptionFromProduct(product) {
-	if (!product) return false;
-	const signature = `${product.Nom_Prd || ""} ${product.Tip_Prd || ""}`.toLowerCase();
-	return ["suscrip", "internet", "plan", "mensual", "stream", "servicio"].some((term) => signature.includes(term));
+/**
+ * Un producto es suscripcion si asi esta tipificado, o si la variante define
+ * una duracion. Es exactamente la regla que aplica el backend para decidir si
+ * crea o no la fila en `suscripciones`: adivinarlo por el nombre del producto
+ * (como se hacia antes) mostraba campos de suscripcion en cosas como
+ * "Servicio de instalacion", que luego el backend ignoraba.
+ */
+function isSubscriptionLine(product, variant) {
+	if (product?.Tip_Prd === "suscripcion") return true;
+	return Boolean(variant?.Dur_Tip_Var && variant?.Dur_Val_Var);
 }
 
 function findVariantById(variantes, idVariante) {
@@ -93,6 +101,7 @@ export default function DetalleVentasManager({
 	clienteId,
 	revendedorId,
 	licenciasCliente = [],
+	graciaDias,
 	onDetallesChange,
 	onFormChange,
 	onFormClose,
@@ -117,7 +126,10 @@ export default function DetalleVentasManager({
 	}
 
 	function findPreviousLicenses(idPrd) {
-		if (!clienteId || !idPrd) return [];
+		// El titular puede ser cliente o revendedor: antes solo se miraba
+		// clienteId, asi que las renovaciones de revendedores nunca se detectaban
+		// y se registraban como ventas nuevas, rompiendo la cadena de periodos.
+		if ((!clienteId && !revendedorId) || !idPrd) return [];
 		return licenciasCliente
 			.filter((d) => Number(d.Id_Prd) === Number(idPrd))
 			.sort((a, b) => {
@@ -132,6 +144,29 @@ export default function DetalleVentasManager({
 		if (prevLicenses.length === 0) return null;
 		const best = prevLicenses.find((d) => Number(d.Id_Var) === Number(idVar)) || prevLicenses[0];
 		return best;
+	}
+
+	/**
+	 * Inicio del periodo de una linea. Si renueva una licencia previa, encadena
+	 * desde su vencimiento con la misma regla que el modulo de suscripciones;
+	 * si es una venta nueva, arranca hoy.
+	 */
+	function getInicioLinea(previousLicense) {
+		const today = getTodayDateInputValue();
+		if (!previousLicense?.Fec_Fin_Dve) return today;
+		return calcularInicioPeriodo(previousLicense.Fec_Fin_Dve, { graciaDias }).inicio || today;
+	}
+
+	/**
+	 * Credenciales heredadas del periodo anterior. Sin esto habria que reescribir
+	 * a mano el correo del cliente final en cada renovacion hecha desde ventas.
+	 */
+	function getCredencialesLinea(previousLicense) {
+		if (!previousLicense) return {};
+		return {
+			Cor_Cue: previousLicense.Cor_Cue || "",
+			Con_Cue: previousLicense.Con_Cue || "",
+		};
 	}
 
 	const variantsByProduct = useMemo(() => {
@@ -154,11 +189,20 @@ export default function DetalleVentasManager({
 	const availableVariants = useMemo(() => {
 		return variantsByProduct[Number(detalleForm.Id_Prd)] || [];
 	}, [detalleForm.Id_Prd, variantsByProduct]);
+	const selectedVariant = useMemo(
+		() => findVariantById(availableVariants, detalleForm.Id_Var),
+		[availableVariants, detalleForm.Id_Var]
+	);
 	const hasSubscription = Boolean(
 		detalleForm.Es_Suscripcion_Dve ||
-		inferSubscriptionFromProduct(selectedProduct) ||
+		isSubscriptionLine(selectedProduct, selectedVariant) ||
 		(detalleForm.Fec_Ini_Dve && detalleForm.Fec_Fin_Dve && detalleForm.Fec_Ini_Dve !== detalleForm.Fec_Fin_Dve)
 	);
+	// La licencia que esta linea renueva, para explicar de donde sale la fecha.
+	const licenciaAnterior = useMemo(() => {
+		if (!detalleForm.Id_Dve_Ant) return null;
+		return licenciasCliente.find((d) => Number(d.Id_Dve) === Number(detalleForm.Id_Dve_Ant)) || null;
+	}, [detalleForm.Id_Dve_Ant, licenciasCliente]);
 	const normalizedSearch = searchTerm.trim().toLowerCase();
 
 	const filteredDetalles = useMemo(() => {
@@ -208,39 +252,39 @@ export default function DetalleVentasManager({
 		if (!item) return;
 
 		if (item.type === "variant") {
-			const today = getTodayDateInputValue();
-			const isSubscription = Boolean(item.variant.Dur_Tip_Var && item.variant.Dur_Val_Var) || inferSubscriptionFromProduct(item.product || null);
+			const isSubscription = isSubscriptionLine(item.product || null, item.variant);
 			const previousLicense = detectRenewal(item.variant.Id_Prd, item.variant.Id_Var);
+			const inicio = getInicioLinea(previousLicense);
 			onAddClick({
 				...createDetalleInitialValues(),
 				Id_Prd: String(item.product?.Id_Prd || item.variant.Id_Prd || ""),
 				Id_Var: String(item.variant.Id_Var),
 				Pre_Uni_Dve: getVariantPrice(item.variant),
 				Es_Suscripcion_Dve: isSubscription,
-				Fec_Ini_Dve: today,
-				Fec_Fin_Dve: isSubscription ? addDurationToDateInput(today, item.variant.Dur_Tip_Var, item.variant.Dur_Val_Var) : today,
-				tipoOperacion: previousLicense ? "renovacion" : "nueva",
-				renovacion: previousLicense ? { Id_Dve_Ori: previousLicense.Id_Dve, Tip_Ren: "manual", Des_Ren: 0 } : undefined,
+				Fec_Ini_Dve: inicio,
+				Fec_Fin_Dve: isSubscription ? addDurationToDateInput(inicio, item.variant.Dur_Tip_Var, item.variant.Dur_Val_Var) : inicio,
+				Id_Dve_Ant: previousLicense?.Id_Dve || null,
+				...getCredencialesLinea(previousLicense),
 			});
 			return;
 		}
 
 		const primaryVariant = item.variants?.[0] || null;
-		const today = getTodayDateInputValue();
-		const isSubscription = Boolean(primaryVariant?.Dur_Tip_Var && primaryVariant?.Dur_Val_Var) || inferSubscriptionFromProduct(item.product || null);
+		const isSubscription = isSubscriptionLine(item.product || null, primaryVariant);
 		const productId = item.product?.Id_Prd;
 		const variantId = primaryVariant?.Id_Var;
 		const previousLicense = detectRenewal(productId, variantId);
+		const inicio = getInicioLinea(previousLicense);
 		onAddClick({
 			...createDetalleInitialValues(),
 			Id_Prd: String(item.product?.Id_Prd || ""),
 			Id_Var: primaryVariant ? String(primaryVariant.Id_Var) : "",
 			Pre_Uni_Dve: getVariantPrice(primaryVariant),
 			Es_Suscripcion_Dve: isSubscription,
-			Fec_Ini_Dve: today,
-			Fec_Fin_Dve: isSubscription ? addDurationToDateInput(today, primaryVariant?.Dur_Tip_Var, primaryVariant?.Dur_Val_Var) : today,
-			tipoOperacion: previousLicense ? "renovacion" : "nueva",
-			renovacion: previousLicense ? { Id_Dve_Ori: previousLicense.Id_Dve, Tip_Ren: "manual", Des_Ren: 0 } : undefined,
+			Fec_Ini_Dve: inicio,
+			Fec_Fin_Dve: isSubscription ? addDurationToDateInput(inicio, primaryVariant?.Dur_Tip_Var, primaryVariant?.Dur_Val_Var) : inicio,
+			Id_Dve_Ant: previousLicense?.Id_Dve || null,
+			...getCredencialesLinea(previousLicense),
 		});
 	};
 
@@ -248,36 +292,41 @@ export default function DetalleVentasManager({
 		const product = productos.find((item) => Number(item.Id_Prd) === Number(productId)) || null;
 		const productVariants = variantsByProduct[Number(productId)] || [];
 		const firstVariant = productVariants[0] || null;
-		const today = getTodayDateInputValue();
-		const isSubscription = Boolean(firstVariant?.Dur_Tip_Var && firstVariant?.Dur_Val_Var) || inferSubscriptionFromProduct(product);
+		const isSubscription = isSubscriptionLine(product, firstVariant);
 		const previousLicense = detectRenewal(productId, firstVariant?.Id_Var);
+		const inicio = getInicioLinea(previousLicense);
 		onFormChange({
 			...detalleForm,
 			Id_Prd: productId,
 			Id_Var: firstVariant ? String(firstVariant.Id_Var) : "",
 			Pre_Uni_Dve: getVariantPrice(firstVariant) || detalleForm.Pre_Uni_Dve,
 			Es_Suscripcion_Dve: isSubscription,
-			Fec_Ini_Dve: today,
-			Fec_Fin_Dve: isSubscription ? addDurationToDateInput(today, firstVariant?.Dur_Tip_Var, firstVariant?.Dur_Val_Var) : today,
-			tipoOperacion: previousLicense ? "renovacion" : "nueva",
-			renovacion: previousLicense ? { Id_Dve_Ori: previousLicense.Id_Dve, Tip_Ren: "manual", Des_Ren: 0 } : undefined,
+			Fec_Ini_Dve: inicio,
+			Fec_Fin_Dve: isSubscription ? addDurationToDateInput(inicio, firstVariant?.Dur_Tip_Var, firstVariant?.Dur_Val_Var) : inicio,
+			Id_Dve_Ant: previousLicense?.Id_Dve || null,
+			...getCredencialesLinea(previousLicense),
 		});
 	};
 
 	const handleVariantChange = (variantId) => {
 		const variant = findVariantById(availableVariants, variantId);
-		const today = getTodayDateInputValue();
-		const isSubscription = Boolean(variant?.Dur_Tip_Var && variant?.Dur_Val_Var) || inferSubscriptionFromProduct(selectedProduct);
+		const isSubscription = isSubscriptionLine(selectedProduct, variant);
 		const previousLicense = detectRenewal(detalleForm.Id_Prd, variantId);
+		// Al cambiar de variante se recalcula el inicio: si la linea pasa a ser
+		// una renovacion, tiene que encadenar desde el vencimiento anterior.
+		const inicio = previousLicense
+			? getInicioLinea(previousLicense)
+			: detalleForm.Fec_Ini_Dve || getTodayDateInputValue();
 		onFormChange({
 			...detalleForm,
 			Id_Var: variantId,
 			Pre_Uni_Dve: getVariantPrice(variant) || detalleForm.Pre_Uni_Dve,
 			Es_Suscripcion_Dve: isSubscription,
-			Fec_Ini_Dve: detalleForm.Fec_Ini_Dve || today,
-			Fec_Fin_Dve: isSubscription ? addDurationToDateInput(detalleForm.Fec_Ini_Dve || today, variant?.Dur_Tip_Var, variant?.Dur_Val_Var) : detalleForm.Fec_Fin_Dve,
-			tipoOperacion: previousLicense ? "renovacion" : (detalleForm.tipoOperacion || "nueva"),
-			renovacion: previousLicense ? { Id_Dve_Ori: previousLicense.Id_Dve, Tip_Ren: "manual", Des_Ren: 0 } : detalleForm.renovacion,
+			Fec_Ini_Dve: inicio,
+			Fec_Fin_Dve: isSubscription ? addDurationToDateInput(inicio, variant?.Dur_Tip_Var, variant?.Dur_Val_Var) : detalleForm.Fec_Fin_Dve,
+			Id_Dve_Ant: previousLicense?.Id_Dve || detalleForm.Id_Dve_Ant || null,
+			// Solo si la linea aun no tiene credenciales: no pisar lo ya escrito.
+			...(previousLicense && !detalleForm.Cor_Cue ? getCredencialesLinea(previousLicense) : {}),
 		});
 	};
 
@@ -322,10 +371,7 @@ export default function DetalleVentasManager({
 			Con_Cue: toNullableString(detalleForm.Con_Cue),
 			Not_Dve: toNullableString(detalleForm.Not_Dve),
 			Est_Dve: detalleForm.Est_Dve || "activo",
-			tipoOperacion: detalleForm.tipoOperacion || "nueva",
-			renovacion: detalleForm.tipoOperacion === "renovacion" && detalleForm.renovacion?.Id_Dve_Ori
-				? { ...detalleForm.renovacion }
-				: undefined,
+			Id_Dve_Ant: detalleForm.Id_Dve_Ant ? Number(detalleForm.Id_Dve_Ant) : null,
 		};
 
 		if (isEditing) {
@@ -459,8 +505,8 @@ export default function DetalleVentasManager({
 						<tbody>
 							{filteredDetalles.map((detalle, index) => {
 								const realIndex = detallesTemporales.indexOf(detalle);
-								const prevLicense = detalle.renovacion?.Id_Dve_Ori
-									? licenciasCliente.find((d) => Number(d.Id_Dve) === Number(detalle.renovacion.Id_Dve_Ori))
+				const prevLicense = detalle.Id_Dve_Ant
+					? licenciasCliente.find((d) => Number(d.Id_Dve) === Number(detalle.Id_Dve_Ant))
 									: null;
 								return (
 									<tr key={`${detalle.Id_Dve || "tmp"}-${index}`} className="border-t bg-card align-top">
@@ -470,7 +516,7 @@ export default function DetalleVentasManager({
 										</td>
 										<td className="px-4 py-3">{varianteMap.get(Number(detalle.Id_Var)) || detalle.Nom_Var || "—"}</td>
 										<td className="px-4 py-3">
-											{detalle.tipoOperacion === "renovacion" ? (
+							{detalle.Id_Dve_Ant ? (
 												<span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
 													Renovación
 													{prevLicense ? ` #${prevLicense.Id_Dve}` : ""}
@@ -565,83 +611,72 @@ export default function DetalleVentasManager({
 								</div>
 							</FormSection>
 
-							{detalleForm.Id_Prd ? (
-								<FormSection title="Tipo de operacion" description="Indica si es una nueva licencia o una renovacion de una licencia existente.">
-									<div className="space-y-4">
-										<div className="inline-flex rounded-lg border bg-muted/30 p-1">
-											<Button
-												type="button"
-												size="sm"
-												variant={(detalleForm.tipoOperacion || "nueva") === "nueva" ? "default" : "ghost"}
-												onClick={() => onFormChange({ ...detalleForm, tipoOperacion: "nueva", renovacion: undefined })}
-											>
-												Nueva licencia
-											</Button>
-											<Button
-												type="button"
-												size="sm"
-												variant={detalleForm.tipoOperacion === "renovacion" ? "default" : "ghost"}
-												onClick={() => {
-													const idPrd = Number(detalleForm.Id_Prd);
-													const prevLicenses = findPreviousLicenses(idPrd);
-													const best = prevLicenses[0] || null;
-													onFormChange({
-														...detalleForm,
-														tipoOperacion: "renovacion",
-														renovacion: best ? { Id_Dve_Ori: best.Id_Dve, Tip_Ren: "manual", Des_Ren: 0 } : undefined,
-													});
-												}}
-											>
-												Renovacion
-											</Button>
-										</div>
-
-										{detalleForm.tipoOperacion === "renovacion" ? (
-											(() => {
-												const idPrd = Number(detalleForm.Id_Prd);
-												const prevLicenses = findPreviousLicenses(idPrd);
-												return (
-													<div className="space-y-2">
-														<Label>Licencia anterior a renovar</Label>
-														{prevLicenses.length === 0 ? (
-															<p className="text-sm text-amber-600">No se encontraron licencias anteriores de este producto para este cliente.</p>
-														) : (
-															<Select
-																value={detalleForm.renovacion?.Id_Dve_Ori ? String(detalleForm.renovacion.Id_Dve_Ori) : ""}
-																onValueChange={(value) => onFormChange({
-																	...detalleForm,
-																	renovacion: {
-																		...detalleForm.renovacion,
-																		Id_Dve_Ori: Number(value),
-																		Tip_Ren: "manual",
-																		Des_Ren: 0,
-																	},
-																})}
-															>
-																<SelectTrigger className="w-full">
-																	<SelectValue placeholder="Seleccionar licencia anterior" />
-																</SelectTrigger>
-																<SelectContent>
-																	{prevLicenses.map((lic) => {
-																		const prodName = lic.Nom_Prd || productoMap.get(Number(lic.Id_Prd)) || "Producto";
-																		const varName = lic.Nom_Var || varianteMap.get(Number(lic.Id_Var)) || "";
-																		const date = lic.Fec_Fin_Dve ? `hasta ${lic.Fec_Fin_Dve}` : "";
-																		return (
-																			<SelectItem key={lic.Id_Dve} value={String(lic.Id_Dve)}>
-																				{`#${lic.Id_Dve} - ${prodName}${varName ? ` (${varName})` : ""} ${date}`}
-																			</SelectItem>
-																		);
-																	})}
-																</SelectContent>
-															</Select>
-														)}
-													</div>
-												);
-											})()
-										) : null}
-									</div>
-								</FormSection>
-							) : null}
+			{detalleForm.Id_Prd ? (
+				<FormSection title="Tipo de operacion" description="Una renovacion enlaza este detalle con una licencia anterior.">
+					<div className="space-y-2">
+						<Label>Licencia anterior a renovar (opcional)</Label>
+						<Select
+							value={detalleForm.Id_Dve_Ant ? String(detalleForm.Id_Dve_Ant) : "__none__"}
+							onValueChange={(value) => {
+								const seleccionada =
+									value === "__none__"
+										? null
+										: findPreviousLicenses(Number(detalleForm.Id_Prd)).find(
+												(lic) => Number(lic.Id_Dve) === Number(value)
+											) || null;
+								// Marcar la linea como renovacion tiene que reajustar el
+								// periodo: encadena desde el vencimiento de la licencia
+								// elegida, no desde hoy.
+								const inicio = getInicioLinea(seleccionada);
+								onFormChange({
+									...detalleForm,
+									Id_Dve_Ant: seleccionada ? Number(seleccionada.Id_Dve) : null,
+									Fec_Ini_Dve: inicio,
+									Fec_Fin_Dve: hasSubscription
+										? addDurationToDateInput(inicio, selectedVariant?.Dur_Tip_Var, selectedVariant?.Dur_Val_Var)
+										: detalleForm.Fec_Fin_Dve,
+									// Al marcar la linea como renovacion se heredan las
+									// credenciales de esa licencia.
+									...getCredencialesLinea(seleccionada),
+								});
+							}}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue placeholder="Venta nueva" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="__none__">Venta nueva</SelectItem>
+								{findPreviousLicenses(Number(detalleForm.Id_Prd)).map((lic) => {
+									const prodName = lic.Nom_Prd || productoMap.get(Number(lic.Id_Prd)) || "Producto";
+									const varName = lic.Nom_Var || varianteMap.get(Number(lic.Id_Var)) || "";
+									const date = lic.Fec_Fin_Dve ? `hasta ${toDateInputValue(lic.Fec_Fin_Dve)}` : "";
+									// El correo va primero: con un revendedor que tiene decenas
+									// de clientes, es lo unico que identifica la licencia.
+									const etiqueta = [
+										lic.Cor_Cue || `#${lic.Id_Dve}`,
+										`${prodName}${varName ? ` (${varName})` : ""}`,
+										date,
+									]
+										.filter(Boolean)
+										.join(" · ");
+									return (
+										<SelectItem key={lic.Id_Dve} value={String(lic.Id_Dve)}>
+											{etiqueta}
+										</SelectItem>
+									);
+								})}
+							</SelectContent>
+						</Select>
+						{licenciaAnterior ? (
+							<p className="text-xs text-zinc-500">
+								Renovación: el periodo encadena desde el vencimiento anterior
+								{licenciaAnterior.Fec_Fin_Dve ? ` (${toDateInputValue(licenciaAnterior.Fec_Fin_Dve)})` : ""}
+								{" "}para no dejar días sin cobertura.
+							</p>
+						) : null}
+					</div>
+				</FormSection>
+			) : null}
 
 							<FormSection title="Valores" description="Define cantidad, precio, descuento y estado del detalle.">
 								<div className="grid gap-4 sm:grid-cols-3">

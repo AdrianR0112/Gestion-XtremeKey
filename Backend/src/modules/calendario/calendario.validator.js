@@ -1,4 +1,5 @@
 const { toEcuadorDateTime } = require('../../utils/dateHelper');
+const { z } = require('../../utils/zod');
 
 function isValidDateValue(value) {
   const date = new Date(value);
@@ -20,12 +21,23 @@ function getCurrentMonthRange() {
   return { startDate, endDate };
 }
 
-function validateQuery(query = {}) {
-  const errors = [];
-  const defaults = getCurrentMonthRange();
+const calendarioQuerySchema = z.object({
+  startDate: z.any().optional(),
+  endDate: z.any().optional(),
+}).passthrough();
 
-  let startDate = query.startDate ?? defaults.startDate;
-  let endDate = query.endDate ?? defaults.endDate;
+function validateQuery(query = {}) {
+  const defaults = getCurrentMonthRange();
+  const parseResult = calendarioQuerySchema.safeParse(query);
+
+  if (!parseResult.success) {
+    return { isValid: false, errors: parseResult.error.issues.map((issue) => issue.message), query: defaults };
+  }
+
+  const errors = [];
+
+  let startDate = parseResult.data.startDate ?? defaults.startDate;
+  let endDate = parseResult.data.endDate ?? defaults.endDate;
 
   if (!isValidDateValue(startDate)) {
     errors.push('startDate must be a valid date');
@@ -47,4 +59,4 @@ function validateQuery(query = {}) {
   return { isValid, errors, query: { startDate, endDate } };
 }
 
-module.exports = { validateQuery };
+module.exports = { calendarioQuerySchema, validateQuery };

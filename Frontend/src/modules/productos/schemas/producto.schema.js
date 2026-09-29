@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { fieldErrorsFromResult } from "@/lib/zod";
+
 export const TIPOS_PRODUCTO = ["servicio", "producto", "suscripcion"];
 export const ESTADOS_PRODUCTO = ["activo", "inactivo", "agotado"];
 export const TIPOS_DURACION_PRODUCTO = ["dias", "meses", "anios"];
@@ -10,31 +13,19 @@ export const PRODUCTO_INICIAL = {
 	Id_Cat: "",
 	Tip_Prd: "producto",
 	Ima_Prd: "",
+	Imagen_Archivo: null,
+	Eliminar_Ima_Prd: false,
 	Est_Prd: "activo",
 };
 
-function isValidNumber(value) {
-	if (!value && value !== 0) return true;
-	const num = Number(value);
-	return !isNaN(num) && isFinite(num);
-}
+const productoFormSchema = z.object({
+	Nom_Prd: z.string().trim().min(1, "El nombre del producto es obligatorio."),
+	Tip_Prd: z.enum(TIPOS_PRODUCTO, { message: "Tipo de producto invalido." }).optional(),
+	Est_Prd: z.enum(ESTADOS_PRODUCTO, { message: "Estado invalido." }).optional(),
+}).passthrough();
 
 export function validateProductoForm(form = {}) {
-	const errors = {};
-
-	if (!form.Nom_Prd?.trim()) {
-		errors.Nom_Prd = "El nombre del producto es obligatorio.";
-	}
-
-	if (form.Tip_Prd && !TIPOS_PRODUCTO.includes(form.Tip_Prd)) {
-		errors.Tip_Prd = "Tipo de producto invalido.";
-	}
-
-	if (form.Est_Prd && !ESTADOS_PRODUCTO.includes(form.Est_Prd)) {
-		errors.Est_Prd = "Estado invalido.";
-	}
-
-	return errors;
+	return fieldErrorsFromResult(productoFormSchema.safeParse(form));
 }
 
 export function isProductoFormValid(form = {}) {
@@ -42,6 +33,7 @@ export function isProductoFormValid(form = {}) {
 }
 
 export const productoSchema = {
+	schema: productoFormSchema,
 	validate: validateProductoForm,
 };
 

@@ -8,6 +8,7 @@ let server;
 
 async function bootstrap() {
   await connectDatabase();
+
   startJobs();
 
   server = app.listen(env.port, () => {

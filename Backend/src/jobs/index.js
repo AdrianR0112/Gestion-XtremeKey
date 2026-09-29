@@ -3,40 +3,16 @@ const cron = require('node-cron');
 const { env } = require('../config/env');
 const { logger } = require('../config/logger');
 const { runVencimientosJob } = require('./vencimientos.job');
-<<<<<<< Updated upstream
-
-let remindersTask = null;
-=======
 const { runRecordatoriosPushJob } = require('./recordatoriosPush.job');
 const { runExpirarSuscripcionesJob } = require('./suscripcionesExpiracion.job');
 
 let remindersTask = null;
 let pushTask = null;
 let expiracionTask = null;
->>>>>>> Stashed changes
 
 function startJobs() {
   if (!env.remindersEnabled) {
     logger.info('Cron de recordatorios deshabilitado por configuracion.');
-<<<<<<< Updated upstream
-    return;
-  }
-
-  if (remindersTask) {
-    return;
-  }
-
-  remindersTask = cron.schedule(env.remindersCron, async () => {
-    try {
-      const summary = await runVencimientosJob();
-      logger.info(`Cron de recordatorios ejecutado: ${summary.sentCount} enviados, ${summary.skippedCount} omitidos, ${summary.errorCount} con error.`);
-    } catch (error) {
-      logger.error('Error ejecutando cron de recordatorios.', error);
-    }
-  }, {
-    timezone: 'America/Guayaquil'
-  });
-=======
   } else if (!remindersTask) {
     remindersTask = cron.schedule(env.remindersCron, async () => {
       try {
@@ -83,9 +59,9 @@ function startJobs() {
     }, {
       timezone: env.cronTimezone
     });
->>>>>>> Stashed changes
 
-  logger.info(`Cron de recordatorios inicializado con expresion: ${env.remindersCron}`);
+    logger.info(`Cron de expiracion de suscripciones inicializado con expresion: ${env.expiracionCron}`);
+  }
 }
 
 module.exports = { startJobs };

@@ -5,12 +5,25 @@ function toDateOnly(value) {
   return localValue ? localValue.slice(0, 10) : '';
 }
 
+/**
+ * Deja el telefono en el formato que espera wa.me: solo digitos, con codigo de
+ * pais y sin el 0 inicial.
+ *
+ * Los numeros guardados hoy ya vienen con codigo de pais (11-13 digitos), asi
+ * que caen por el ultimo return. Las ramas de Ecuador cubren lo que se puede
+ * teclear a mano en el panel: 0987654321 y 987654321.
+ */
 function normalizeWhatsappPhone(phone) {
   const digits = String(phone || '').replace(/\D/g, '');
   if (!digits) return '';
   if (digits.startsWith('593')) return digits;
   if (digits.startsWith('0') && digits.length === 10) {
     return `593${digits.slice(1)}`;
+  }
+  // Celular ecuatoriano sin 0 ni codigo de pais: sin esta rama se devolvia tal
+  // cual y generaba un enlace de WhatsApp invalido en silencio.
+  if (digits.length === 9 && digits.startsWith('9')) {
+    return `593${digits}`;
   }
 
   return digits;

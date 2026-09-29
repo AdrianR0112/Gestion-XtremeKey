@@ -3,7 +3,6 @@
 const allowedFields = [
   'Id_Prd',
   'Id_Var',
-  'Id_Pro',
   'Cla_Key',
   'Des_Key',
   'Fec_Com_Key',

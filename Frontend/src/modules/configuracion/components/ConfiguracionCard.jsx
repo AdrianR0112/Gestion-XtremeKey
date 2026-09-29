@@ -1,4 +1,4 @@
-﻿import { Mail, MapPin, Phone, Clock3, Percent, Pencil } from "lucide-react";
+﻿import { Archive, CalendarClock, Mail, MapPin, Phone, Clock3, Percent, Pencil } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Separator } from "../../../components/ui/separator";
@@ -69,12 +69,34 @@ export default function ConfiguracionCard({ configuracion, isCurrent, onEdit }) 
 								: `${configuracion.Imp_Con}%`}
 						</p>
 					</div>
-					<div className="rounded-md border p-3 sm:col-span-2">
+					<div className="rounded-md border p-3">
 						<p className="text-xs text-zinc-500 flex items-center gap-1">
 							<Clock3 className="size-3.5" />
 							Zona horaria
 						</p>
 						<p className="font-medium mt-1">{configuracion.Zon_Hor_Con || "-"}</p>
+					</div>
+					<div className="rounded-md border p-3">
+						<p className="text-xs text-zinc-500 flex items-center gap-1">
+							<CalendarClock className="size-3.5" />
+							Gracia de renovación
+						</p>
+						<p className="font-medium mt-1">
+							{configuracion.Dia_Gra_Ren_Con === "" || configuracion.Dia_Gra_Ren_Con === null
+								? "-"
+								: `${configuracion.Dia_Gra_Ren_Con} día(s)`}
+						</p>
+					</div>
+					<div className="rounded-md border p-3">
+						<p className="text-xs text-zinc-500 flex items-center gap-1">
+							<Archive className="size-3.5" />
+							Archivar vencidas tras
+						</p>
+						<p className="font-medium mt-1">
+							{configuracion.Dia_Arc_Ven_Con === "" || configuracion.Dia_Arc_Ven_Con === null
+								? "-"
+								: `${configuracion.Dia_Arc_Ven_Con} día(s)`}
+						</p>
 					</div>
 				</div>
 			</div>

@@ -12,8 +12,6 @@ async function findById(id) {
   return rows[0] || null;
 }
 
-<<<<<<< Updated upstream
-=======
 async function findByEmail(email) {
   const pool = getPool();
   const normalized = String(email ?? '').trim().toLowerCase();
@@ -58,7 +56,6 @@ async function findByPhoneCandidates(candidates = []) {
   return normalizedRows;
 }
 
->>>>>>> Stashed changes
 async function createOne(data) {
   const pool = getPool();
   const sql = `
@@ -69,17 +66,15 @@ async function createOne(data) {
       Ema_Cli,
       Pai_Cli,
       Doc_Cli,
+      Dir_Cli,
+      Tip_Cli,
       Cat_Cli,
       Pre_Con_Cli,
       Ace_Not_What_Cli,
       Ace_Not_Cor_Cli,
       Not_Cli,
       Est_Cli
-<<<<<<< Updated upstream
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-=======
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
->>>>>>> Stashed changes
   `;
 
   const values = [
@@ -89,6 +84,8 @@ async function createOne(data) {
     data.Ema_Cli ?? null,
     data.Pai_Cli ?? 'Ecuador',
     data.Doc_Cli ?? null,
+    data.Dir_Cli ?? null,
+    data.Tip_Cli ?? 'persona',
     data.Cat_Cli ?? 'nuevo',
     data.Pre_Con_Cli ?? 'whatsapp',
     data.Ace_Not_What_Cli ?? 1,
@@ -122,12 +119,9 @@ async function removeById(id) {
 module.exports = {
   findAll,
   findById,
-<<<<<<< Updated upstream
-=======
   findByEmail,
   findByPhone,
   findByPhoneCandidates,
->>>>>>> Stashed changes
   createOne,
   updateById,
   removeById

@@ -26,6 +26,7 @@ export default function VentaTable({
 	const columns = useMemo(
 		() => [
 			{ id: "id", header: "ID", cell: (venta) => venta.Id_Ven },
+			{ id: "codigo", header: "Código", cell: (venta) => venta.Cod_Ven || "-" },
 			{
 				id: "cliente",
 				header: "Cliente / Revendedor",
@@ -100,6 +101,7 @@ export default function VentaTable({
 				<TableHeader>
 					<TableRow>
 						<TableHead>ID</TableHead>
+						<TableHead>Código</TableHead>
 						<TableHead>Cliente / Revendedor</TableHead>
 						<TableHead>Fecha</TableHead>
 						<TableHead>Total</TableHead>
@@ -123,7 +125,7 @@ export default function VentaTable({
 						})
 					) : (
 						<TableRow>
-							<TableCell colSpan={6} className="h-24 text-center">
+							<TableCell colSpan={7} className="h-24 text-center">
 								No hay ventas.
 							</TableCell>
 						</TableRow>

@@ -145,6 +145,49 @@ export default function ConfiguracionForm({
 			) : null}
 
 			<div className="space-y-1.5">
+				<Label htmlFor="Dia_Gra_Ren_Con">Días de gracia para renovación</Label>
+				<Input
+					id="Dia_Gra_Ren_Con"
+					type="number"
+					min="0"
+					max="365"
+					step="1"
+					placeholder="30"
+					value={form.Dia_Gra_Ren_Con}
+					onChange={(event) => setForm((prev) => ({ ...prev, Dia_Gra_Ren_Con: event.target.value }))}
+				/>
+				<p className="text-xs text-zinc-500">
+					Al renovar, si la suscripción venció hace menos de estos días el nuevo periodo arranca en la fecha
+					de vencimiento anterior en vez de hoy, para no dejar días sin cobertura.
+				</p>
+				{formErrors.Dia_Gra_Ren_Con ? (
+					<p className="text-xs text-red-600">{formErrors.Dia_Gra_Ren_Con}</p>
+				) : null}
+			</div>
+
+			<div className="space-y-1.5">
+				<Label htmlFor="Dia_Arc_Ven_Con">Días antes de archivar una vencida</Label>
+				<Input
+					id="Dia_Arc_Ven_Con"
+					type="number"
+					min="0"
+					max="365"
+					step="1"
+					placeholder="5"
+					value={form.Dia_Arc_Ven_Con}
+					onChange={(event) => setForm((prev) => ({ ...prev, Dia_Arc_Ven_Con: event.target.value }))}
+				/>
+				<p className="text-xs text-zinc-500">
+					Pasados estos días desde el vencimiento, la suscripción pasa a la pestaña Archivo y deja de
+					aparecer en el listado. Las marcadas como expiradas se archivan igualmente, sin esperar a este
+					plazo.
+				</p>
+				{formErrors.Dia_Arc_Ven_Con ? (
+					<p className="text-xs text-red-600">{formErrors.Dia_Arc_Ven_Con}</p>
+				) : null}
+			</div>
+
+			<div className="space-y-1.5">
 				<Label htmlFor="Zon_Hor_Con">Zona horaria</Label>
 				<Input
 					id="Zon_Hor_Con"

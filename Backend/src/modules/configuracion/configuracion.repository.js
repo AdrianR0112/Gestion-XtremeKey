@@ -1,13 +1,10 @@
 ﻿const { getPool } = require('../../config/database');
-<<<<<<< Updated upstream
-=======
 const {
   DEFAULT_DIAS_GRACIA_RENOVACION,
   DEFAULT_DIAS_ARCHIVO_VENCIDA,
   DEFAULT_HORA_NOTIFICACION,
   DEFAULT_DIAS_ANTICIPACION_NOTIFICACION
 } = require('./configuracion.schemas');
->>>>>>> Stashed changes
 
 async function findAll() {
   const pool = getPool();
@@ -39,17 +36,12 @@ async function createOne(data) {
       Mon_Con,
       Zon_Hor_Con,
       Imp_Con,
-<<<<<<< Updated upstream
-      Hab_Imp_Con
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-=======
       Hab_Imp_Con,
       Dia_Gra_Ren_Con,
       Dia_Arc_Ven_Con,
       Hor_Not_Con,
       Dia_Ant_Not_Con
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
->>>>>>> Stashed changes
   `;
 
   const values = [
@@ -61,23 +53,17 @@ async function createOne(data) {
     data.Mon_Con ?? 'USD',
     data.Zon_Hor_Con ?? 'America/Guayaquil',
     data.Imp_Con ?? 0,
-<<<<<<< Updated upstream
-    data.Hab_Imp_Con ?? true
-=======
     data.Hab_Imp_Con ?? true,
     data.Dia_Gra_Ren_Con ?? DEFAULT_DIAS_GRACIA_RENOVACION,
     data.Dia_Arc_Ven_Con ?? DEFAULT_DIAS_ARCHIVO_VENCIDA,
     data.Hor_Not_Con ?? DEFAULT_HORA_NOTIFICACION,
     data.Dia_Ant_Not_Con ?? DEFAULT_DIAS_ANTICIPACION_NOTIFICACION
->>>>>>> Stashed changes
   ];
 
   const [result] = await pool.query(sql, values);
   return findById(result.insertId);
 }
 
-<<<<<<< Updated upstream
-=======
 /**
  * Dias de gracia para renovar. Se lee suelto (y no la configuracion entera)
  * porque la renovacion lo consulta una vez por peticion, tambien en lote.
@@ -109,7 +95,6 @@ async function getConfiguracionNotificaciones() {
   };
 }
 
->>>>>>> Stashed changes
 async function updateById(id, data) {
   const fields = Object.keys(data);
   if (fields.length === 0) return findById(id);
@@ -132,12 +117,9 @@ module.exports = {
   findAll,
   findById,
   findCurrent,
-<<<<<<< Updated upstream
-=======
   getDiasGraciaRenovacion,
   getDiasArchivoVencida,
   getConfiguracionNotificaciones,
->>>>>>> Stashed changes
   createOne,
   updateById,
   removeById

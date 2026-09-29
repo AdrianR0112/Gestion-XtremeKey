@@ -23,7 +23,6 @@ export default function CuentaTable({
 	onDelete,
 	productoMap,
 	varianteMap,
-	proveedorMap,
 }) {
 	const [sorting, setSorting] = useState([]);
 	const [columnVisibility, setColumnVisibility] = useState({});
@@ -117,7 +116,7 @@ export default function CuentaTable({
 						<Input
 							value={searchTerm}
 							onChange={(event) => onSearchTermChange(event.target.value)}
-							placeholder="Buscar por nombre, usuario, perfil o proveedor"
+							placeholder="Buscar por nombre, usuario o perfil"
 							className="pl-8"
 						/>
 					</div>

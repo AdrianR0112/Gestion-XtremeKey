@@ -13,8 +13,21 @@ function extractPayload(response) {
 	return response;
 }
 
+function buildQueryString(params = {}) {
+	const query = new URLSearchParams();
+
+	if (params.periodo) query.set("periodo", params.periodo);
+	if (params.ancla != null) query.set("ancla", String(params.ancla));
+
+	const queryString = query.toString();
+	return queryString ? `?${queryString}` : "";
+}
+
 export const dashboardService = {
-	getResumen: async (options) => extractPayload(await api.get(basePath, options)),
+	getResumen: async (params = {}, options) => {
+		const path = `${basePath}${buildQueryString(params)}`;
+		return extractPayload(await api.get(path, options));
+	},
 };
 
 export default dashboardService;

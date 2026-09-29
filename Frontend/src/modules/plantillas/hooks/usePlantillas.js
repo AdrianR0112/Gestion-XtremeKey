@@ -1,10 +1,13 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { mapPlantillaFromApi } from "../helpers/plantilla.mapper";
 import { PLANTILLA_INICIAL, isPlantillaFormValid } from "../schemas/plantilla.schema";
 import plantillasService from "../services/plantillas.service";
 
 export default function usePlantillas() {
-  const [plantillas, setPlantillas] = useState([]);
+  const queryClient = useQueryClient();
   const [selectedPlantillaId, setSelectedPlantillaId] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState("create");
@@ -13,34 +16,37 @@ export default function usePlantillas() {
   const [tipoFilter, setTipoFilter] = useState("todos");
   const [canalFilter, setCanalFilter] = useState("todos");
   const [estadoFilter, setEstadoFilter] = useState("todos");
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const plantillasQueryKey = queryKeys.plantillas.list();
+  const plantillasQuery = useQuery({
+    queryKey: plantillasQueryKey,
+    queryFn: async () => toArray(await plantillasService.list()).map((item) => mapPlantillaFromApi(item)),
+  });
+  const plantillas = plantillasQuery.data ?? [];
+  const setPlantillas = createQueryDataSetter(queryClient, plantillasQueryKey, []);
+  const loading = plantillasQuery.isLoading || plantillasQuery.isFetching;
 
   const cargarPlantillas = async () => {
-    setLoading(true);
     setError("");
     try {
-      const list = await plantillasService.list();
-      const mapped = Array.isArray(list) ? list.map((item) => mapPlantillaFromApi(item)) : [];
-      setPlantillas(mapped);
-      setSelectedPlantillaId((prev) => {
-        if (prev && mapped.some((item) => item.Id_Pla === prev)) return prev;
-        return mapped[0]?.Id_Pla ?? null;
+      return await queryClient.fetchQuery({
+        queryKey: plantillasQueryKey,
+        queryFn: async () => toArray(await plantillasService.list()).map((item) => mapPlantillaFromApi(item)),
       });
-      return mapped;
     } catch (err) {
-      setError(err?.data?.message || err?.message || "No se pudieron cargar las plantillas.");
+      setError(getErrorMessage(err, "No se pudieron cargar las plantillas."));
       return [];
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    cargarPlantillas();
-  }, []);
+	    setSelectedPlantillaId((prev) => {
+	      if (prev && plantillas.some((item) => item.Id_Pla === prev)) return prev;
+	      return plantillas[0]?.Id_Pla ?? null;
+	    });
+	  }, [plantillas]);
 
   const plantillaSeleccionada = useMemo(
     () => plantillas.find((item) => item.Id_Pla === selectedPlantillaId) || null,

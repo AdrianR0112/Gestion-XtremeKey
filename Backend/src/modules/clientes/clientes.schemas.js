@@ -9,6 +9,8 @@ const allowedFields = [
   'Ema_Cli',
   'Pai_Cli',
   'Doc_Cli',
+  'Dir_Cli',
+  'Tip_Cli',
   'Cat_Cli',
   'Pre_Con_Cli',
   'Ace_Not_What_Cli',

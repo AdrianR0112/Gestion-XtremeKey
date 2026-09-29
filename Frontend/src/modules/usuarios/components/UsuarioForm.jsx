@@ -20,7 +20,7 @@ export default function UsuarioForm({
 		return (
 			<div className="space-y-4 px-6 pb-6">
 				<p className="text-sm text-zinc-600 dark:text-zinc-300">
-					Se eliminara el usuario <strong>{`${usuarioSeleccionado?.Nom_Usu || ""} ${usuarioSeleccionado?.Ape_Usu || ""}`.trim() || "-"}</strong>.
+					Se eliminara la cuenta staff <strong>{`${usuarioSeleccionado?.Nom_Usu || ""} ${usuarioSeleccionado?.Ape_Usu || ""}`.trim() || "-"}</strong>.
 				</p>
 				<div className="flex items-center justify-end gap-2">
 					<Button variant="outline" onClick={onCancel} disabled={saving}>
@@ -36,7 +36,7 @@ export default function UsuarioForm({
 
 	return (
 		<form onSubmit={onSubmit} className="space-y-5 px-6 pb-6">
-			<FormSection title="Identidad" description="Datos básicos del usuario dentro del sistema.">
+			<FormSection title="Identidad" description="Datos basicos de la cuenta staff dentro del sistema.">
 			<div className="grid sm:grid-cols-2 gap-3">
 				<div className="space-y-1.5">
 					<Label htmlFor="Nom_Usu">Nombre</Label>
@@ -70,7 +70,7 @@ export default function UsuarioForm({
 			</div>
 			</FormSection>
 
-			<FormSection title="Acceso y permisos" description="Controla credenciales, rol y estado del usuario.">
+			<FormSection title="Acceso y permisos" description="Controla credenciales y estado del staff.">
 			<div className="space-y-1.5">
 				<Label htmlFor="Pas_Usu">Contrasena {mode === "edit" ? "(opcional)" : ""}</Label>
 				<Input

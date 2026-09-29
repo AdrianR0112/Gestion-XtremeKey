@@ -1,21 +1,18 @@
 ﻿const express = require('express');
+const path = require('node:path');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
 const { rateLimit } = require('express-rate-limit');
 
 const { corsOptions } = require('./config/cors');
+const { betterAuthHandler } = require('./auth/bridge');
 const { apiRouter } = require('./routes/index.routes');
 const { notFoundMiddleware } = require('./middlewares/notFound.middleware');
 const { errorMiddleware } = require('./middlewares/error.middleware');
 
 const app = express();
 
-<<<<<<< Updated upstream
-app.use(helmet());
-app.use(cors(corsOptions));
-app.use(morgan('dev'));
-=======
 const loginRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -41,9 +38,9 @@ app.use('/api/v1/staff-auth/login', loginRateLimit);
 app.use('/api/v1/auth', authRateLimit);
 app.all('/api/v1/auth', betterAuthHandler);
 app.all('/api/v1/auth/*', betterAuthHandler);
->>>>>>> Stashed changes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ ok: true, service: 'backend', timestamp: new Date().toISOString() });

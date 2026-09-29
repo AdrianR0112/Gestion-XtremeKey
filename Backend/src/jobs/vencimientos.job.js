@@ -17,16 +17,7 @@ function normalizeEmail(value) {
   return email || '';
 }
 
-function resolveRecipient(row, overrideEmail = '') {
-  const forced = normalizeEmail(overrideEmail);
-  if (forced) {
-    return {
-      email: forced,
-      name: row.Nom_Rev_Completo || row.Nom_Cli_Completo || 'Pruebas',
-      channel: 'override'
-    };
-  }
-
+function resolveRecipient(row) {
   if (row.Id_Rev) {
     const resellerEmail = normalizeEmail(row.Ema_Rev);
     if (!resellerEmail) return { email: '', name: row.Nom_Rev_Completo || 'Revendedor', channel: 'revendedor' };
@@ -74,7 +65,7 @@ async function findCurrentConfig(pool) {
 }
 
 async function findEligibleDetails(pool, targetDate, type, options) {
-  const clauses = ['DATE(d.Fec_Fin_Dve) = ?', "d.Est_Dve IN ('activo','vencido')"];
+  const clauses = ['DATE(d.Fec_Fin_Dve) = ?', "d.Est_Dve IN ('activo','vencido')", "p.Tip_Prd = 'suscripcion'"];
   const values = [targetDate];
 
   if (options.clientId) {
@@ -85,11 +76,6 @@ async function findEligibleDetails(pool, targetDate, type, options) {
   if (options.detalleId) {
     clauses.push('d.Id_Dve = ?');
     values.push(options.detalleId);
-  }
-
-  if (env.remindersTestMode && env.remindersTestClientId && !options.includeAllClients && !options.detalleId) {
-    clauses.push('v.Id_Cli = ?');
-    values.push(env.remindersTestClientId);
   }
 
   const [rows] = await pool.query(
@@ -194,7 +180,7 @@ async function processReminder(pool, row, config, targetDate, options) {
     return { status: 'skipped', reason: rulesSkipReason, detailId: row.Id_Dve, recipientEmail: '' };
   }
 
-  const recipient = resolveRecipient(row, options.overrideEmail || env.remindersTestOverrideEmail);
+  const recipient = resolveRecipient(row);
   if (!recipient.email) {
     const reason = 'No se encontro un correo valido para este recordatorio.';
     await upsertLog(pool, {
@@ -318,9 +304,7 @@ async function runVencimientosJob(options = {}) {
     for (const row of eligibleRows) {
       const result = await processReminder(pool, row, config, entry.date, {
         dryRun: options.dryRun ?? env.remindersDryRun,
-        forceResend: Boolean(options.forceResend),
-        overrideEmail: options.overrideEmail || '',
-        includeAllClients: Boolean(options.includeAllClients)
+        forceResend: Boolean(options.forceResend)
       });
 
       summary.processedCount += 1;

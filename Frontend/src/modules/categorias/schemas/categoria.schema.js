@@ -1,4 +1,7 @@
-﻿export const ESTADOS_CATEGORIA = ["activo", "inactivo"];
+﻿import { z } from "zod";
+import { fieldErrorsFromResult } from "@/lib/zod";
+
+export const ESTADOS_CATEGORIA = ["activo", "inactivo"];
 
 export const CATEGORIA_INICIAL = {
 	Nom_Cat: "",
@@ -9,32 +12,19 @@ export const CATEGORIA_INICIAL = {
 	Est_Cat: "activo",
 };
 
+const categoriaFormSchema = z.object({
+	Nom_Cat: z.string().trim().min(1, "El nombre de la categoria es obligatorio."),
+	Est_Cat: z.enum(ESTADOS_CATEGORIA, { message: "Estado invalido." }).optional(),
+	Ord_Cat: z.union([z.string(), z.number(), z.null()]).optional().refine((value) => value === "" || value === null || Number.isFinite(Number(value)), {
+		message: "El orden debe ser numerico.",
+	}),
+	Id_Cat_Pad: z.union([z.string(), z.number(), z.null()]).optional().refine((value) => value === "" || value === null || (Number.isInteger(Number(value)) && Number(value) > 0), {
+		message: "La categoria padre debe ser un id valido.",
+	}),
+}).passthrough();
+
 export function validateCategoriaForm(form = {}) {
-	const errors = {};
-
-	if (!form.Nom_Cat?.trim()) {
-		errors.Nom_Cat = "El nombre de la categoria es obligatorio.";
-	}
-
-	if (form.Est_Cat && !ESTADOS_CATEGORIA.includes(form.Est_Cat)) {
-		errors.Est_Cat = "Estado invalido.";
-	}
-
-	if (form.Ord_Cat !== "" && form.Ord_Cat !== null) {
-		const value = Number(form.Ord_Cat);
-		if (!Number.isFinite(value)) {
-			errors.Ord_Cat = "El orden debe ser numerico.";
-		}
-	}
-
-	if (form.Id_Cat_Pad !== "" && form.Id_Cat_Pad !== null) {
-		const parentValue = Number(form.Id_Cat_Pad);
-		if (!Number.isInteger(parentValue) || parentValue <= 0) {
-			errors.Id_Cat_Pad = "La categoria padre debe ser un id valido.";
-		}
-	}
-
-	return errors;
+	return fieldErrorsFromResult(categoriaFormSchema.safeParse(form));
 }
 
 export function isCategoriaFormValid(form = {}) {
@@ -42,6 +32,7 @@ export function isCategoriaFormValid(form = {}) {
 }
 
 export const categoriaSchema = {
+	schema: categoriaFormSchema,
 	validate: validateCategoriaForm,
 };
 

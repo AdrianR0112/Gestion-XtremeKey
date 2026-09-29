@@ -1,45 +1,51 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "../../../app/query-keys";
+import { createQueryDataSetter, getErrorMessage, toArray } from "../../../app/query-utils";
 import { matchesPhoneSearch, matchesTextSearch, normalizeSearchText } from "../../../utils/search";
 import { mapRevendedorFromApi } from "../helpers/revendedor.mapper";
 import { REVENDEDOR_INICIAL, isRevendedorFormValid } from "../schemas/revendedor.schema";
 import revendedoresService from "../services/revendedores.service";
 
 export default function useRevendedores() {
-	const [revendedores, setRevendedores] = useState([]);
+	const queryClient = useQueryClient();
 	const [selectedRevendedorId, setSelectedRevendedorId] = useState(null);
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [sheetMode, setSheetMode] = useState("create");
 	const [form, setForm] = useState(REVENDEDOR_INICIAL);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [estadoFilter, setEstadoFilter] = useState("todos");
-	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
+	const revendedoresQueryKey = queryKeys.revendedores.list();
+	const revendedoresQuery = useQuery({
+		queryKey: revendedoresQueryKey,
+		queryFn: async () => toArray(await revendedoresService.list()).map((item) => mapRevendedorFromApi(item)),
+	});
+	const revendedores = revendedoresQuery.data ?? [];
+	const setRevendedores = createQueryDataSetter(queryClient, revendedoresQueryKey, []);
+	const loading = revendedoresQuery.isLoading || revendedoresQuery.isFetching;
 
 	const cargarRevendedores = async () => {
-		setLoading(true);
 		setError("");
 		try {
-			const list = await revendedoresService.list();
-			const mapped = Array.isArray(list) ? list.map((item) => mapRevendedorFromApi(item)) : [];
-			setRevendedores(mapped);
-			setSelectedRevendedorId((prev) => {
-				if (prev && mapped.some((item) => item.Id_Rev === prev)) return prev;
-				return mapped[0]?.Id_Rev ?? null;
+			return await queryClient.fetchQuery({
+				queryKey: revendedoresQueryKey,
+				queryFn: async () => toArray(await revendedoresService.list()).map((item) => mapRevendedorFromApi(item)),
 			});
-			return mapped;
 		} catch (err) {
-			setError(err?.data?.message || err?.message || "No se pudo cargar revendedores.");
+			setError(getErrorMessage(err, "No se pudo cargar revendedores."));
 			return [];
-		} finally {
-			setLoading(false);
 		}
 	};
 
 	useEffect(() => {
-		cargarRevendedores();
-	}, []);
+		setSelectedRevendedorId((prev) => {
+			if (prev && revendedores.some((item) => item.Id_Rev === prev)) return prev;
+			return revendedores[0]?.Id_Rev ?? null;
+		});
+	}, [revendedores]);
 
 	const revendedorSeleccionado = useMemo(
 		() => revendedores.find((revendedor) => revendedor.Id_Rev === selectedRevendedorId) || null,

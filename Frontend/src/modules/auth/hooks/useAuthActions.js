@@ -27,15 +27,13 @@ export default function useAuthActions(state, { dispatch, navigate }) {
 	};
 
 	const hydrateSession = async () => {
-		const token = localStorage.getItem("authToken");
-		if (!token) return;
 		try {
 			const response = await authService.me();
 			const { user } = extractAuthPayload(response);
-			dispatch(setCredentials({ token, user }));
+			if (!user) return;
+			dispatch(setCredentials({ user }));
 			navigate("/dashboard", { replace: true });
 		} catch {
-			localStorage.removeItem("authToken");
 			localStorage.removeItem("authUser");
 		}
 	};
@@ -49,9 +47,9 @@ export default function useAuthActions(state, { dispatch, navigate }) {
 
 		await execute(async () => {
 			const response = await authService.login(mapLoginPayload(state.loginForm));
-			const { token, user } = extractAuthPayload(response);
-			if (!token) throw new Error("El servidor no devolvio token");
-			dispatch(setCredentials({ token, user }));
+			const { user } = extractAuthPayload(response);
+			if (!user) throw new Error("El servidor no devolvio sesion");
+			dispatch(setCredentials({ user }));
 			navigate("/dashboard", { replace: true });
 		});
 	};
@@ -65,14 +63,10 @@ export default function useAuthActions(state, { dispatch, navigate }) {
 
 		await execute(async () => {
 			const response = await authService.register(mapRegisterPayload(state.registerForm));
-			const { token, user } = extractAuthPayload(response);
-			if (token) {
-				dispatch(setCredentials({ token, user }));
-				navigate("/dashboard", { replace: true });
-			} else {
-				state.setSuccess("Usuario registrado correctamente. Ahora puedes iniciar sesion.");
-				navigate("/auth", { replace: true });
-			}
+			const { user } = extractAuthPayload(response);
+			if (!user) throw new Error("No se pudo crear el staff");
+			dispatch(setCredentials({ user }));
+			navigate("/dashboard", { replace: true });
 		});
 	};
 

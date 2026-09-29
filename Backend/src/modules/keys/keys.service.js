@@ -1,7 +1,6 @@
 ﻿const keysRepository = require('./keys.repository');
 const productosRepository = require('../productos/productos.repository');
 const variantesRepository = require('../variantes/variantes.repository');
-const proveedoresRepository = require('../proveedores/proveedores.repository');
 const { validatePayload, isNumericId } = require('./keys.validator');
 
 function createHttpError(statusCode, message, errors = null) {
@@ -24,14 +23,6 @@ async function ensureVarianteExiste(idVar) {
   const variante = await variantesRepository.findById(idVar);
   if (!variante) {
     throw createHttpError(400, 'La variante indicada no existe.');
-  }
-}
-
-async function ensureProveedorExiste(idPro) {
-  if (idPro === undefined || idPro === null) return;
-  const proveedor = await proveedoresRepository.findById(idPro);
-  if (!proveedor) {
-    throw createHttpError(400, 'El proveedor indicado no existe.');
   }
 }
 
@@ -71,7 +62,6 @@ async function createKey(payload) {
   validateDateRange(validation.payload);
   await ensureProductoExiste(validation.payload.Id_Prd);
   await ensureVarianteExiste(validation.payload.Id_Var);
-  await ensureProveedorExiste(validation.payload.Id_Pro);
 
   return keysRepository.createOne(validation.payload);
 }
@@ -104,7 +94,6 @@ async function updateKey(id, payload) {
   validateDateRange(merged);
   await ensureProductoExiste(validation.payload.Id_Prd ?? current.Id_Prd);
   await ensureVarianteExiste(validation.payload.Id_Var ?? current.Id_Var);
-  await ensureProveedorExiste(validation.payload.Id_Pro ?? current.Id_Pro);
 
   return keysRepository.updateById(Number(id), validation.payload);
 }

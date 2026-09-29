@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import FormSection from "../../../components/form-section";
 import { Input } from "../../../components/ui/input";
@@ -5,15 +6,76 @@ import { Label } from "../../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
 import { TIPOS_PRODUCTO, ESTADOS_PRODUCTO, validateProductoForm } from "../schemas/producto.schema";
+import { resolveProductoImageUrl } from "../helpers/producto-image";
 
-export default function ProductoForm({ form = {}, onFormChange = () => {}, categoriasActivas = [], onSubmit = () => {}, onCancel = () => {}, isValid = false, isLoading = false }) {
+export default function ProductoForm({ form = {}, onFormChange = () => {}, categoriasActivas = [], onSubmit = () => {}, onCancel = () => {}, onRemovePersistedImage = async () => false, isValid = false, isLoading = false }) {
+	const [imageError, setImageError] = useState("");
+
 	const handleChange = (field, value) => {
 		onFormChange({ ...form, [field]: value });
 	};
 
+	const previewUrl = useMemo(() => {
+		if (form.Imagen_Archivo instanceof File) {
+			return URL.createObjectURL(form.Imagen_Archivo);
+		}
+
+		if (form.Eliminar_Ima_Prd) {
+			return "";
+		}
+
+		return resolveProductoImageUrl(form.Ima_Prd || "");
+	}, [form.Eliminar_Ima_Prd, form.Ima_Prd, form.Imagen_Archivo]);
+
+	useEffect(() => {
+		return () => {
+			if (previewUrl && form.Imagen_Archivo instanceof File) {
+				URL.revokeObjectURL(previewUrl);
+			}
+		};
+	}, [form.Imagen_Archivo, previewUrl]);
+
+	const handleImageChange = (event) => {
+		const file = event.target.files?.[0] || null;
+		if (!file) {
+			return;
+		}
+
+		const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
+		if (!allowedTypes.includes(file.type)) {
+			setImageError("Solo se permiten archivos SVG, PNG o JPG/JPEG.");
+			event.target.value = "";
+			return;
+		}
+
+		setImageError("");
+		onFormChange({
+			...form,
+			Imagen_Archivo: file,
+			Eliminar_Ima_Prd: false,
+		});
+	};
+
+	const handleRemoveImage = async () => {
+		setImageError("");
+
+		if (form.Imagen_Archivo instanceof File) {
+			onFormChange({
+				...form,
+				Imagen_Archivo: null,
+				Eliminar_Ima_Prd: false,
+			});
+			return;
+		}
+
+		if (form.Id_Prd && form.Ima_Prd) {
+			await onRemovePersistedImage(form.Id_Prd);
+		}
+	};
+
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		if (isValid) {
+		if (isValid && !imageError) {
 			onSubmit(e);
 		}
 	};
@@ -113,13 +175,30 @@ export default function ProductoForm({ form = {}, onFormChange = () => {}, categ
 					<Label htmlFor="Ima_Prd">Imagen (Opcional)</Label>
 					<Input
 						id="Ima_Prd"
-						type="text"
-						value={form.Ima_Prd || ""}
-						onChange={(e) => handleChange("Ima_Prd", e.target.value)}
-						placeholder="Ruta o URL de imagen"
+						type="file"
+						accept=".svg,.png,.jpg,.jpeg,image/svg+xml,image/png,image/jpeg"
+						onChange={handleImageChange}
 					/>
+					<p className="text-xs text-muted-foreground">Formatos permitidos: SVG, PNG, JPG o JPEG. Maximo 5 MB.</p>
+					{imageError && <p className="text-xs text-red-500 mt-1">{imageError}</p>}
 				</div>
-				<div />
+				<div className="space-y-2">
+					<Label>Vista previa</Label>
+					<div className="flex min-h-40 items-center justify-center overflow-hidden rounded-lg border bg-muted/20">
+						{previewUrl ? (
+							<img src={previewUrl} alt={form.Nom_Prd || "Vista previa del producto"} className="h-40 w-full object-contain" />
+						) : (
+							<p className="px-4 text-center text-sm text-muted-foreground">No hay imagen seleccionada.</p>
+						)}
+					</div>
+					<div className="flex flex-wrap gap-2">
+						{(form.Imagen_Archivo || form.Ima_Prd) && (
+							<Button type="button" variant="outline" onClick={handleRemoveImage}>
+								{form.Imagen_Archivo instanceof File ? "Quitar imagen seleccionada" : "Quitar imagen"}
+							</Button>
+						)}
+					</div>
+				</div>
 			</div>
 
 			<div className="space-y-2">
@@ -149,7 +228,7 @@ export default function ProductoForm({ form = {}, onFormChange = () => {}, categ
 				<Button type="button" variant="outline" onClick={onCancel}>
 					Cancelar
 				</Button>
-				<Button type="submit" disabled={!isValid || isLoading}>
+				<Button type="submit" disabled={!isValid || isLoading || Boolean(imageError)}>
 					{isLoading ? "Guardando..." : "Guardar"}
 				</Button>
 			</div>
