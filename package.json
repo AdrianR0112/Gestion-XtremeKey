@@ -1,0 +1,9 @@
+{
+  "name": "gestion-xtremekey",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm ci --prefix Frontend && npm run build --prefix Frontend && npm ci --omit=dev --prefix Backend",
+    "start": "npm start --prefix Backend"
+  }
+}
