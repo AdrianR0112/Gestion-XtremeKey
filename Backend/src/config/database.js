@@ -883,6 +883,26 @@ async function ensureAuthAndDomainSchema(connection) {
   await ensureConfiguracionRenovacionSchema(connection);
 }
 
+async function ensureCalendarTableCollation(connection) {
+  const targetCollation = 'utf8mb4_unicode_ci';
+  const [rows] = await connection.query(
+    `
+      SELECT TABLE_COLLATION
+      FROM INFORMATION_SCHEMA.TABLES
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'detalle_ventas'
+      LIMIT 1
+    `,
+    [env.mysqlDatabase]
+  );
+
+  if (rows[0]?.TABLE_COLLATION && rows[0].TABLE_COLLATION !== targetCollation) {
+    await connection.query(
+      'ALTER TABLE `detalle_ventas` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+    );
+    logger.info(`Schema actualizado: collation de detalle_ventas normalizada a ${targetCollation}.`);
+  }
+}
+
 async function connectDatabase() {
   if (!env.mysqlDatabase) {
     throw new Error('MYSQL_DATABASE is not configured.');
@@ -935,6 +955,7 @@ async function connectDatabase() {
 
   await pool.query('SELECT 1');
 
+  await ensureCalendarTableCollation(pool);
   await ensureAuthAndDomainSchema(pool);
   await ensureVariantNotificationColumns(pool);
   await ensureReminderEmailLogTable(pool);

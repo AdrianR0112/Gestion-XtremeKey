@@ -6,23 +6,23 @@ async function findEventsBetween(startDate, endDate) {
   const [rows] = await pool.query(
     `
     SELECT
-      'tarea' AS Event_Type,
-      CONCAT('tarea-', t.Id_Tar) AS Event_Key,
+      _utf8mb4'tarea' COLLATE utf8mb4_unicode_ci AS Event_Type,
+      CONVERT(CONCAT('tarea-', t.Id_Tar) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Event_Key,
       t.Id_Tar AS Event_Id,
-      t.Tit_Tar AS Title,
-      t.Des_Tar AS Description,
+      CONVERT(t.Tit_Tar USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Title,
+      CONVERT(t.Des_Tar USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Description,
       t.Fec_Lim_Tar AS Event_Date,
-      t.Est_Tar AS Status,
-      t.Pri_Tar AS Priority,
+      CONVERT(t.Est_Tar USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Status,
+      CONVERT(t.Pri_Tar USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Priority,
       t.Pro_Tar AS Progress,
       t.Id_Cli AS Client_Id,
-      CONCAT_WS(' ', c.Nom_Cli, c.Ape_Cli) AS Client_Name,
+      CONVERT(CONCAT_WS(' ', c.Nom_Cli, c.Ape_Cli) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Client_Name,
       t.Id_Ven AS Sale_Id,
       NULL AS Product_Id,
       NULL AS Product_Name,
       NULL AS Variant_Id,
       NULL AS Variant_Name,
-      'tarea' AS Source
+      _utf8mb4'tarea' COLLATE utf8mb4_unicode_ci AS Source
     FROM tareas t
     LEFT JOIN clientes c ON c.Id_Cli = t.Id_Cli
     WHERE t.Fec_Lim_Tar IS NOT NULL
@@ -31,23 +31,23 @@ async function findEventsBetween(startDate, endDate) {
     UNION ALL
 
     SELECT
-      'detalle-venta' AS Event_Type,
-      CONCAT('detalle-venta-', d.Id_Dve) AS Event_Key,
+      _utf8mb4'detalle-venta' COLLATE utf8mb4_unicode_ci AS Event_Type,
+      CONVERT(CONCAT('detalle-venta-', d.Id_Dve) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Event_Key,
       d.Id_Dve AS Event_Id,
-      CONCAT('Venta #', v.Id_Ven, ' - ', COALESCE(p.Nom_Prd, 'Detalle de venta')) AS Title,
-      d.Not_Dve AS Description,
+      CONVERT(CONCAT('Venta #', v.Id_Ven, ' - ', COALESCE(p.Nom_Prd, 'Detalle de venta')) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Title,
+      CONVERT(d.Not_Dve USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Description,
       d.Fec_Fin_Dve AS Event_Date,
-      d.Est_Dve AS Status,
+      CONVERT(d.Est_Dve USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Status,
       NULL AS Priority,
       NULL AS Progress,
       v.Id_Cli AS Client_Id,
-      CONCAT_WS(' ', c.Nom_Cli, c.Ape_Cli) AS Client_Name,
+      CONVERT(CONCAT_WS(' ', c.Nom_Cli, c.Ape_Cli) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Client_Name,
       d.Id_Ven AS Sale_Id,
       d.Id_Prd AS Product_Id,
-      p.Nom_Prd AS Product_Name,
+      CONVERT(p.Nom_Prd USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Product_Name,
       d.Id_Var AS Variant_Id,
-      vr.Nom_Var AS Variant_Name,
-      'detalle-venta' AS Source
+      CONVERT(vr.Nom_Var USING utf8mb4) COLLATE utf8mb4_unicode_ci AS Variant_Name,
+      _utf8mb4'detalle-venta' COLLATE utf8mb4_unicode_ci AS Source
     FROM detalle_ventas d
     INNER JOIN ventas v ON v.Id_Ven = d.Id_Ven
     INNER JOIN clientes c ON c.Id_Cli = v.Id_Cli
